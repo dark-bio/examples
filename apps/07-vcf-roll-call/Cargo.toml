@@ -1,0 +1,7 @@
+[package]
+name = "vcf-roll-call"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+noodles-vcf = "0.88.0"

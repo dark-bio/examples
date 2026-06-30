@@ -1,0 +1,5 @@
+# Build outputs. Unlike the internal devapps repo, this one does not commit the
+# compiled binaries; they are reproduced from source with `make`.
+build/
+target/
+*.wasm

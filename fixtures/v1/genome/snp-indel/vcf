@@ -1,0 +1,26 @@
+##fileformat=VCFv4.3
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=LowQual,Description="Low quality">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the region">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Combined depth">
+##ALT=<ID=NON_REF,Description="Any non-reference allele">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##contig=<ID=chr1>
+##contig=<ID=chr7>
+##contig=<ID=chrM>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE
+chr1	100	.	A	G	55	PASS	DP=30	GT:DP:GQ	0/1:30:60
+chr1	240	.	C	T	62	PASS	DP=28	GT:DP:GQ	1/1:28:58
+chr1	377	rs1	G	A	48	PASS	DP=21	GT:DP:GQ	0/1:21:47
+chr1	420	.	A	AT	37	PASS	DP=19	GT:DP:GQ	0/1:19:41
+chr1	555	.	CTT	C	29	LowQual	DP=11	GT:DP:GQ	0/1:11:22
+chr1	600	.	A	G,T	44	PASS	DP=24	GT:DP:GQ	1/2:24:50
+chr1	720	.	A	C	18	PASS	DP=7	GT:DP:GQ	./.:7:14
+chr1	1000	.	G	<NON_REF>	.	PASS	END=1800;DP=16	GT:DP:GQ	0/0:16:42
+chr7	141972731	.	A	C	57	PASS	DP=33	GT:DP:GQ	0/1:33:59
+chr7	150856517	.	C	T	61	PASS	DP=27	GT:DP:GQ	1/1:27:57
+chrM	263	.	A	G	99	PASS	DP=540	GT:DP:GQ	1:540:99
+chrM	8860	.	A	G	99	PASS	DP=610	GT:DP:GQ	1:610:99
+chrM	14766	.	C	T	88	PASS	DP=480	GT:DP:GQ	1:480:97
