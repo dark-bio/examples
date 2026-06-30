@@ -75,7 +75,7 @@ broadest request, and the most work: you parse the format yourself. The
 decompressed `vcf` view is plain text, so a simple app can scan it line by line,
 and a real one can use a genomics library.
 
-See [vcf-mini](../apps/07-vcf-mini) for a dependency-free line scan and
+See [vcf-mini](../apps/07-vcf-mini) for a simple line scan and
 [vcf-roll-call](../apps/07-vcf-roll-call) for a full scan with `noodles-vcf`.
 
 ## Least privilege

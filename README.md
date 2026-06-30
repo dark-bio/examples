@@ -62,9 +62,16 @@ build and run the Rust hello world:
 make run APP=01-hello-rust
 ```
 
-That builds the app to WebAssembly, prints its manifest (the no-argument pass),
-then runs it against the `fixtures/` tree, which stands in for the data an Ark
-would mount. The fixtures are a few kilobytes of plain text, not a real genome;
+Omit `APP` to build and run the full example suite:
+
+```sh
+make run
+```
+
+The Makefile builds each selected app to WebAssembly, prints its manifest (the
+no-argument pass), then runs it against the `fixtures/` tree, which stands in for
+the data an Ark would mount. The fixtures are a few kilobytes of plain text, not
+a real genome;
 [docs/05-running-locally.md](docs/05-running-locally.md) explains where they
 come from and how faithfully a laptop can stand in for a device.
 

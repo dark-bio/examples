@@ -7,20 +7,46 @@ of stand-in data are enough to run both passes on your laptop.
 
 - [`wasmtime`](https://wasmtime.dev/), the runtime that runs the module.
 - A toolchain for your language: `rustup` with the `wasm32-wasip1` target for
-  Rust, Go 1.24+ for Go, or [wasi-sdk](https://github.com/WebAssembly/wasi-sdk)
-  for C. Each example's README has the exact build command.
+  Rust, Go 1.24+ for Go, or a WASI C toolchain for C. Each example's README has
+  the exact build command.
 
-C is built with wasi-sdk rather than Emscripten on purpose: wasi-sdk produces a
-standard WASI module whose file reads resolve against mounted data, which is what
-the Ark provides. Emscripten's standalone output cannot reach those files.
+C is built with a WASI clang/sysroot toolchain rather than Emscripten on purpose:
+standard WASI modules can read the mounted data the Ark provides. Emscripten's
+standalone output cannot reach those files. The Makefile auto-detects either an
+upstream [wasi-sdk](https://github.com/WebAssembly/wasi-sdk) install at
+`/opt/wasi-sdk` or Homebrew's split WASI toolchain (`llvm`, `lld`, `wasi-libc`,
+and `wasi-runtimes`).
+
+On macOS with Homebrew, these packages cover the local runner, Go examples, and
+C examples:
+
+```sh
+brew install wasmtime go llvm lld wasi-libc wasi-runtimes
+```
+
+Install Rust through `rustup` if you do not already have it, then add the WASI
+target:
+
+```sh
+rustup target add wasm32-wasip1
+```
 
 ## make run
 
-`make run APP=<name>` builds the app and runs both passes:
+`make run` builds every app and runs both passes for each one:
+
+```sh
+make run
+```
+
+To run just one app, set `APP`:
 
 ```sh
 make run APP=03-cilantro-soapiness
 ```
+
+`make build` follows the same selection rule: without `APP` it builds every app;
+with `APP=<name>` it builds only that app.
 
 Every app builds to a single module at `build/<app>.wasm`, whatever its language,
 so the compiled output for the whole repo lives in one `build/` directory.
@@ -37,7 +63,9 @@ asked for, the same as on a device. That is why
 [permissions](../apps/02-permissions) can demonstrate a blocked read locally: the
 undeclared path is never mounted.
 
-To run a C app, point `WASI_SDK` at your install (it defaults to `/opt/wasi-sdk`):
+For C apps, the Makefile first looks for `/opt/wasi-sdk/bin/clang`, then falls
+back to `brew --prefix llvm` when Homebrew LLVM is installed. Only set `WASI_SDK`
+for a non-standard install:
 
 ```sh
 make run APP=03-cilantro-mini-c WASI_SDK=/path/to/wasi-sdk

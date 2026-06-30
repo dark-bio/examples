@@ -5,17 +5,31 @@ manifest on the manifest pass and a greeting on the run pass, and reads no data.
 
 ## Build
 
-C apps use [wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases), which
-bundles clang and the WASI C library. It produces a standard WASI module, so
-file reads resolve against the data the Ark mounts; Emscripten's standalone
-output cannot reach those files, so it is not used here. Install wasi-sdk, point
-`WASI_SDK` at it, then:
+C apps use a WASI clang/sysroot toolchain. It produces a standard WASI module,
+so file reads resolve against the data the Ark mounts; Emscripten's standalone
+output cannot reach those files, so it is not used here.
+
+From the repository root, the Makefile auto-detects either `/opt/wasi-sdk` or
+Homebrew's split WASI toolchain:
+
+```sh
+make build APP=01-hello-c
+```
+
+To compile by hand with upstream
+[wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases):
 
 ```sh
 $WASI_SDK/bin/clang --target=wasm32-wasip1 -O3 main.c -o app.wasm
 ```
 
-The Makefile looks for wasi-sdk at `/opt/wasi-sdk`; override with
+Or with Homebrew's toolchain:
+
+```sh
+$(brew --prefix llvm)/bin/clang --target=wasm32-wasip1 -O3 main.c -o app.wasm
+```
+
+For a non-standard upstream install, override with
 `make build APP=01-hello-c WASI_SDK=/path/to/wasi-sdk`.
 
 ## Run

@@ -7,12 +7,27 @@ soapy. For the full report version, see
 
 ## Build
 
-C apps use [wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases) (clang
-plus the WASI C library), not Emscripten: its standard WASI output is what lets
-`fopen` reach the files the Ark mounts. With `WASI_SDK` pointing at the install:
+C apps use a WASI clang/sysroot toolchain, not Emscripten: standard WASI output
+is what lets `fopen` reach the files the Ark mounts.
+
+From the repository root, the Makefile auto-detects either `/opt/wasi-sdk` or
+Homebrew's split WASI toolchain:
+
+```sh
+make build APP=03-cilantro-mini-c
+```
+
+To compile by hand with upstream
+[wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases):
 
 ```sh
 $WASI_SDK/bin/clang --target=wasm32-wasip1 -O3 main.c -o app.wasm
+```
+
+Or with Homebrew's toolchain:
+
+```sh
+$(brew --prefix llvm)/bin/clang --target=wasm32-wasip1 -O3 main.c -o app.wasm
 ```
 
 ## Run

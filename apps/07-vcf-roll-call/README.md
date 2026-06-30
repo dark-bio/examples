@@ -15,8 +15,6 @@ It is not a formal coverage calculator; read depth from BAM/CRAM is out of scope
 
 ## Build
 
-This app has one dependency, `noodles-vcf`, which `cargo` fetches automatically.
-
 ```sh
 rustup target add wasm32-wasip1
 cargo build --release --target wasm32-wasip1

@@ -25,9 +25,7 @@ The Ark reads four fields, all under `[package]`:
 - **`develop`** - optional, defaults to `false`. The debugging switch described
   in [01-app-model.md](01-app-model.md). Leave it out for a shipped app.
 
-Any other key is ignored. You will see `api = "v1"` in some apps; the Ark does
-not read it. The dataset paths already carry the `v1` version, so the field is
-redundant. Treat the four fields above as the whole contract.
+Treat the four fields above as the whole contract.
 
 The manifest pass output is capped at 1 KiB, so keep the manifest small. Even a
 panel of a dozen datasets fits comfortably.
