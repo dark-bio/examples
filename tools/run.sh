@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run an Ark app the way the device does: read its manifest, mount only the
 # datasets it declares (read-only), then run it with the data directory as its
-# first argument. Invoked by `make run`. See docs/05-running-locally.md.
+# first argument. Invoked by `make run`. See docs/05-running.md.
 #
 # Usage: tools/run.sh <module.wasm> <fixtures-dir>
 set -eu

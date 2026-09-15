@@ -9,7 +9,7 @@
 #
 # Every app builds to a single module at build/<app>.wasm, whatever its language.
 # The run target uses the wasmtime CLI against the fixtures/ tree, which stands
-# in for the data an Ark would mount. See docs/05-running-locally.md.
+# in for the data an Ark would mount. See docs/05-running.md.
 
 FIXTURES := fixtures
 WASMTIME := wasmtime
