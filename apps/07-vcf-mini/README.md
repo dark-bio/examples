@@ -1,21 +1,12 @@
 # 07 - vcf-mini
 
-Reading the raw variant file, in the fewest lines. It asks for the
-`v1/genome/snp-indel` slot and opens its decompressed `vcf` view, which is plain
-text, so it just counts header lines and records and shows the first one. No
-genomics library.
+The app grants the whole call file, `v1/genome/snp-indel`, and streams `vcf` one
+line at a time to count its header lines and records. A whole-genome call file
+runs to gigabytes, far past an app's 100 MiB of memory, so it's never loaded
+whole. A failed read stops the app instead of reporting zero records.
+[07-vcf-roll-call](../07-vcf-roll-call) parses the same file with a library.
 
-This is the grok version of raw-file access. For a real scan with `noodles-vcf`,
-see [vcf-roll-call](../07-vcf-roll-call).
-
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=07-vcf-mini

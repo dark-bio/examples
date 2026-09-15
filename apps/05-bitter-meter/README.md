@@ -1,24 +1,16 @@
-# 05 - bitter-meter (full)
+# 05 - bitter-meter
 
-A whole gene through the `genes/` lens. It reads `v1/genome/genes/TAS2R38`, the
-bitter-taste receptor behind whether coffee, broccoli, and brussels sprouts come
-across as harsh, and reports the gene's metadata, its reference length and GC
-content, the non-reference changes you carry, and a ruler of where they fall
-across the gene.
+A full report on TAS2R38, the bitter taste receptor gene. It streams the gene's
+`sequence` for its GC content, and lists the owner's `changes` inside the gene
+with each one's reference allele and genotype. It's a data demonstration, not a
+taste prediction.
 
-Read [genes-mini](../05-genes-mini) first for the bare lens read; this is the
-same data turned into a full report.
+It shows how to walk `changes` safely. A listed position without leaves still
+counts, since several records start there. Genotypes are split around symbolic
+and breakend alleles. A listing that fails, including with "file too large",
+stops the app instead of reading as no changes.
 
-This is a curiosity demo, not a taste prediction and not medical advice.
-
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=05-bitter-meter

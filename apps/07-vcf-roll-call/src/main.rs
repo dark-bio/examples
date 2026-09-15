@@ -1,4 +1,4 @@
-//! Coverage Weather: a full-VCF Markdown sanity report.
+//! VCF Roll Call: a full-VCF Markdown sanity report.
 //!
 //! Tutorial note for app authors: this is deliberately a broad-permission demo.
 //! It asks Ark for `v1/genome/snp-indel` and streams `vcf` with `noodles-vcf`.
@@ -8,13 +8,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use noodles_vcf as vcf;
-use noodles_vcf::variant::Record as _;
 use noodles_vcf::variant::record::AlternateBases as _;
 use noodles_vcf::variant::record::Filters as _;
+use noodles_vcf::variant::record::info::field::Value as InfoValue;
 use noodles_vcf::variant::record::samples::Sample as _;
 use noodles_vcf::variant::record::samples::keys::key as sample_key;
 use noodles_vcf::variant::record::samples::series::Value as SampleValue;
@@ -39,7 +39,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match scan_vcf(&path) {
         Ok(report) => report.print(),
-        Err(err) => print_unavailable(err.as_ref()),
+        Err(err) => {
+            eprintln!("Could not read VCF: {err}");
+            std::process::exit(1);
+        }
     }
 
     Ok(())
@@ -189,7 +192,7 @@ impl Report {
             format_int(self.variant_records())
         );
         println!(
-            "| Homozygous-reference records | {} |",
+            "| All-reference records | {} |",
             format_int(self.genotype.hom_ref)
         );
         println!(
@@ -328,7 +331,11 @@ impl Report {
 
 fn scan_vcf(path: &Path) -> Result<Report, Box<dyn Error>> {
     let file = File::open(path)?;
-    let mut reader = vcf::io::Reader::new(BufReader::new(file));
+    scan_reader(BufReader::new(file))
+}
+
+fn scan_reader(input: impl BufRead) -> Result<Report, Box<dyn Error>> {
+    let mut reader = vcf::io::Reader::new(input);
     let header = reader.read_header()?;
     let file_format = header.file_format();
     let mut report = Report {
@@ -337,14 +344,17 @@ fn scan_vcf(path: &Path) -> Result<Report, Box<dyn Error>> {
         ..Report::default()
     };
 
-    for result in reader.records() {
-        let record = match result {
-            Ok(record) => record,
-            Err(_) => {
-                report.parse_errors += 1;
-                continue;
-            }
-        };
+    // Read each line before parsing it: a source read failure is always fatal.
+    // A malformed record can then be skipped without retrying the same bytes.
+    for line in reader.get_mut().lines() {
+        let mut line = line?;
+        line.push('\n');
+        let mut parser = vcf::io::Reader::new(line.as_bytes());
+        let mut record = vcf::Record::default();
+        if parser.read_record(&mut record).is_err() {
+            report.parse_errors += 1;
+            continue;
+        }
         scan_record(&header, &record, &mut report);
     }
 
@@ -360,11 +370,11 @@ fn scan_record(header: &vcf::Header, record: &vcf::Record, report: &mut Report) 
         .and_then(Result::ok)
         .map(|p| p.get() as u64)
         .unwrap_or(0);
-    let end = record
-        .variant_end(header)
-        .ok()
-        .map(|p| p.get() as u64)
-        .unwrap_or(pos);
+    // A reference block's END still defines its span in VCF 4.5 call files.
+    let end = match record.info().get(header, "END") {
+        Some(Ok(Some(InfoValue::Integer(end)))) if end >= 0 && end as u64 >= pos => end as u64,
+        _ => pos + record.reference_bases().len().saturating_sub(1) as u64,
+    };
     let span = end.saturating_sub(pos).saturating_add(1);
 
     let chrom_stats = report.chromosomes.entry(chrom).or_default();
@@ -389,7 +399,9 @@ fn scan_record(header: &vcf::Header, record: &vcf::Record, report: &mut Report) 
         report.variants.multiallelic += 1;
     }
 
-    if is_reference_block(record, span) {
+    if is_reference_block(record, span)
+        && matches!(genotype_class(header, record), GenotypeClass::HomRef)
+    {
         report.reference_blocks.records += 1;
         report.reference_blocks.bases += span;
         chrom_stats.reference_block_bases += span;
@@ -424,7 +436,7 @@ fn scan_record(header: &vcf::Header, record: &vcf::Record, report: &mut Report) 
         GenotypeClass::NoGt => report.genotype.no_sample += 1,
     }
 
-    if genotype_is_phased(header, record) {
+    if genotype_is_phased(record) {
         report.genotype.phased += 1;
     }
 
@@ -530,8 +542,13 @@ fn genotype_class(header: &vcf::Header, record: &vcf::Record) -> GenotypeClass {
     let Some(sample) = samples.get_index(0) else {
         return GenotypeClass::NoGt;
     };
+    // A whole-sample dot is a missing call when FORMAT declares GT.
+    if sample.as_ref().is_empty() && samples.keys().iter().any(|key| key == sample_key::GENOTYPE) {
+        return GenotypeClass::Missing;
+    }
     let genotype = match sample.get(header, sample_key::GENOTYPE) {
         Some(Ok(Some(SampleValue::Genotype(genotype)))) => genotype,
+        Some(Ok(None)) => return GenotypeClass::Missing,
         _ => return GenotypeClass::NoGt,
     };
 
@@ -561,20 +578,24 @@ fn genotype_class(header: &vcf::Header, record: &vcf::Record) -> GenotypeClass {
     }
 }
 
-fn genotype_is_phased(header: &vcf::Header, record: &vcf::Record) -> bool {
-    use noodles_vcf::variant::record::samples::series::value::genotype::Phasing;
-
+fn genotype_is_phased(record: &vcf::Record) -> bool {
     let samples = record.samples();
+    let Some(index) = samples
+        .keys()
+        .iter()
+        .position(|key| key == sample_key::GENOTYPE)
+    else {
+        return false;
+    };
     let Some(sample) = samples.get_index(0) else {
         return false;
     };
-    let genotype = match sample.get(header, sample_key::GENOTYPE) {
-        Some(Ok(Some(SampleValue::Genotype(genotype)))) => genotype,
-        _ => return false,
-    };
-    genotype
-        .iter()
-        .any(|allele| matches!(allele, Ok((_, Phasing::Phased))))
+    // A haploid call alone does not imply an explicit phase marker.
+    sample
+        .as_ref()
+        .split(':')
+        .nth(index)
+        .is_some_and(|gt| gt.contains('|'))
 }
 
 fn sample_integer(header: &vcf::Header, record: &vcf::Record, key: &str) -> Option<u32> {
@@ -599,23 +620,14 @@ fn print_header() {
     println!();
 }
 
-fn print_unavailable(err: &dyn Error) {
-    println!("## Result unavailable");
-    println!();
-    println!("The SNP/indel VCF could not be read.");
-    println!();
-    println!("Reason: `{err}`");
-    println!();
-}
-
 fn print_genotype_table(stats: &GenotypeStats) {
     println!("## Genotype Calls");
     println!();
     println!("| Class | Records |");
     println!("| :--- | ---: |");
-    println!("| Homozygous reference | {} |", format_int(stats.hom_ref));
+    println!("| All copies reference | {} |", format_int(stats.hom_ref));
     println!("| Heterozygous | {} |", format_int(stats.heterozygous));
-    println!("| Homozygous alternate | {} |", format_int(stats.hom_alt));
+    println!("| All copies alternate | {} |", format_int(stats.hom_alt));
     println!(
         "| Alternate/alternate mixed | {} |",
         format_int(stats.mixed_alt)
@@ -679,7 +691,7 @@ fn print_chromosome_table(chromosomes: &BTreeMap<String, ChromStats>) {
         "Primary chromosomes are listed separately from alternate, random, unplaced, and patch contigs."
     );
     println!();
-    println!("| Chromosome | Records | Variant GTs | Hom-ref GTs | Ref-block bp | Label |");
+    println!("| Chromosome | Records | Variant GTs | All-ref GTs | Ref-block bp | Label |");
     println!("| :--- | ---: | ---: | ---: | ---: | :--- |");
     for primary in primary_chromosome_order() {
         let Some((name, stats)) = find_primary(chromosomes, primary) else {
@@ -710,7 +722,7 @@ fn print_chromosome_table(chromosomes: &BTreeMap<String, ChromStats>) {
         println!();
         println!("Top non-primary contigs by record count:");
         println!();
-        println!("| Contig | Records | Variant GTs | Hom-ref GTs | Ref-block bp | Label |");
+        println!("| Contig | Records | Variant GTs | All-ref GTs | Ref-block bp | Label |");
         println!("| :--- | ---: | ---: | ---: | ---: | :--- |");
         let mut top = other;
         top.sort_by(|a, b| b.1.records.cmp(&a.1.records).then_with(|| a.0.cmp(b.0)));

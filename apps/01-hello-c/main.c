@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {
+  (void)argv;
   // The manifest pass: no data directory was given, so describe the app and
   // stop. This app reads nothing, so its dataset list is empty.
   if (argc < 2) {

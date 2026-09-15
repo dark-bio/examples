@@ -6,11 +6,13 @@
 //
 // It is the same program as ../03-cilantro-mini-rust, in Go. The rsids/ lens hands
 // back the genotype and coordinate as plain files; the app never opens a
-// variant file. See ../../docs/04-data-access.md.
+// variant file. See ../../docs/04-reading-data.md.
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,20 +37,20 @@ func main() {
 	// The run pass: everything comes from the one lens directory.
 	base := filepath.Join(os.Args[1], lens)
 
-	// The genotype leaf exists only where your calls cover the site. A missing
-	// file just means the site was not sequenced, so report that and stop.
-	raw, err := os.ReadFile(filepath.Join(base, "genotype"))
-	if err != nil {
+	// ENOENT means no answer, including reference sites in variants-only calls.
+	genotype, present := leaf(base, "genotype")
+	if !present {
 		fmt.Printf("## Cilantro taste\n\n")
-		fmt.Printf("Your data does not cover `%s`, so there is nothing to report.\n", rsID)
+		fmt.Printf("No genotype answer for `%s`. Absence does not imply two reference alleles.\n", rsID)
 		return
 	}
-	genotype := strings.TrimSpace(string(raw))
 
-	// The lens returns alleles as bases (A/C, or C|C when phased), so just count
-	// copies of the soapy allele. There is no REF/ALT index to decode.
-	copies := 0
+	// This known SNP needs only a simple split; keep the original text for display.
+	copies, missing := 0, false
 	for _, allele := range strings.FieldsFunc(genotype, func(r rune) bool { return r == '/' || r == '|' }) {
+		if allele == "." {
+			missing = true
+		}
 		if allele == soapyAllele {
 			copies++
 		}
@@ -56,27 +58,36 @@ func main() {
 
 	fmt.Printf("## Cilantro taste\n\n")
 	fmt.Printf("Your genotype at `%s` is `%s`.\n\n", rsID, genotype)
-	switch copies {
-	case 0:
-		fmt.Printf("You carry no copies of the soapy `%s` allele. Cilantro probably tastes fresh and herby.\n", soapyAllele)
-	case 1:
-		fmt.Printf("You carry one copy of the soapy `%s` allele. Cilantro may have a faint soapy note.\n", soapyAllele)
-	default:
-		fmt.Printf("You carry two copies of the soapy `%s` allele. Cilantro likely tastes like dish soap.\n", soapyAllele)
+	if missing {
+		fmt.Println("The copy count is inconclusive because an allele is missing (`.`).")
+	} else {
+		switch copies {
+		case 0:
+			fmt.Printf("You carry no copies of the soapy `%s` allele. Cilantro probably tastes fresh and herby.\n", soapyAllele)
+		case 1:
+			fmt.Printf("You carry one copy of the soapy `%s` allele. Cilantro may have a faint soapy note.\n", soapyAllele)
+		default:
+			fmt.Printf("You carry %d copies of the soapy `%s` allele. Cilantro likely tastes like dish soap.\n", copies, soapyAllele)
+		}
 	}
 
-	// The coordinate, read from the lens's other leaves, shown for context.
-	chrom, pos, reference := leaf(base, "chromosome"), leaf(base, "position"), leaf(base, "reference")
-	if chrom != "" && pos != "" {
+	chrom, hasChrom := leaf(base, "chromosome")
+	pos, hasPos := leaf(base, "position")
+	reference, hasRef := leaf(base, "reference")
+	if hasChrom && hasPos && hasRef {
 		fmt.Printf("\nLocus `%s:%s`, reference allele `%s`.\n", chrom, pos, reference)
 	}
 }
 
-// leaf reads a single lens file and trims it, returning "" if it is absent.
-func leaf(base, name string) string {
+// Generated files hold exactly their value; only ENOENT means no answer.
+func leaf(base, name string) (string, bool) {
 	data, err := os.ReadFile(filepath.Join(base, name))
-	if err != nil {
-		return ""
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", false
 	}
-	return strings.TrimSpace(string(data))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read %s %s: %v\n", rsID, name, err)
+		os.Exit(1)
+	}
+	return string(data), true
 }

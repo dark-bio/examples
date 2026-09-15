@@ -1,20 +1,14 @@
-//! Permissions and the develop flag.
+//! A directory grant and the develop flag.
 //!
-//! An app reads only what it declares. This one declares a single variant
-//! directory, reads it (works), then deliberately reaches for a slot it did NOT
-//! declare. The Ark mounts only declared data, so that second read fails. The
-//! local runner mounts only the declared datasets too, so you see the same wall.
-//!
-//! It also sets `develop = true`. On a device that changes what comes back: with
-//! develop, standard output is returned even when the app fails, and standard
-//! error is always returned; without it, a failed run returns nothing and stderr
-//! is never returned. The local runner always shows both, so this is the one
-//! place the two differ. Ship without develop.
+//! The app reads a granted genotype if it has an answer, then checks that an
+//! undeclared call file is blocked. The local runner mounts only declared paths.
+//! With develop enabled, an Ark returns stderr and stdout even on failure.
+//! The local runner always shows both streams. Ship without develop.
 
-use std::fs;
 use std::path::Path;
+use std::{fs, io};
 
-/// Declared in the manifest, so the Ark mounts it and this read works.
+/// Declared in the manifest, so the Ark mounts it.
 const GRANTED: &str = "v1/genome/rsids/rs72921001";
 /// Not declared, so it is never mounted and reading it fails.
 const DENIED: &str = "v1/genome/snp-indel/vcf";
@@ -34,17 +28,39 @@ fn main() {
 
     println!("## Permissions\n");
 
-    // The declared path is mounted, so this succeeds.
+    // The grant allows the read; the genotype can still have no answer.
     match fs::read_to_string(root.join(GRANTED).join("genotype")) {
-        Ok(genotype) => println!("- granted `{GRANTED}`: read genotype `{}`", genotype.trim()),
-        Err(err) => println!("- granted `{GRANTED}`: unexpected failure ({err})"),
+        Ok(genotype) => println!("- granted `{GRANTED}`: read genotype `{}`", genotype),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => {
+            println!(
+                "- granted `{GRANTED}`: no genotype answer (absence is not homozygous reference)"
+            );
+        }
+        Err(err) => {
+            eprintln!("Could not read the granted genotype: {err}");
+            std::process::exit(1);
+        }
     }
 
     // The undeclared path was never mounted, so this fails. On a device the same
     // holds: an app cannot reach data the owner did not approve.
     match fs::read_to_string(root.join(DENIED)) {
-        Ok(_) => println!("- undeclared `{DENIED}`: read succeeded (would not happen on a device)"),
-        Err(err) => println!("- undeclared `{DENIED}`: blocked, as it should be ({err})"),
+        Ok(_) => {
+            eprintln!("The undeclared path was readable; check the sandbox mounts.");
+            std::process::exit(1);
+        }
+        Err(err)
+            if matches!(
+                err.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::PermissionDenied
+            ) =>
+        {
+            println!("- undeclared `{DENIED}`: blocked, as it should be");
+        }
+        Err(err) => {
+            eprintln!("Could not check the undeclared path: {err}");
+            std::process::exit(1);
+        }
     }
 
     // This goes to standard error. The Ark returns stderr only when the manifest

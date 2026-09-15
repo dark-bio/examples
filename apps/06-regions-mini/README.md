@@ -1,20 +1,14 @@
 # 06 - regions-mini
 
-One interval through the `regions/` lens, in the fewest lines. It reads the
-reference sequence of `v1/genome/regions/chrM/1-16569` (the whole mitochondrial
-genome) and reports its length and GC content.
+The app grants one interval, the whole mitochondrial genome at
+`v1/genome/regions/chrM/1-16569`, and streams its `sequence` in chunks to report
+its length and GC content, so memory use doesn't grow with the interval. A
+missing sequence or a failed read stops the app.
 
-This is the grok version of the regions lens. For the same data turned into a
-full report, see [powerhouse-of-the-cell](../06-powerhouse-of-the-cell).
+The interval grant also covers the owner's `changes`, which
+[06-powerhouse-of-the-cell](../06-powerhouse-of-the-cell) lists.
 
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=06-regions-mini
