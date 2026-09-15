@@ -1,28 +1,26 @@
 # The app model
 
-An Ark app is a WebAssembly module built against WASI Preview 1, with a standard
-`_start` entry point. That is the whole interface. Anything that compiles to
-that target can be an app; the examples cover Rust, Go, and C.
+An Ark app is a WebAssembly module built for WASI Preview 1, with a standard
+`_start` entry point. Anything that compiles to that target can be an app, and
+these examples cover Rust, Go and C.
 
-The Ark never trusts the app. It trusts the box the app runs in. Everything
-below follows from that.
+The Ark doesn't need to trust an app. It trusts the sandbox the app runs in, and
+everything below follows from that.
 
-## The two passes
+## Two passes
 
-The Ark runs an app twice, and tells the two apart by a single command-line
-argument.
+The Ark runs every app twice, and tells the two passes apart by the first
+command-line argument.
 
-The **manifest pass** comes first. The Ark runs the app with no arguments. The
-app prints a TOML manifest to standard output and exits. The manifest names the
-app and lists the data it wants (see [02-manifest.md](02-manifest.md)). Nothing
-is mounted yet, so the app cannot read anything during this pass; it only
-describes itself.
+- **The manifest pass** runs the module with no arguments. The app prints a
+  short TOML manifest naming itself and the data it wants, then exits. Nothing
+  is mounted yet, so it can't read anything. [02-manifest.md](02-manifest.md)
+  covers the format.
+- **The run pass** runs the module again once the owner has approved it, with
+  the data directory as the first argument. The app reads the files it was
+  granted and prints its report.
 
-The **run pass** comes second, and only if the owner approves. The Ark mounts
-the requested data, then runs the app again with the data directory as its first
-argument, conventionally `/`. The app reads its files and prints a report.
-
-Apps detect the pass by argument count:
+An app picks its pass by counting arguments:
 
 | Language | Manifest pass | Run pass |
 | :-- | :-- | :-- |
@@ -30,64 +28,68 @@ Apps detect the pass by argument count:
 | Go | `len(os.Args) < 2` | otherwise |
 | C | `argc < 2` | otherwise |
 
-The report an app prints is treated as Markdown. The owner sees it rendered on
-their phone, so headings, tables, and emphasis are worth using.
+Write the report as Markdown, since that is how it is shown. Headings, tables
+and emphasis all help.
+
+## Before the owner is asked
+
+When an app is scheduled, the Ark checks it before any prompt reaches the owner's
+phone, and refuses it if a check fails.
+
+- A module with a WebAssembly start section is refused, since a run begins at
+  `_start`.
+- A name or version that is empty, too long, or holds control characters, line
+  separators or text direction controls is refused.
+- A dataset path that is misspelled or can't be granted is refused, and so is
+  one whose data isn't on the Ark.
 
 ## The sandbox
 
-The run pass executes inside a sandbox with no network, no writable storage, and
-no access to anything the app was not explicitly granted. Granted data is mounted
-read-only.
+The run pass has no network, no writable storage, and no access to anything
+beyond its grants, which are mounted read-only.
 
-The sandbox is also **deterministic**. The same app over the same data produces
-the same output every time, because the usual sources of variation are removed:
+The sandbox is also deterministic, so the same app over the same data prints the
+same report every time:
 
 - Standard input is closed.
 - The random number generator returns zeros.
-- The wall clock and the monotonic clock are counters that start at one and tick
-  up by one on each call, unrelated to real time.
+- Both clocks read one counter that starts at 1 and ticks once per read,
+  unrelated to real time.
 
-An app that needs a "random" choice must derive it from its input, not from the
-runtime. [09-fortune-cookie](../apps) leans on this on purpose.
+An app that needs a random-looking choice derives it from its input.
+[09-fortune-cookie](../apps/09-fortune-cookie) does exactly that.
 
 ## Limits
 
-Each pass runs under its own resource limits. The manifest pass is held to a
-tight budget because it should only print a few lines and exit.
-
 | | Manifest pass | Run pass |
 | :-- | :-- | :-- |
-| Memory | about 16 MiB | 100 MiB |
+| Memory | 15.75 MiB | 100 MiB |
 | Standard output | 1 KiB | 1 MiB |
 | Standard error | 1 KiB | 1 MiB |
 | Time | 250 ms | none, but cancellable |
-| Filesystem | none | granted data, read-only |
+| Data | none | granted paths, read-only |
 
-Output past the cap is dropped, so keep the manifest small and the report within
-a megabyte. The run pass has no time limit, but the owner can cancel it from
-their phone.
+Output past a cap is dropped. The module itself can be up to 256 MiB.
 
 ## The develop flag
 
 By default the Ark returns an app's standard output only when the app exits
-successfully, and never returns its standard error. A failed run returns
-nothing. This keeps incidental output from leaking off the device.
+successfully, and never returns its standard error, so a failed run returns
+nothing.
 
-Setting `develop = true` in the manifest changes that: standard output is
-returned even on failure, and standard error is always returned. It is the
-debugging switch. [02-permissions](../apps) uses it to show an error that would
-otherwise be invisible. Ship without it.
+Setting `develop = true` in the manifest returns standard output even on failure,
+and standard error every time. It is a debugging switch, and the owner sees a
+developer mode warning when approving such an app. Leave it out of apps you ship.
 
-## Lifecycle on the device
+## A run on an Ark
 
-For context, a run on a real Ark goes:
-
-1. The app is uploaded to the device.
-2. The Ark runs the manifest pass and reads the manifest.
-3. The owner is shown the app's name and the exact data it asked for, and
-   approves or declines on their phone.
-4. On approval, the Ark mounts that data read-only and runs the app.
+1. A developer sends the module to the Ark, for example with
+   `ark app run app.wasm`.
+2. The Ark runs the manifest pass, then checks the module, its name and version,
+   and every dataset path.
+3. The owner sees the app's name, version and requested paths on their phone,
+   and approves or declines.
+4. On approval, the Ark mounts the granted paths read-only and runs the app.
 5. The result is returned to the owner, who decides whether to release it.
 
-Every step is recorded in a signed, tamper-evident journal on the device. As an
-app author you only write the program; the Ark drives the rest.
+Every step is recorded in a signed, tamper-evident journal on the device.

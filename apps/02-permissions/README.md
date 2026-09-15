@@ -1,28 +1,18 @@
 # 02 - permissions
 
-How an app's data access is bounded, and what the `develop` flag does.
+A grant covers one directory and everything beneath it, and nothing else. This
+app grants `v1/genome/rsids/rs72921001` and reads its genotype, then tries to
+open the call file it never asked for, and shows that the read is blocked.
 
-The app declares one variant directory and reads it (works), then deliberately
-reaches for a slot it did not declare (`v1/genome/snp-indel/vcf`). The Ark mounts
-only what an app declares, so the second read fails. The local runner mounts only
-the declared datasets too, so you see the same boundary here.
+Its manifest sets `develop = true`, so an Ark also returns what it prints to
+standard error. Leave that flag out of apps you ship.
+[02-manifest.md](../../docs/02-manifest.md) covers grants, and
+[01-app-model.md](../../docs/01-app-model.md) the flag.
 
-The manifest also sets `develop = true`. On a device that is the debugging
-switch: with it, standard output is returned even on failure and standard error
-is always returned; without it, a failed run returns nothing and stderr is never
-returned. The local runner always shows both, so this is the one spot where local
-and device behavior differ. The `eprintln!` line is there to make stderr visible.
-Ship without `develop`.
-
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=02-permissions
+make run APP=02-permissions FIXTURES=fixtures/no-call
+make run APP=02-permissions FIXTURES=fixtures/unanswered
 ```

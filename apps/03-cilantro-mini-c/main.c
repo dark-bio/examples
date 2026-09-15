@@ -6,36 +6,61 @@
 //
 // It is the same program as ../03-cilantro-mini-rust, in C. The rsids/ lens hands
 // back the genotype and coordinate as plain files; the app never opens a
-// variant file. See ../../docs/04-data-access.md.
+// variant file. See ../../docs/04-reading-data.md.
+#include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define RSID "rs72921001"
 #define SOAPY_ALLELE "C"
 #define LENS "v1/genome/rsids/rs72921001"
 
-// Read a lens leaf into buf and trim trailing whitespace. Returns its length,
-// or -1 if the file is absent. The data directory is the run pass argument.
-static int read_leaf(const char *dir, const char *name, char *buf, int cap) {
-  const char *sep = (dir[0] && dir[strlen(dir) - 1] == '/') ? "" : "/";
-  char path[1024];
-  snprintf(path, sizeof(path), "%s%s" LENS "/%s", dir, sep, name);
+static void fail(const char *name) {
+  fprintf(stderr, "Could not read " RSID " %s: %s\n", name, strerror(errno));
+  exit(1);
+}
 
-  FILE *file = fopen(path, "r");
+// Generated files hold exactly their value. Only ENOENT returns NULL.
+static char *read_leaf(const char *dir, const char *name) {
+  size_t path_size = strlen(dir) + sizeof(LENS) + strlen(name) + 3;
+  char *path = malloc(path_size);
+  if (!path) fail(name);
+  snprintf(path, path_size, "%s/" LENS "/%s", dir, name);
+  FILE *file = fopen(path, "rb");
+  int open_error = errno;
+  free(path);
   if (!file) {
-    return -1;
+    if (open_error == ENOENT) return NULL;
+    errno = open_error;
+    fail(name);
   }
-  int n = (int)fread(buf, 1, cap - 1, file);
-  fclose(file);
-  while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == '\r' || buf[n - 1] == ' ')) {
-    n--;
+
+  // Grow the buffer so long alleles cannot be silently truncated.
+  size_t size = 0, capacity = 128;
+  char *value = malloc(capacity);
+  if (!value) fail(name);
+  for (;;) {
+    size_t count = fread(value + size, 1, capacity - size - 1, file);
+    size += count;
+    if (ferror(file)) fail(name);
+    if (feof(file)) break;
+    if (capacity > SIZE_MAX / 2) {
+      errno = ENOMEM;
+      fail(name);
+    }
+    capacity *= 2;
+    char *grown = realloc(value, capacity);
+    if (!grown) fail(name);
+    value = grown;
   }
-  buf[n] = '\0';
-  return n;
+  if (fclose(file) != 0) fail(name);
+  value[size] = '\0';
+  return value;
 }
 
 int main(int argc, char *argv[]) {
-  // The manifest pass: name the app and ask for the one variant directory.
   if (argc < 2) {
     printf("[package]\n"
            "name = \"cilantro-mini\"\n"
@@ -44,46 +69,51 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  // The run pass: read the genotype leaf. A missing file means your data does
-  // not cover the site, so there is nothing to report.
-  char genotype[64];
-  if (read_leaf(argv[1], "genotype", genotype, sizeof(genotype)) < 0) {
+  // ENOENT means no answer, including reference sites in variants-only calls.
+  char *genotype = read_leaf(argv[1], "genotype");
+  if (!genotype) {
     printf("## Cilantro taste\n\n");
-    printf("Your data does not cover `" RSID "`, so there is nothing to report.\n");
+    printf("No genotype answer for `" RSID "`. Absence does not imply two reference alleles.\n");
     return 0;
   }
 
-  // The lens returns alleles as bases (C/C, or C|C when phased), so split on the
-  // separators and count copies of the soapy allele. No REF/ALT index to decode.
-  int copies = 0;
-  char work[64];
-  snprintf(work, sizeof(work), "%s", genotype);
-  for (char *allele = strtok(work, "/|"); allele; allele = strtok(NULL, "/|")) {
-    if (strcmp(allele, SOAPY_ALLELE) == 0) {
-      copies++;
-    }
+  // This known SNP needs only a simple split; keep the original text for display.
+  size_t copies = 0;
+  int missing = 0;
+  const char *allele = genotype;
+  if (*allele == '/' || *allele == '|') allele++;
+  while (*allele) {
+    size_t length = strcspn(allele, "/|");
+    if (length == 1 && allele[0] == '.') missing = 1;
+    if (length == 1 && allele[0] == SOAPY_ALLELE[0]) copies++;
+    allele += length;
+    if (*allele) allele++;
   }
 
   printf("## Cilantro taste\n\n");
   printf("Your genotype at `" RSID "` is `%s`.\n\n", genotype);
-  if (copies == 0) {
+  if (missing) {
+    printf("The copy count is inconclusive because an allele is missing (`.`).\n");
+  } else if (copies == 0) {
     printf("You carry no copies of the soapy `" SOAPY_ALLELE "` allele. "
            "Cilantro probably tastes fresh and herby.\n");
   } else if (copies == 1) {
     printf("You carry one copy of the soapy `" SOAPY_ALLELE "` allele. "
            "Cilantro may have a faint soapy note.\n");
   } else {
-    printf("You carry two copies of the soapy `" SOAPY_ALLELE "` allele. "
-           "Cilantro likely tastes like dish soap.\n");
+    printf("You carry %zu copies of the soapy `" SOAPY_ALLELE "` allele. "
+           "Cilantro likely tastes like dish soap.\n", copies);
   }
 
-  // The coordinate, read from the lens's other leaves, shown for context.
-  char chrom[32], pos[32], reference[32];
-  if (read_leaf(argv[1], "chromosome", chrom, sizeof(chrom)) > 0 &&
-      read_leaf(argv[1], "position", pos, sizeof(pos)) > 0) {
-    read_leaf(argv[1], "reference", reference, sizeof(reference));
+  char *chrom = read_leaf(argv[1], "chromosome");
+  char *pos = read_leaf(argv[1], "position");
+  char *reference = read_leaf(argv[1], "reference");
+  if (chrom && pos && reference) {
     printf("\nLocus `%s:%s`, reference allele `%s`.\n", chrom, pos, reference);
   }
-
+  free(genotype);
+  free(chrom);
+  free(pos);
+  free(reference);
   return 0;
 }

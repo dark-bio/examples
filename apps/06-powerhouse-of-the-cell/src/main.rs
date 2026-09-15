@@ -1,4 +1,4 @@
-//! Mitochondrial Star Map: a Markdown report from one BioFS `regions/` lens.
+//! Powerhouse of the Cell: a Markdown report from one genome `regions/` lens.
 //!
 //! The mitochondrial chromosome is small enough to read as one range, which makes
 //! it a useful demo of the region lens: one granted interval exposes a streamed
@@ -6,11 +6,11 @@
 //!
 //! Tutorial note for app authors: the app asks Ark for exactly one dataset path
 //! (`v1/genome/regions/chrM/1-16569`). The user-facing report below avoids
-//! teaching BioFS mechanics; those details belong here and in the README.
+//! teaching path details; those details belong here and in the README.
 
 use std::collections::BTreeSet;
-use std::error::Error;
-use std::fs;
+use std::fs::{self, File};
+use std::io::{self, Read};
 use std::path::Path;
 
 const CHROM: &str = "chrM";
@@ -20,7 +20,7 @@ const LENS_PATH: &str = "v1/genome/regions/chrM/1-16569";
 const MAP_WIDTH: usize = 72;
 const MAX_CHANGE_ROWS: usize = 28;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
             "[package]\n\
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
              version = \"0.1.0\"\n\
              datasets = [\"v1/genome/regions/chrM/1-16569\"]\n"
         );
-        return Ok(());
+        return;
     };
 
     let base = Path::new(&dir).join(LENS_PATH);
@@ -36,23 +36,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match RegionReport::load(&base) {
         Ok(report) => report.print(),
-        Err(err) => print_unavailable(&base, &err),
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(1);
+        }
     }
-
-    Ok(())
 }
 
 #[derive(Debug)]
 struct RegionReport {
-    reference: String,
-    changes: Vec<Change>,
+    sequence: Sequence,
+    changes: Option<Vec<Change>>,
 }
 
 #[derive(Debug)]
 struct Change {
     pos: u64,
-    reference: String,
-    genotype: String,
+    reference: Option<String>,
+    genotype: Option<String>,
     call: String,
     kind: String,
     substitution: String,
@@ -60,40 +61,39 @@ struct Change {
 
 impl RegionReport {
     fn load(base: &Path) -> Result<Self, String> {
-        let reference = fs::read_to_string(base.join("reference"))
-            .map(|s| s.trim_end_matches(['\n', '\r']).to_string())
-            .map_err(|err| format!("failed to read `reference`: {err}"))?;
-        let changes = read_changes(&base.join("changes"));
-        Ok(Self { reference, changes })
+        let sequence = read_sequence(&base.join("sequence"))?;
+        if sequence.len != END - START + 1 {
+            return Err("Region sequence length does not match its span".into());
+        }
+        let changes = read_changes(&base.join("changes"))?;
+        Ok(Self { sequence, changes })
     }
 
     fn print(&self) {
+        let Some(changes) = &self.changes else {
+            println!("No changes answer is available for this span.");
+            println!(
+                "Reference length: {} bp; GC: {:.1}%.",
+                self.sequence.len,
+                self.sequence.gc_percent()
+            );
+            return;
+        };
         let span = END - START + 1;
-        let gc = gc_percent(&self.reference);
-        let density = per_kb(self.changes.len(), span);
-        let mixed = self
-            .changes
-            .iter()
-            .filter(|c| c.call == "mixed alleles")
-            .count();
-        let fixed = self
-            .changes
+        let gc = self.sequence.gc_percent();
+        let density = per_kb(changes.len(), span);
+        let mixed = changes.iter().filter(|c| c.call == "mixed alleles").count();
+        let fixed = changes
             .iter()
             .filter(|c| c.call == "single change" || c.call == "all copies changed")
             .count();
-        let uncertain = self
-            .changes
-            .iter()
-            .filter(|c| c.call == "uncertain")
-            .count();
-        let indels = self.changes.iter().filter(|c| c.kind == "indel").count();
-        let transitions = self
-            .changes
+        let uncertain = changes.iter().filter(|c| c.call == "uncertain").count();
+        let indels = changes.iter().filter(|c| c.kind == "indel").count();
+        let transitions = changes
             .iter()
             .filter(|c| c.substitution == "transition")
             .count();
-        let transversions = self
-            .changes
+        let transversions = changes
             .iter()
             .filter(|c| c.substitution == "transversion")
             .count();
@@ -105,10 +105,10 @@ impl RegionReport {
         println!("| Interval | {}:{}-{} |", CHROM, START, END);
         println!(
             "| Reference bases read | {} bp |",
-            format_int(self.reference.len() as u64)
+            format_int(self.sequence.len)
         );
         println!("| Reference GC | {:.1}% |", gc);
-        println!("| Observed changes | {} |", self.changes.len());
+        println!("| Observed changes | {} |", changes.len());
         println!("| Change density | {:.2} / kb |", density);
         println!("| Mixed-allele calls | {mixed} |");
         println!("| Fixed or single-copy changes | {fixed} |");
@@ -116,6 +116,10 @@ impl RegionReport {
         println!("| Transitions | {transitions} |");
         println!("| Transversions | {transversions} |");
         println!("| Uncertain calls | {uncertain} |");
+        println!(
+            "| Positions without an answer | {} |",
+            changes.iter().filter(|c| c.call == "no answer").count()
+        );
         println!();
 
         println!("## Variant Compass");
@@ -124,11 +128,11 @@ impl RegionReport {
             "Each `*` marks at least one non-reference change. `+` means multiple changes share a text column."
         );
         println!();
-        print_star_map(&self.changes);
+        print_star_map(changes);
         println!();
 
-        print_windows(&self.changes);
-        print_change_table(&self.changes);
+        print_windows(changes);
+        print_change_table(changes);
         print_data_receipt();
         print_meaning();
         print_fine_print();
@@ -147,61 +151,105 @@ fn print_header() {
     println!();
 }
 
-fn print_unavailable(_base: &Path, err: &str) {
-    println!("## Result unavailable");
-    println!();
-    println!("The mitochondrial interval data could not be read.");
-    println!();
-    println!("Reason: `{err}`");
-    println!();
-    println!(
-        "This usually means the loaded genome package does not include the \
-         mitochondrial reference sequence or variant calls needed for this report."
-    );
-    println!();
-    print_data_receipt();
-    print_fine_print();
+/// Stream the forward-strand bases, including lowercase soft-masking.
+fn read_sequence(path: &Path) -> Result<Sequence, String> {
+    let mut file = File::open(path).map_err(|err| format!("Could not open sequence: {err}"))?;
+    let mut summary = Sequence {
+        len: 0,
+        gc: 0,
+        acgt: 0,
+    };
+    let mut buffer = [0; 8192];
+    loop {
+        let n = file
+            .read(&mut buffer)
+            .map_err(|err| format!("Could not read sequence: {err}"))?;
+        if n == 0 {
+            break;
+        }
+        summary.len += n as u64;
+        for base in &buffer[..n] {
+            match base.to_ascii_uppercase() {
+                b'G' | b'C' => {
+                    summary.gc += 1;
+                    summary.acgt += 1;
+                }
+                b'A' | b'T' => summary.acgt += 1,
+                _ => {}
+            }
+        }
+    }
+    if summary.len == 0 {
+        return Err("The sequence is empty".into());
+    }
+    Ok(summary)
 }
 
-fn read_changes(path: &Path) -> Vec<Change> {
-    let Ok(entries) = fs::read_dir(path) else {
-        return Vec::new();
-    };
+#[derive(Debug)]
+struct Sequence {
+    len: u64,
+    gc: u64,
+    acgt: u64,
+}
 
-    let mut changes = Vec::new();
-    for entry in entries.flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let Ok(pos) = name.parse::<u64>() else {
-            continue;
-        };
-        let change_dir = entry.path();
-        let reference = fs::read_to_string(change_dir.join("reference"))
-            .map(|s| trim_line(&s))
-            .unwrap_or_default();
-        let genotype = fs::read_to_string(change_dir.join("genotype"))
-            .map(|s| trim_line(&s))
-            .unwrap_or_default();
-        if reference.is_empty() || genotype.is_empty() {
-            continue;
+impl Sequence {
+    fn gc_percent(&self) -> f64 {
+        if self.acgt == 0 {
+            0.0
+        } else {
+            self.gc as f64 * 100.0 / self.acgt as f64
         }
-        let call = classify_call(&reference, &genotype).to_string();
-        let kind = classify_kind(&reference, &genotype).to_string();
-        let substitution = classify_substitution(&reference, &genotype).to_string();
+    }
+}
+
+/// Only ENOENT means no answer. Scalar values have no trailing newline.
+fn read_leaf(base: &Path, name: &str) -> Result<Option<String>, String> {
+    match fs::read_to_string(base.join(name)) {
+        Ok(value) => Ok(Some(value)),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(format!("Could not read {name}: {err}")),
+    }
+}
+
+/// changes cannot be granted directly. Past 4000000 bases or 16384 positions,
+/// listing or lookup fails with EFBIG. This small-span example does not split.
+fn read_changes(path: &Path) -> Result<Option<Vec<Change>>, String> {
+    let entries = match fs::read_dir(path) {
+        Ok(entries) => entries,
+        Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(format!("Could not list changes: {err}")),
+    };
+    let mut changes = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|err| format!("Could not read changes entry: {err}"))?;
+        let name = entry.file_name();
+        let pos = name
+            .to_str()
+            .ok_or("Invalid change position")?
+            .parse::<u64>()
+            .map_err(|err| format!("Invalid change position: {err}"))?;
+        let reference = read_leaf(&entry.path(), "reference")?;
+        let genotype = read_leaf(&entry.path(), "genotype")?;
+        // Several records can start at one listed position, leaving both leaves absent.
+        let (call, kind, substitution) = match (&reference, &genotype) {
+            (Some(reference), Some(genotype)) => (
+                classify_call(reference, genotype),
+                classify_kind(reference, genotype),
+                classify_substitution(reference, genotype),
+            ),
+            _ => ("no answer", "no answer", "no answer"),
+        };
         changes.push(Change {
             pos,
             reference,
             genotype,
-            call,
-            kind,
-            substitution,
+            call: call.into(),
+            kind: kind.into(),
+            substitution: substitution.into(),
         });
     }
     changes.sort_by_key(|c| c.pos);
-    changes
-}
-
-fn trim_line(s: &str) -> String {
-    s.trim_end_matches(['\n', '\r']).to_string()
+    Ok(Some(changes))
 }
 
 fn classify_call(reference: &str, genotype: &str) -> &'static str {
@@ -230,7 +278,7 @@ fn classify_call(reference: &str, genotype: &str) -> &'static str {
 
 fn classify_kind(reference: &str, genotype: &str) -> &'static str {
     let alleles = alleles(genotype);
-    if reference.len() != 1 || alleles.iter().any(|a| *a != "." && a.len() != 1) {
+    if !is_base(reference) || alleles.iter().any(|a| *a != "." && !is_base(a)) {
         "indel"
     } else {
         "snp"
@@ -238,7 +286,7 @@ fn classify_kind(reference: &str, genotype: &str) -> &'static str {
 }
 
 fn classify_substitution(reference: &str, genotype: &str) -> &'static str {
-    if reference.len() != 1 {
+    if !is_base(reference) {
         return "not a snp";
     }
     let Some(reference) = reference.chars().next().map(|c| c.to_ascii_uppercase()) else {
@@ -251,7 +299,7 @@ fn classify_substitution(reference: &str, genotype: &str) -> &'static str {
         if allele == "." || allele.eq_ignore_ascii_case(&reference.to_string()) {
             continue;
         }
-        if allele.len() != 1 {
+        if !is_base(allele) {
             return "not a snp";
         }
         let Some(alt) = allele.chars().next().map(|c| c.to_ascii_uppercase()) else {
@@ -272,12 +320,44 @@ fn classify_substitution(reference: &str, genotype: &str) -> &'static str {
     }
 }
 
+/// Separators inside symbolic alleles and breakend mate positions are literal.
 fn alleles(genotype: &str) -> Vec<&str> {
-    genotype
-        .split(['/', '|'])
-        .map(str::trim)
-        .filter(|a| !a.is_empty())
-        .collect()
+    let text = genotype.strip_prefix(['/', '|']).unwrap_or(genotype);
+    let (mut start, mut angles, mut mate) = (0, 0usize, None);
+    let mut result = Vec::new();
+    for (i, byte) in text.bytes().enumerate() {
+        if let Some(bracket) = mate {
+            if byte == bracket {
+                mate = None;
+            }
+        } else if byte == b'<' {
+            angles += 1;
+        } else if byte == b'>' && angles > 0 {
+            angles -= 1;
+        } else if angles == 0 {
+            match byte {
+                b'[' | b']' => mate = Some(byte),
+                b'/' | b'|' => {
+                    result.push(&text[start..i]);
+                    start = i + 1;
+                }
+                _ => {}
+            }
+        }
+    }
+    result.push(&text[start..]);
+    result
+}
+
+fn is_base(allele: &str) -> bool {
+    matches!(
+        allele.as_bytes(),
+        [b'A' | b'a' | b'C' | b'c' | b'G' | b'g' | b'T' | b't']
+    )
+}
+
+fn table_value(value: &Option<String>) -> String {
+    value.as_deref().unwrap_or("no answer").replace('|', "\\|")
 }
 
 fn is_transition(reference: char, alt: char) -> bool {
@@ -285,26 +365,6 @@ fn is_transition(reference: char, alt: char) -> bool {
         (reference, alt),
         ('A', 'G') | ('G', 'A') | ('C', 'T') | ('T', 'C')
     )
-}
-
-fn gc_percent(sequence: &str) -> f64 {
-    let mut gc = 0usize;
-    let mut acgt = 0usize;
-    for base in sequence.bytes() {
-        match base {
-            b'G' | b'g' | b'C' | b'c' => {
-                gc += 1;
-                acgt += 1;
-            }
-            b'A' | b'a' | b'T' | b't' => acgt += 1,
-            _ => {}
-        }
-    }
-    if acgt == 0 {
-        0.0
-    } else {
-        (gc as f64) * 100.0 / (acgt as f64)
-    }
 }
 
 fn per_kb(count: usize, span: u64) -> f64 {
@@ -324,7 +384,7 @@ fn print_star_map(changes: &[Change]) {
         }
         let idx = (((change.pos - START) as usize) * (MAP_WIDTH - 1) / (span as usize))
             .min(MAP_WIDTH - 1);
-        track[idx] = if track[idx] == '*' { '+' } else { '*' };
+        track[idx] = if track[idx] == ' ' { '*' } else { '+' };
     }
 
     println!("```text");
@@ -400,8 +460,8 @@ fn print_change_table(changes: &[Change]) {
         println!(
             "| {} | `{}` | `{}` | {} | {} | {} |",
             change.pos,
-            change.reference,
-            change.genotype,
+            table_value(&change.reference),
+            table_value(&change.genotype),
             change.call,
             change.kind,
             change.substitution
@@ -448,8 +508,8 @@ fn print_fine_print() {
     println!("## Fine Print");
     println!();
     println!(
-        "The change list contains positions where the reported genotype differs \
-         from the reference sequence. The absence of a listed change is not a \
+        "The change list contains record starts within this span whose genotype \
+         holds an ALT allele. Records starting before the span are excluded. The absence of a listed change is not a \
          medical or ancestry result. Mitochondrial data can also involve \
          heteroplasmy and platform-specific calling choices that a simple genotype \
          string does not fully describe."

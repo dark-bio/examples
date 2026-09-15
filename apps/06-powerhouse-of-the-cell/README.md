@@ -1,23 +1,13 @@
-# 06 - powerhouse-of-the-cell (full)
+# 06 - powerhouse-of-the-cell
 
-An interval through the `regions/` lens. It reads the entire mitochondrial genome
-as a single region (`v1/genome/regions/chrM/1-16569`) and prints a report over it:
-GC content, the non-reference changes you carry, density windows, and a text
-"star map" of where the variants fall.
+A full report on the mitochondrial genome, read as one interval. It streams the
+`sequence` for GC content and density windows, and lists the owner's `changes`
+with a text map of where they fall. Like [05-bitter-meter](../05-bitter-meter),
+it counts listed positions without leaves and splits genotypes around symbolic
+and breakend alleles. It isn't a haplogroup caller, an ancestry test or a
+medical report.
 
-Read [regions-mini](../06-regions-mini) first for the bare lens read; this is the
-full report. Mitochondrial DNA is inherited only from your mother, and is the
-cell's energy organelle, hence the name. The app is a data-shape demo, not a
-haplogroup caller, ancestry test, or medical report.
-
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=06-powerhouse-of-the-cell

@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fs;
+use std::io;
 use std::path::Path;
 
 // ── SNP panel ──────────────────────────────────────────────────────────────
@@ -17,9 +18,9 @@ struct SnpTarget {
     gene: &'static str,
     // risk_allele is the LITERAL nucleotide letter (A/C/G/T on forward strand)
     // associated with the phenotype this SNP contributes to. NOT a synonym for
-    // ALT — for rs1229984 the GRCh38 reference happens to encode the rare/risk
+    // ALT - for rs1229984 the GRCh38 reference happens to encode the rare/risk
     // allele. Always derive from the biology, never assume "ALT = risk". It is
-    // compared against the alleles the `rsids/<rs#>/genotype` lens reports.
+    // compared against the alleles the `rsids/{rsid}/genotype` lens reports.
     risk_allele: &'static str,
     axis: Axis,
     short: &'static str,
@@ -27,7 +28,7 @@ struct SnpTarget {
 }
 
 // Positions + bases per dbSNP / Ensembl GRCh38 forward-strand convention.
-// risk_allele is the LITERAL nucleotide associated with the phenotype — derived
+// risk_allele is the LITERAL nucleotide associated with the phenotype - derived
 // from the biology (which amino acid / functional change is the "risk" one),
 // not from REF/ALT status.
 const TARGETS: &[SnpTarget] = &[
@@ -38,7 +39,7 @@ const TARGETS: &[SnpTarget] = &[
         risk_allele: "A", // ALDH2*2 (Lys487, broken enzyme) = ALT
         axis: Axis::Flush,
         short: "broken acetaldehyde clearance",
-        blurb: "Glu487Lys in ALDH2. Dominant-negative — one broken subunit poisons the whole tetramer (~6% activity). The classic alcohol-flush variant.",
+        blurb: "Glu487Lys in ALDH2. Dominant-negative - one broken subunit poisons the whole tetramer (~6% activity). The classic alcohol-flush variant.",
     },
     SnpTarget {
         rsid: "rs1229984",
@@ -50,7 +51,7 @@ const TARGETS: &[SnpTarget] = &[
         risk_allele: "T",
         axis: Axis::Flush,
         short: "fast alcohol→acetaldehyde (ADH1B*2)",
-        blurb: "Arg48His in ADH1B. The His48 variant (ADH1B*2) oxidizes ethanol 70–100× faster, piling up acetaldehyde. Common in East Asia (~25–70% allele freq), Ashkenazi Jews, parts of the Middle East. Note: GRCh38 encodes His48 (T) at this position despite it being the global minor allele — for most populations the reference genome is the variant, so the 'risk' allele here is REF, not ALT.",
+        blurb: "Arg48His in ADH1B. The His48 variant (ADH1B*2) oxidizes ethanol 70-100× faster, piling up acetaldehyde. Common in East Asia (~25-70% allele freq), Ashkenazi Jews, parts of the Middle East. Note: GRCh38 encodes His48 (T) at this position despite it being the global minor allele - for most populations the reference genome is the variant, so the 'risk' allele here is REF, not ALT.",
     },
     SnpTarget {
         rsid: "rs2066702",
@@ -67,7 +68,7 @@ const TARGETS: &[SnpTarget] = &[
         risk_allele: "G", // Asp40 (stronger reward) = ALT
         axis: Axis::Reward,
         short: "stronger alcohol reward",
-        blurb: "A118G (Asn40Asp) in OPRM1. The G allele binds β-endorphin tighter — alcohol's reward signal lands harder. Predicts naltrexone response in dependence treatment.",
+        blurb: "A118G (Asn40Asp) in OPRM1. The G allele binds β-endorphin tighter - alcohol's reward signal lands harder. Predicts naltrexone response in dependence treatment.",
     },
     SnpTarget {
         rsid: "rs1800497",
@@ -86,13 +87,13 @@ const TARGETS: &[SnpTarget] = &[
         risk_allele: "C",
         axis: Axis::Reward,
         short: "alcohol's chill effect (effect direction debated)",
-        blurb: "GABA-A α2 subunit. Tracks with alcohol's anxiolytic 'unwind' effect and dependence risk. The risk-allele direction is replicated unevenly across studies — treat the contribution to the score as suggestive, not definitive.",
+        blurb: "GABA-A α2 subunit. Tracks with alcohol's anxiolytic 'unwind' effect and dependence risk. The risk-allele direction is replicated unevenly across studies - treat the contribution to the score as suggestive, not definitive.",
     },
     // ── Junk panel (Histamine sub-panel): does fermented-drink load wreck you? ──
     // Histamine pathway only: 4× DAO (gut/blood histamine clearance) +
     // 1× HNMT (alternative CNS/airway pathway). Sulfite sensitivity and
     // tyramine tolerance don't have well-replicated common SNPs at the
-    // genotype-array level — SUOX has only severe-disease pathogenic variants,
+    // genotype-array level - SUOX has only severe-disease pathogenic variants,
     // and the canonical MAOA tyramine signal is the uVNTR, not a SNP.
     SnpTarget {
         rsid: "rs10156191",
@@ -100,7 +101,7 @@ const TARGETS: &[SnpTarget] = &[
         risk_allele: "T", // Met16 (reduced DAO activity) = ALT
         axis: Axis::Histamine,
         short: "DAO Thr16Met (may slow histamine clearance)",
-        blurb: "Thr16Met in AOC1/DAO. Associated with reduced histamine-degrading enzyme activity. ~22% MAF in Europeans — one of the most-studied DAO variants.",
+        blurb: "Thr16Met in AOC1/DAO. Associated with reduced histamine-degrading enzyme activity. ~22% MAF in Europeans - one of the most-studied DAO variants.",
     },
     SnpTarget {
         rsid: "rs1049742",
@@ -124,7 +125,7 @@ const TARGETS: &[SnpTarget] = &[
         risk_allele: "T", // Reduced transcription = ALT
         axis: Axis::Histamine,
         short: "DAO promoter (may reduce DAO transcription)",
-        blurb: "Promoter variant 2kb upstream of AOC1. Reportedly reduces transcription — fewer DAO enzymes made. ~21% MAF.",
+        blurb: "Promoter variant 2kb upstream of AOC1. Reportedly reduces transcription - fewer DAO enzymes made. ~21% MAF.",
     },
     SnpTarget {
         rsid: "rs11558538",
@@ -140,12 +141,10 @@ const TARGETS: &[SnpTarget] = &[
 
 #[derive(Debug, Clone)]
 struct GenotypeCall {
+    genotype: String,
     alleles: Vec<String>,
-    risk_copies: u32,
-    // confident = false if any allele was missing (`.`). Uncertain calls are
-    // excluded from scoring — they neither contribute risk nor count as
-    // "observed" coverage.
-    confident: bool,
+    // A missing allele makes the count inconclusive, never zero.
+    risk_copies: Option<u32>,
     // Coordinate and reference base from the rsids lens, for the details table.
     chromosome: String,
     position: String,
@@ -154,17 +153,15 @@ struct GenotypeCall {
 
 // ── Tier classification ────────────────────────────────────────────────────
 //
-// Flush axis is *not* a simple linear sum — ALDH2 is dominant-negative
+// Flush axis is *not* a simple linear sum - ALDH2 is dominant-negative
 // (the enzyme works as a tetramer, one bad subunit kills it). So we tier on
 // (ALDH2 risk-allele count, total ADH1B risk-allele count) instead.
 //
 // Like axis is straight-up additive across the three reward-pathway SNPs.
 
-// Returns (tier_idx, label, emoji). idx is None when ALDH2 is missing — the
-// tier is "Inconclusive" and the combo callout / share-worthy headline can't
-// fire reliably without the dominant variant.
+// Returns (tier_idx, label, emoji). Incomplete calls leave the tier inconclusive.
 fn flush_tier(s: &FlushScore) -> (Option<usize>, &'static str, &'static str) {
-    if !s.aldh2_observed {
+    if !s.fully_called() {
         return (None, "Inconclusive", "❓");
     }
     if s.aldh2_risk >= 2 {
@@ -181,30 +178,35 @@ fn flush_tier(s: &FlushScore) -> (Option<usize>, &'static str, &'static str) {
 }
 
 fn flush_blurb(s: &FlushScore) -> &'static str {
-    if !s.aldh2_observed {
-        return "rs671 (ALDH2) was not found in your VCF. ALDH2 is the dominant \
-                Flush variant — without confirming it, we can't tell whether \
-                you're Iron Liver or Tomato Mode. Re-genotype with a panel that \
-                covers chr12:111,803,962 (GRCh38) before trusting a Flush call.";
+    if !s.fully_called() {
+        return "A Flush marker has no genotype answer or has a missing allele. \
+                The Flush score is inconclusive. ALDH2 is the dominant variant, \
+                and ADH1B contributes how fast acetaldehyde is produced.";
     }
     if s.aldh2_risk >= 2 {
-        return "Homozygous broken ALDH2. Functional enzyme: dead. Acetaldehyde — \
-                the poison your body makes from alcohol — has nowhere to go. Sip → \
+        return "Two or more broken ALDH2 copies. Functional enzyme: dead. Acetaldehyde - \
+                the poison your body makes from alcohol - has nowhere to go. Sip → \
                 flush → headache → 'wait why am I sweating?'. Not a lightweight. \
                 Pharmacology.";
     }
     if s.aldh2_risk == 1 {
-        return "Heterozygous ALDH2. One broken copy poisons the whole tetramer \
+        return "One broken ALDH2 copy poisons the whole tetramer \
                 (~6% activity). One drink in, you're glowing. Two drinks in, \
                 headache. Real flush, real fast.";
     }
     match s.adh1b_risk {
-        0 => "Both ALDH2 copies clear acetaldehyde clean. ADH1B running at \
-              standard speed. Hangovers are a choice, not a consequence.",
-        1..=2 => "Standard human metabolism. You can keep up with the table \
-                  without lighting up. Your liver does not need your help.",
-        _ => "ADH1B in turbo mode — your body produces acetaldehyde faster than \
-              baseline. Pink cheeks by drink two, mild glow afterwards.",
+        0 => {
+            "The called ALDH2 copies clear acetaldehyde clean. ADH1B running at \
+              standard speed. Hangovers are a choice, not a consequence."
+        }
+        1..=2 => {
+            "Standard human metabolism. You can keep up with the table \
+                  without lighting up. Your liver does not need your help."
+        }
+        _ => {
+            "ADH1B in turbo mode - your body produces acetaldehyde faster than \
+              baseline. Pink cheeks by drink two, mild glow afterwards."
+        }
     }
 }
 
@@ -220,16 +222,26 @@ fn like_tier(score: u32) -> (usize, &'static str, &'static str) {
 
 fn like_blurb(score: u32) -> &'static str {
     match score {
-        0 => "Reward circuitry shrugs at alcohol. The buzz doesn't land, the \
-              chill doesn't chill. Booze is just bitter water with vibes.",
-        1 => "Alcohol's fine. Sometimes nice. Not a thing your brain would \
-              chase out of a quiet evening.",
-        2..=3 => "Buzz lands. Evening's nicer with a glass. Standard \
-                  relationship with booze — neither indifferent nor wired.",
-        4..=5 => "Your brain LIKES alcohol. Mu-opioid + dopamine systems both \
-                  saying yes. Two glasses is genuinely fun.",
-        _ => "Every reward gene voting yes. The buzz is good, the reward chase \
-              is strong, the chill is real. Worth knowing about yourself.",
+        0 => {
+            "Reward circuitry shrugs at alcohol. The buzz doesn't land, the \
+              chill doesn't chill. Booze is just bitter water with vibes."
+        }
+        1 => {
+            "Alcohol's fine. Sometimes nice. Not a thing your brain would \
+              chase out of a quiet evening."
+        }
+        2..=3 => {
+            "Buzz lands. Evening's nicer with a glass. Standard \
+                  relationship with booze - neither indifferent nor wired."
+        }
+        4..=5 => {
+            "Your brain LIKES alcohol. Mu-opioid + dopamine systems both \
+                  saying yes. Two glasses is genuinely fun."
+        }
+        _ => {
+            "Every reward gene voting yes. The buzz is good, the reward chase \
+              is strong, the chill is real. Worth knowing about yourself."
+        }
     }
 }
 
@@ -245,29 +257,39 @@ fn junk_tier(score: u32) -> (&'static str, &'static str) {
 
 fn junk_blurb(score: u32) -> &'static str {
     match score {
-        0 => "No flagged DAO or HNMT variants. This panel doesn't suggest \
-              histamine-clearance issues — but the panel only tests histamine \
+        0 => {
+            "No flagged DAO or HNMT variants. This panel doesn't suggest \
+              histamine-clearance issues - but the panel only tests histamine \
               pathways. Sulfites, tannins, sugar, dehydration, and sleep are \
-              not captured here.",
-        1..=2 => "One or two flagged variants. May lean toward slower histamine \
+              not captured here."
+        }
+        1..=2 => {
+            "One or two flagged variants. May lean toward slower histamine \
                   clearance from fermented drinks; effects are typically mild \
-                  and the most common European baseline.",
-        3..=4 => "Several DAO variants flagged. The panel leans toward slower \
-                  histamine clearance — fermented drinks (red wine especially, \
+                  and the most common European baseline."
+        }
+        3..=4 => {
+            "Several DAO variants flagged. The panel leans toward slower \
+                  histamine clearance - fermented drinks (red wine especially, \
                   aged beers, kombucha) and aged foods (cheese, cured meats) \
                   are *more likely* to cause symptoms. Worth tracking your own \
-                  reactions.",
-        5..=7 => "Multiple DAO/HNMT variants flagged. The panel suggests reduced \
+                  reactions."
+        }
+        5..=7 => {
+            "Multiple DAO/HNMT variants flagged. The panel suggests reduced \
                   histamine-clearance capacity. People with this load often \
                   report flushing, headache, congestion, racing heart, or \
-                  sneezing after fermented drinks — but symptoms vary widely \
-                  and the SNPs are not deterministic.",
-        _ => "All or nearly all panel variants flagged. The genotype suggests a \
+                  sneezing after fermented drinks - but symptoms vary widely \
+                  and the SNPs are not deterministic."
+        }
+        _ => {
+            "All or nearly all panel variants flagged. The genotype suggests a \
               substantial histamine-clearance burden, but real-world symptoms \
               depend on diet, gut health, hormones, and many factors not in \
               this panel. If fermented-drink reactions are bothering you, talk \
-              to a doctor — DAO supplements help some people, but this is not \
-              a diagnosis.",
+              to a doctor - DAO supplements help some people, but this is not \
+              a diagnosis."
+        }
     }
 }
 
@@ -297,14 +319,14 @@ const COMBO_CALLOUTS: [[&str; 5]; 5] = [
         "**The Casual Drinker.** Drinks land, evenings improve, hangovers fair. Nothing \
          alarming, nothing impressive. Functional booze.",
         "**The Happy Drunk.** Brain says yes, body keeps up. Best mood at the bar. \
-         Three drinks deep, philosophical. Four drinks, calling exes — careful.",
+         Three drinks deep, philosophical. Four drinks, calling exes - careful.",
         "**The Pro.** Reward maxed, metabolism standard. You drink for the buzz and \
          your liver does not file complaints. Watch the cab fare.",
     ],
     // ── Lightweight row ──
     [
         "**The Practical Drinker.** Drinks because it's there, never because they're \
-         chasing it. Two beers and you're done — physically and motivationally.",
+         chasing it. Two beers and you're done - physically and motivationally.",
         "**The Mild Glow.** Pink cheeks by drink two, no chase from the brain. One is \
          enough and you'll know it.",
         "**The Quick Tipsy.** Pink cheeks by drink two, evening's pleasant by drink \
@@ -325,7 +347,7 @@ const COMBO_CALLOUTS: [[&str; 5]; 5] = [
         "**The Internal Conflict.** Reward circuit votes yes, metabolism votes hell no. \
          You'll enjoy the first sip and regret the second.",
         "**The Compulsive Glower.** Body screams stop, brain screams more. The \
-         dependence-vulnerable combo for non-Tomato genotypes — worth knowing.",
+         dependence-vulnerable combo for non-Tomato genotypes - worth knowing.",
     ],
     // ── Tomato Mode row ──
     [
@@ -337,7 +359,7 @@ const COMBO_CALLOUTS: [[&str; 5]; 5] = [
          learn to politely decline.",
         "**The Tragic Combination.** Your brain wants what your liver can't process. \
          Real talk: ALDH2-deficient people who drink heavily have *significantly* \
-         elevated esophageal cancer risk — well-replicated public health finding, \
+         elevated esophageal cancer risk - well-replicated public health finding, \
          not internet doomscroll. Worth knowing.",
         "**The Tragic Combination, Maxed.** Brain demands what liver can't process. \
          ALDH2-deficient people who drink heavily have *significantly* elevated \
@@ -357,8 +379,8 @@ fn print_app_header() {
     println!();
     println!(
         "Eleven SNPs across three axes: **Flush** (does alcohol make you sick?), \
-         **Like** (does your brain enjoy it?), and **Junk** (do drink additives — \
-         histamine, tannins, the fermented-stuff load — wreck you?). Each axis \
+         **Like** (does your brain enjoy it?), and **Junk** (do drink additives - \
+         histamine, tannins, the fermented-stuff load - wreck you?). Each axis \
          bins into 5 tiers."
     );
     println!();
@@ -367,8 +389,16 @@ fn print_app_header() {
 fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
     let (flush_score, reward_score, histamine_score) = score_sample(results);
     let (flush_idx_opt, flush_label, flush_emoji) = flush_tier(&flush_score);
-    let (like_idx, like_label, like_emoji) = like_tier(reward_score.risk);
-    let (junk_label, junk_emoji) = junk_tier(histamine_score.risk);
+    let (like_idx, like_label, like_emoji) = if reward_score.fully_called() {
+        like_tier(reward_score.risk)
+    } else {
+        (0, "Inconclusive", "❓")
+    };
+    let (junk_label, junk_emoji) = if histamine_score.fully_called() {
+        junk_tier(histamine_score.risk)
+    } else {
+        ("Inconclusive", "❓")
+    };
 
     println!(
         "### Your drunk-o-type: {} {} + {} {} + {} {}",
@@ -376,118 +406,152 @@ fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
     );
     println!();
 
-    // Combo callout only fires if all three axes are confidently classifiable.
-    // Flush requires ALDH2 to be observed; otherwise the headline already says
-    // Inconclusive and we shouldn't compound that with a confident-sounding
-    // 5×5 callout.
-    if let Some(flush_idx) = flush_idx_opt {
+    // Missing answers or alleles must not produce a low-risk classification.
+    if let Some(flush_idx) =
+        flush_idx_opt.filter(|_| reward_score.fully_called() && histamine_score.fully_called())
+    {
         println!("> {}", combo_callout(flush_idx, like_idx));
         println!();
     } else {
         println!(
-            "> ⚠️ Flush axis is inconclusive — rs671 (ALDH2) is missing from \
-             your calls. The combo readout below is omitted because ALDH2 \
-             dominates the Flush phenotype and we can't pretend to call it \
-             without that marker."
+            "> ⚠️ At least one axis is inconclusive because a genotype has no \
+             answer or contains a missing allele. The combo readout is omitted."
         );
         println!();
     }
 
     // Flush axis breakdown
-    println!("#### 🍻 Flush axis — {} {}", flush_label, flush_emoji);
+    println!("#### 🍻 Flush axis - {} {}", flush_label, flush_emoji);
     println!();
     let aldh2_marker = if flush_score.aldh2_observed {
         "✓ found"
     } else {
-        "⚠️ missing"
+        "⚠️ inconclusive"
     };
     println!(
-        "ALDH2 risk alleles: **{}/2** ({}) · ADH1B fast alleles: **{}/4** ({}/{} markers)",
-        flush_score.aldh2_risk,
+        "ALDH2 risk alleles: **{}** ({}) · ADH1B fast alleles: **{}** ({}/{} markers)",
+        copy_count(
+            flush_score.aldh2_risk,
+            flush_score.aldh2_copies,
+            flush_score.aldh2_observed
+        ),
         aldh2_marker,
-        flush_score.adh1b_risk,
+        copy_count(
+            flush_score.adh1b_risk,
+            flush_score.adh1b_copies,
+            flush_score.adh1b_observed == flush_score.adh1b_expected
+        ),
         flush_score.adh1b_observed,
         flush_score.adh1b_expected,
     );
     println!();
     println!("{}", flush_blurb(&flush_score));
     println!();
-    print_axis_table(results,Axis::Flush);
+    print_axis_table(results, Axis::Flush);
 
     // Like axis breakdown
     println!(
-        "#### 🧠 Like axis — {} {} ({}/6 risk · {}/{} markers{})",
+        "#### 🧠 Like axis - {} {} ({} risk · {}/{} markers{})",
         like_label,
         like_emoji,
-        reward_score.risk,
+        copy_count(
+            reward_score.risk,
+            reward_score.copies,
+            reward_score.fully_called()
+        ),
         reward_score.observed,
         reward_score.expected,
-        if reward_score.fully_covered() {
+        if reward_score.fully_called() {
             ""
         } else {
             " ⚠️"
         },
     );
     println!();
-    if !reward_score.fully_covered() {
+    if !reward_score.fully_called() {
         println!(
-            "*Partial coverage: {} of {} reward markers were called \
-             confidently. Tier may be biased toward Stone Cold.*",
+            "*Incomplete calls: {} of {} reward markers have every allele \
+             called. The Like score is inconclusive.*",
             reward_score.observed, reward_score.expected
         );
         println!();
     }
-    println!("{}", like_blurb(reward_score.risk));
+    if reward_score.fully_called() {
+        println!("{}", like_blurb(reward_score.risk));
+    }
     println!();
-    print_axis_table(results,Axis::Reward);
+    print_axis_table(results, Axis::Reward);
 
     // Junk axis breakdown
     println!(
-        "#### 🤧 Junk axis — fermented-drink sensitivity — {} {} ({}/10 risk · {}/{} markers{})",
+        "#### 🤧 Junk axis - fermented-drink sensitivity - {} {} ({} risk · {}/{} markers{})",
         junk_label,
         junk_emoji,
-        histamine_score.risk,
+        copy_count(
+            histamine_score.risk,
+            histamine_score.copies,
+            histamine_score.fully_called()
+        ),
         histamine_score.observed,
         histamine_score.expected,
-        if histamine_score.fully_covered() {
+        if histamine_score.fully_called() {
             ""
         } else {
             " ⚠️"
         },
     );
     println!();
-    if !histamine_score.fully_covered() {
+    if !histamine_score.fully_called() {
         println!(
-            "*Partial coverage: {} of {} histamine markers were called \
-             confidently. Tier may be biased toward Cast Iron.*",
+            "*Incomplete calls: {} of {} histamine markers have every allele \
+             called. The Junk score is inconclusive.*",
             histamine_score.observed, histamine_score.expected
         );
         println!();
     }
-    println!("{}", junk_blurb(histamine_score.risk));
+    if histamine_score.fully_called() {
+        println!("{}", junk_blurb(histamine_score.risk));
+    }
     println!();
-    print_axis_table(results,Axis::Histamine);
+    print_axis_table(results, Axis::Histamine);
 }
 
 #[derive(Debug, Default, Clone, Copy)]
 struct FlushScore {
     aldh2_risk: u32,
     aldh2_observed: bool, // false → Flush tier should be Inconclusive
+    aldh2_copies: u32,
     adh1b_risk: u32,
     adh1b_observed: u32,
     adh1b_expected: u32,
+    adh1b_copies: u32,
+}
+
+impl FlushScore {
+    fn fully_called(&self) -> bool {
+        self.aldh2_observed && self.adh1b_observed == self.adh1b_expected
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
 struct AxisScore {
     risk: u32,
+    copies: u32,
     observed: u32,
     expected: u32,
 }
 
 impl AxisScore {
-    fn fully_covered(&self) -> bool {
+    fn fully_called(&self) -> bool {
         self.observed == self.expected
+    }
+}
+
+fn copy_count(risk: u32, total: u32, complete: bool) -> String {
+    if complete {
+        format!("{risk}/{total}")
+    } else {
+        "inconclusive".to_string()
     }
 }
 
@@ -499,35 +563,40 @@ fn score_sample(
     let mut histamine = AxisScore::default();
 
     for (target, call) in results {
-        let confident = call.as_ref().filter(|c| c.confident);
-        let copies = confident.map_or(0, |c| c.risk_copies);
+        let called = call
+            .as_ref()
+            .and_then(|c| c.risk_copies.map(|risk| (risk, c.alleles.len() as u32)));
 
         match target.axis {
             Axis::Flush if target.rsid == "rs671" => {
-                if confident.is_some() {
+                if let Some((risk, total)) = called {
                     flush.aldh2_observed = true;
-                    flush.aldh2_risk = copies;
+                    flush.aldh2_risk = risk;
+                    flush.aldh2_copies = total;
                 }
             }
             Axis::Flush => {
                 flush.adh1b_expected += 1;
-                if confident.is_some() {
+                if let Some((risk, total)) = called {
                     flush.adh1b_observed += 1;
-                    flush.adh1b_risk += copies;
+                    flush.adh1b_risk += risk;
+                    flush.adh1b_copies += total;
                 }
             }
             Axis::Reward => {
                 reward.expected += 1;
-                if confident.is_some() {
+                if let Some((risk, total)) = called {
                     reward.observed += 1;
-                    reward.risk += copies;
+                    reward.risk += risk;
+                    reward.copies += total;
                 }
             }
             Axis::Histamine => {
                 histamine.expected += 1;
-                if confident.is_some() {
+                if let Some((risk, total)) = called {
                     histamine.observed += 1;
-                    histamine.risk += copies;
+                    histamine.risk += risk;
+                    histamine.copies += total;
                 }
             }
         }
@@ -536,23 +605,17 @@ fn score_sample(
     (flush, reward, histamine)
 }
 
-fn print_axis_table(
-    results: &[(&'static SnpTarget, Option<GenotypeCall>)],
-    axis: Axis,
-) {
+fn print_axis_table(results: &[(&'static SnpTarget, Option<GenotypeCall>)], axis: Axis) {
     println!("| Variant | Gene | Genotype | Risk copies | Effect |");
     println!("| :--- | :--- | :--- | :---: | :--- |");
     for (target, call) in results.iter().filter(|(t, _)| t.axis == axis) {
         let (gt, copies) = match call {
-            Some(c) if c.confident => (
-                format!("`{}`", c.alleles.join("/")),
-                c.risk_copies.to_string(),
-            ),
             Some(c) => (
-                format!("`{}` ⚠️", c.alleles.join("/")),
-                "—".to_string(),
+                format!("`{}`", c.genotype.replace('|', "\\|")),
+                c.risk_copies
+                    .map_or_else(|| "inconclusive".to_string(), |n| n.to_string()),
             ),
-            None => ("—".to_string(), "—".to_string()),
+            None => ("no answer".to_string(), "inconclusive".to_string()),
         };
         println!(
             "| `{}` | *{}* | {} | {} | {} |",
@@ -567,7 +630,7 @@ fn print_science_section() {
     println!();
     println!(
         "Alcohol metabolism is a two-step pipeline. **ADH** (alcohol dehydrogenase) \
-         turns ethanol into **acetaldehyde** — a toxic intermediate responsible for \
+         turns ethanol into **acetaldehyde** - a toxic intermediate responsible for \
          flushing, headaches, nausea, and rapid heart rate. **ALDH2** then converts \
          acetaldehyde into harmless acetate. The flush axis measures how much \
          acetaldehyde you accumulate (faster ADH1B in, slower ALDH2 out → more flush)."
@@ -577,18 +640,18 @@ fn print_science_section() {
         "Whether you *like* drinking is a different question. The **mu-opioid \
          receptor** (OPRM1) and **dopamine system** (DRD2/ANKK1) determine how \
          rewarding alcohol feels. **GABA-A** receptors govern its anxiolytic \
-         effect — the chill. The like axis stacks these three reward pathways."
+         effect - the chill. The like axis stacks these three reward pathways."
     );
     println!();
     println!(
         "Drinks aren't pure ethanol. Wine, beer, and fermented anything carry \
-         **histamine** (from bacterial decarboxylation during fermentation) — \
+         **histamine** (from bacterial decarboxylation during fermentation) - \
          and your body clears it via two enzymes: **DAO** (gut/blood, encoded \
          by AOC1) and **HNMT** (CNS/airways). Variants in either pathway slow \
          clearance, and histamine then drives the wine headache, the stuffy \
          nose, the racing heart, the post-drink itch. The junk axis stacks DAO \
          and HNMT loss-of-function variants. *Sulfites and tyramine don't have \
-         clean common SNPs* — those phenotypes exist but the panel-level \
+         clean common SNPs* - those phenotypes exist but the panel-level \
          genetics isn't there yet."
     );
     println!();
@@ -616,25 +679,25 @@ fn print_further_reading() {
     );
     println!(
         "- Edenberg HJ (2007). \"The Genetics of Alcohol Metabolism.\" \
-         *Alcohol Research & Health* 30(1):5–13."
+         *Alcohol Research & Health* 30(1):5-13."
     );
     println!(
         "- Ray LA, Barr CS, Blendy JA, Oslin D, Goldman D, Anton RF (2012). \
          \"The role of the OPRM1 gene in alcohol use disorder and treatment \
-         response.\" *Addiction Biology* 17(3):525–540."
+         response.\" *Addiction Biology* 17(3):525-540."
     );
     println!(
         "- Edenberg HJ *et al.* (2004). \"Variations in GABRA2, encoding the α2 \
          subunit of the GABA-A receptor, are associated with alcohol \
-         dependence and with brain oscillations.\" *Am J Hum Genet* 74(4):705–714."
+         dependence and with brain oscillations.\" *Am J Hum Genet* 74(4):705-714."
     );
     println!(
         "- Maintz L, Yu CF, Rodríguez E, *et al.* (2011). \"Association of \
          single nucleotide polymorphisms in the diamine oxidase gene with \
-         diamine oxidase serum activities.\" *Allergy* 66(7):893–902."
+         diamine oxidase serum activities.\" *Allergy* 66(7):893-902."
     );
     println!(
-        "- Hrubisko M *et al.* (2021). \"Histamine intolerance — the more we know, \
+        "- Hrubisko M *et al.* (2021). \"Histamine intolerance - the more we know, \
          the less we know. A review.\" *Nutrients* 13(7):2228."
     );
     println!();
@@ -644,8 +707,9 @@ fn print_technical_details(results: &[(&'static SnpTarget, Option<GenotypeCall>)
     println!("### Technical details");
     println!();
     println!(
-        "Resolved through the `rsids/` lens: each rsID maps to a coordinate and your \
-         genotype there, build-independently, without the app reading the variant file."
+        "Resolved through the `rsids/` lens on the Ark's reference assembly, \
+         without the app reading the variant file. A missing genotype means \
+         there is no answer; it does not imply homozygous reference."
     );
     println!();
     println!("| rsID | Gene | Locus | Reference | Status |");
@@ -654,18 +718,22 @@ fn print_technical_details(results: &[(&'static SnpTarget, Option<GenotypeCall>)
         let (locus, reference, status) = match call {
             Some(c) => (
                 if c.chromosome.is_empty() || c.position.is_empty() {
-                    "—".to_string()
+                    "no answer".to_string()
                 } else {
                     format!("`{}:{}`", c.chromosome, c.position)
                 },
                 if c.reference.is_empty() {
-                    "—".to_string()
+                    "no answer".to_string()
                 } else {
                     format!("`{}`", c.reference)
                 },
-                if c.confident { "✓ found" } else { "⚠️ uncertain" },
+                if c.risk_copies.is_some() {
+                    "✓ found"
+                } else {
+                    "⚠️ missing allele"
+                },
             ),
-            None => ("—".to_string(), "—".to_string(), "⚠️ not covered"),
+            None => ("-".to_string(), "-".to_string(), "⚠️ no genotype answer"),
         };
         println!(
             "| `{}` | *{}* | {} | {} | {} |",
@@ -677,7 +745,7 @@ fn print_technical_details(results: &[(&'static SnpTarget, Option<GenotypeCall>)
     println!();
     for target in TARGETS {
         println!(
-            "- **`{}`** ({}, *{}*) — {}",
+            "- **`{}`** ({}, *{}*) - {}",
             target.rsid,
             match target.axis {
                 Axis::Flush => "Flush",
@@ -712,40 +780,48 @@ datasets = [
 ]
 ";
 
-// Resolve one rsID target through the `rsids/` lens: `base` is the per-rsID
-// directory (`rsids/<rs#>`). The `genotype` leaf exists only where your calls
-// cover the site; its absence means uncovered (or the catalog lacks the rsID).
-fn resolve_target(base: &Path, target: &SnpTarget) -> Option<GenotypeCall> {
-    let genotype = fs::read_to_string(base.join("genotype")).ok()?;
-    let genotype = genotype.trim();
-
-    // The lens returns alleles as bases (e.g. `A/C`, or `C|C` when phased), so
-    // there is no REF/ALT index decoding to do; just count the risk base.
-    let alleles: Vec<String> = genotype.split(['/', '|']).map(String::from).collect();
-    let confident = !alleles.iter().any(|a| a == "." || a.is_empty());
-    let risk_copies = if confident {
-        alleles.iter().filter(|a| a.as_str() == target.risk_allele).count() as u32
-    } else {
-        0
-    };
-
-    let leaf = |name: &str| {
-        fs::read_to_string(base.join(name))
-            .map(|s| s.trim().to_string())
-            .unwrap_or_default()
-    };
-
-    Some(GenotypeCall {
-        alleles,
-        risk_copies,
-        confident,
-        chromosome: leaf("chromosome"),
-        position: leaf("position"),
-        reference: leaf("reference"),
-    })
+// ENOENT means no answer; every other read error fails the app.
+fn read_leaf(base: &Path, name: &str) -> Result<Option<String>, Box<dyn Error>> {
+    match fs::read_to_string(base.join(name)) {
+        Ok(value) => Ok(Some(value)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("Could not read {name}: {error}").into()),
+    }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+// Resolve a target from its granted `rsids/{rsid}` directory.
+fn resolve_target(base: &Path, target: &SnpTarget) -> Result<Option<GenotypeCall>, Box<dyn Error>> {
+    let Some(genotype) = read_leaf(base, "genotype")? else {
+        return Ok(None);
+    };
+
+    // These known SNPs have no symbolic or breakend alleles, so a simple split works.
+    // Keep the original spelling, including any leading phase marker, for display.
+    let alleles: Vec<String> = genotype
+        .strip_prefix(['/', '|'])
+        .unwrap_or(&genotype)
+        .split(['/', '|'])
+        .map(String::from)
+        .collect();
+    let risk_copies = (!alleles.iter().any(|a| a == "." || a.is_empty())).then(|| {
+        alleles
+            .iter()
+            .filter(|a| a.as_str() == target.risk_allele)
+            .count() as u32
+    });
+
+    // Scalar leaves hold exactly their value, without a trailing newline.
+    Ok(Some(GenotypeCall {
+        genotype,
+        alleles,
+        risk_copies,
+        chromosome: read_leaf(base, "chromosome")?.unwrap_or_default(),
+        position: read_leaf(base, "position")?.unwrap_or_default(),
+        reference: read_leaf(base, "reference")?.unwrap_or_default(),
+    }))
+}
+
+fn run() -> Result<(), Box<dyn Error>> {
     if std::env::args().len() < 2 {
         print!("{}", METADATA);
         return Ok(());
@@ -754,13 +830,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dir = std::env::args().nth(1).unwrap();
     let rsids = Path::new(&dir).join("v1/genome/rsids");
 
-    print_app_header();
-
     let results: Vec<(&'static SnpTarget, Option<GenotypeCall>)> = TARGETS
         .iter()
-        .map(|t| (t, resolve_target(&rsids.join(t.rsid), t)))
-        .collect();
+        .map(|t| resolve_target(&rsids.join(t.rsid), t).map(|call| (t, call)))
+        .collect::<Result<_, _>>()?;
 
+    print_app_header();
     print_sample_report(&results);
     print_science_section();
     print_fine_print();
@@ -768,4 +843,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     print_technical_details(&results);
 
     Ok(())
+}
+
+fn main() {
+    if let Err(error) = run() {
+        eprintln!("{error}");
+        std::process::exit(1);
+    }
 }

@@ -7,8 +7,8 @@
 //! genome gives the same fortune on every run, which is the whole point: nothing
 //! here varies that is not in the data.
 
-use std::fs;
 use std::path::Path;
+use std::{fs, io};
 
 const SITES: &[&str] = &["rs72921001", "rs671", "rs1229984"];
 
@@ -40,10 +40,21 @@ fn main() {
 
     // Fold the genotypes into a stable number with a small FNV-1a hash. This is
     // the app's only source of variety; the runtime provides none.
+    let mut unanswered = 0;
     let mut acc: u64 = 0xcbf29ce484222325;
     for site in SITES {
-        let genotype = fs::read_to_string(rsids.join(site).join("genotype")).unwrap_or_default();
-        for byte in genotype.trim().bytes() {
+        let genotype = match fs::read_to_string(rsids.join(site).join("genotype")) {
+            Ok(value) => value,
+            Err(err) if err.kind() == io::ErrorKind::NotFound => {
+                unanswered += 1;
+                continue;
+            }
+            Err(err) => {
+                eprintln!("Could not read {site} genotype: {err}");
+                std::process::exit(1);
+            }
+        };
+        for byte in genotype.bytes() {
             acc ^= byte as u64;
             acc = acc.wrapping_mul(0x100000001b3);
         }
@@ -52,6 +63,7 @@ fn main() {
     let pick = (acc % FORTUNES.len() as u64) as usize;
     println!("## Your genomic fortune\n");
     println!("> {}\n", FORTUNES[pick]);
+    println!("Genotypes without an answer: {unanswered}.\n");
     println!(
         "The sandbox has no randomness, so this is derived entirely from your \
          genotypes. Run it again on the same data and the fortune is the same."

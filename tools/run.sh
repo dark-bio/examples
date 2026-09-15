@@ -19,6 +19,10 @@ printf '%s\n' "$manifest"
 # sees exactly what it asked for and nothing else, like the device does.
 dirargs=""
 for dataset in $(printf '%s\n' "$manifest" | grep -oE '"v1/[^"]*"' | tr -d '"'); do
+  if [ ! -d "$fixtures/$dataset" ]; then
+    printf 'fixture root has no declared dataset: %s\n' "$dataset" >&2
+    exit 1
+  fi
   dirargs="$dirargs --dir $fixtures/$dataset::/$dataset"
 done
 

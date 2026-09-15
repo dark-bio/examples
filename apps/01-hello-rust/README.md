@@ -1,36 +1,20 @@
 # 01 - hello, Rust
 
-The smallest Ark app: it prints its manifest on the manifest pass, and a
-greeting on the run pass. It reads no data. Start here, then read the Go and C
-versions to see the same shape in another language.
+The smallest Ark app. It prints its manifest when run with no arguments and a
+greeting when given a data directory, and it reads no data. Start here, then
+compare the [Go](../01-hello-go) and [C](../01-hello-c) versions.
 
-## Build
-
-Install [Rust](https://rustup.rs/) and the WebAssembly target:
-
-```sh
-rustup target add wasm32-wasip1
-```
-
-Then:
-
-```sh
-cargo build --release --target wasm32-wasip1
-```
-
-The module lands at `target/wasm32-wasip1/release/hello-rust.wasm`.
-
-## Run
-
-From the repository root:
+## Build and run
 
 ```sh
 make run APP=01-hello-rust
 ```
 
-Or by hand, to see each pass:
+To see each pass by hand, build with Cargo and run the module twice:
 
 ```sh
-wasmtime target/wasm32-wasip1/release/hello-rust.wasm          # manifest pass
-wasmtime target/wasm32-wasip1/release/hello-rust.wasm /        # run pass
+rustup target add wasm32-wasip1
+cargo build --release --target wasm32-wasip1
+wasmtime target/wasm32-wasip1/release/hello-rust.wasm     # manifest pass
+wasmtime target/wasm32-wasip1/release/hello-rust.wasm /   # run pass
 ```

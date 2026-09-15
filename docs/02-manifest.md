@@ -1,59 +1,64 @@
 # The manifest
 
-The manifest is the TOML an app prints during the manifest pass. It names the
-app and declares the data it wants. The Ark reads it to decide what to mount and
-what to show the owner for approval.
-
-A complete manifest:
+The manifest is the TOML an app prints in its manifest pass. It names the app and
+lists the data the app wants. The Ark reads it to decide what to check, what to
+show the owner and what to mount.
 
 ```toml
 [package]
 name = "cilantro"
 version = "0.1.0"
 datasets = ["v1/genome/rsids/rs72921001"]
-develop = false
 ```
 
 ## Fields
 
-The Ark reads four fields, all under `[package]`:
+All fields live under `[package]`.
 
-- **`name`** - the app's name, shown to the owner at approval. Required.
-- **`version`** - the app's version, shown alongside the name. Required.
-- **`datasets`** - the list of data paths the app wants, each relative to the
-  Ark's data root. May be empty. See below.
-- **`develop`** - optional, defaults to `false`. The debugging switch described
-  in [01-app-model.md](01-app-model.md). Leave it out for a shipped app.
+- **`name`** is the app's name, shown to the owner, from 1 to 64 characters.
+- **`version`** is shown beside the name, from 1 to 32 characters.
+- **`datasets`** lists the paths the app wants. It may be empty.
+- **`develop`** is optional and `false` by default. See
+  [01-app-model.md](01-app-model.md).
 
-Treat the four fields above as the whole contract.
+Names and versions can't hold control characters, line or paragraph separators,
+or text direction controls. The whole manifest has to fit in the manifest pass's
+1 KiB of output, which holds a panel of a dozen paths with room to spare.
 
-The manifest pass output is capped at 1 KiB, so keep the manifest small. Even a
-panel of a dozen datasets fits comfortably.
+## Granting data
 
-## Requesting data
+Each dataset is a directory under the Ark's data root. Granting it gives the app
+that directory and everything beneath it, read-only. At run time the grants sit
+under the data directory the app receives as its first argument, so with `/` as
+that argument, a grant of `v1/genome/rsids/rs72921001` is read at
+`/v1/genome/rsids/rs72921001/genotype`.
 
-Each entry in `datasets` is a path under the Ark's data tree, written relative
-(no leading slash). The Ark mounts each one read-only at the same path under the
-data directory it hands the app. So a manifest that requests:
+Spell each path exactly as `ark data paths` shows it, with `v1/` kept and every
+placeholder filled in, such as `v1/genome/genes/BRCA1`. The tree marks the
+directories a manifest may grant with `+`, and
+[03-data-paths.md](03-data-paths.md) explains the rest of it.
 
-```toml
-datasets = ["v1/genome/rsids/rs72921001"]
-```
+The Ark checks every path before the owner is asked, and refuses the app if one
+fails.
 
-lets the app read `/v1/genome/rsids/rs72921001/...` at run time (the leading `/`
-is the data directory passed as the first argument). Every readable path is
-listed in [03-biofs-paths.md](03-biofs-paths.md).
+- **A path must be a grantable directory, spelled the canonical way.** Absolute
+  paths, empty, `.` or `..` segments, a trailing `/`, other spellings such as
+  `chr01` or `rs0334`, files, `changes` directories, the data root and `v1/`
+  itself are all refused.
+- **Its data must be on the Ark.** A well-formed path is refused when it points
+  into an empty slot, names a gene the annotations don't carry or an rsID dbSNP
+  doesn't carry, or names a position past the end of its chromosome.
 
-An app sees exactly what it asked for, and nothing else. Requesting one variant
-directory grants that directory, not the file it came from and not its
-neighbors. This is the point: the owner approves a specific, legible request,
-and the app cannot read past it. The Ark rejects a few requests outright:
+A `changes` directory can't be granted. Grant its gene or interval instead.
 
-- absolute paths,
-- paths that escape the data root (for example with `..`),
-- a request for the entire root.
+## Choosing grants
 
-Ask for the narrowest paths that do the job. The owner sees the list verbatim
-before approving, so "one variant" reads very differently from "the whole
-variant file." [04-data-access.md](04-data-access.md) walks the patterns from
+The owner reads the list of paths before approving, so ask for the narrowest
+ones that do the job. One variant reads very differently from the whole call
+file. [04-reading-data.md](04-reading-data.md) walks through the options, from
 narrowest to broadest.
+
+Some grants reach further than they look. A gene or interval grant includes its
+`changes`, which hold the owner's variants, even when the app only reads the
+sequence. Only `v1/genome/reference` and `v1/genome/annotations` hold nothing but
+public data.

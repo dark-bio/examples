@@ -11,9 +11,8 @@
 //! receptor gene OR6A2: the more copies of the C allele at rs72921001 you carry,
 //! the more soapy cilantro tends to taste (Eriksson et al., 2012).
 
-use std::error::Error;
-use std::fs;
 use std::path::Path;
+use std::{fs, io};
 
 /// The SNP this app reads: rs72921001, near OR6A2 on chromosome 11.
 const RSID: &str = "rs72921001";
@@ -22,7 +21,7 @@ const RISK_BASE: &str = "C";
 /// dbSNP page for the SNP, linked from the report's further-reading section.
 const NIH_SNP_URL: &str = "https://www.ncbi.nlm.nih.gov/snp/rs72921001";
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     // With no data directory, print the manifest the host reads to grant access.
     let Some(dir) = std::env::args().nth(1) else {
         print!(
@@ -31,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
              version = \"0.3.0\"\n\
              datasets = [\"v1/genome/rsids/rs72921001\"]\n"
         );
-        return Ok(());
+        return;
     };
 
     // Everything comes from one lens directory: the user's genotype and the
@@ -40,9 +39,25 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     print_header();
     match read_call(&base) {
-        Call::Covered(genotype) => {
-            let copies = genotype.split(['/', '|']).filter(|a| *a == RISK_BASE).count();
-            print_result(&genotype, copies);
+        Call::Called(genotype) => {
+            let copies = genotype
+                .split(['/', '|'])
+                .filter(|a| *a == RISK_BASE)
+                .count();
+            let ploidy = genotype
+                .strip_prefix(['/', '|'])
+                .unwrap_or(&genotype)
+                .split(['/', '|'])
+                .count();
+            if ploidy == 2 {
+                print_result(&genotype, copies);
+            } else {
+                println!("### Your result: copy count\n");
+                println!(
+                    "Genotype `{genotype}` has {copies} copies of `{RISK_BASE}` across {ploidy} alleles.\n"
+                );
+                println!("The taste comparison uses two-copy SNP calls.\n");
+            }
             print_footer();
             print_technical_details(&base);
         }
@@ -50,40 +65,42 @@ fn main() -> Result<(), Box<dyn Error>> {
             print_uncertain(&genotype);
             print_footer();
         }
-        Call::NotCovered => {
-            print_not_covered();
+        Call::Unanswered => {
+            print_unanswered();
             print_footer();
         }
     }
-
-    Ok(())
 }
 
 /// What the lens can tell us about the user at this site.
 enum Call {
-    /// A confident genotype: both alleles are known bases, e.g. `A/C` or `C|C`.
-    Covered(String),
-    /// The site is covered but an allele is missing (`.`), so copies are unknown.
+    Called(String),
     Uncertain(String),
-    /// No genotype here: the site wasn't sequenced, or the catalog lacks the rsID.
-    NotCovered,
+    Unanswered,
 }
 
-/// Reads and classifies the user's genotype from the lens. The `genotype` leaf
-/// exists only where the user's calls cover the site, so a read error just means
-/// the site is not covered.
 fn read_call(base: &Path) -> Call {
-    let Ok(genotype) = fs::read_to_string(base.join("genotype")) else {
-        return Call::NotCovered;
+    let Some(genotype) = leaf(base, "genotype") else {
+        return Call::Unanswered;
     };
-    let genotype = genotype.trim().to_string();
-
-    // The lens returns alleles as bases (`A/C`, or `C|C` when phased), so there
-    // is no REF/ALT index decoding to do; a `.` is an uncalled allele.
-    if genotype.split(['/', '|']).any(|a| a == "." || a.is_empty()) {
+    // This known SNP needs only a simple split; the leading marker is not an allele.
+    let alleles = genotype.strip_prefix(['/', '|']).unwrap_or(&genotype);
+    if alleles.split(['/', '|']).any(|a| a == ".") {
         Call::Uncertain(genotype)
     } else {
-        Call::Covered(genotype)
+        Call::Called(genotype)
+    }
+}
+
+/// Only ENOENT means no answer; all other read errors stop the app.
+fn leaf(base: &Path, name: &str) -> Option<String> {
+    match fs::read_to_string(base.join(name)) {
+        Ok(value) => Some(value),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => None,
+        Err(err) => {
+            eprintln!("Could not read {RSID} {name}: {err}");
+            std::process::exit(1);
+        }
     }
 }
 
@@ -140,7 +157,10 @@ fn print_result(genotype: &str, copies: usize) {
     println!();
     println!("| Genotype | Risk-allele copies |");
     println!("| :---: | :---: |");
-    println!("| `{genotype}` | **{copies}**×{RISK_BASE} |");
+    println!(
+        "| `{}` | **{copies}**×{RISK_BASE} |",
+        genotype.replace('|', "\\|")
+    );
     println!();
     println!("{}", verdict.detail);
     println!();
@@ -158,12 +178,13 @@ fn print_uncertain(genotype: &str) {
 }
 
 /// The result when the lens has no genotype at this site.
-fn print_not_covered() {
-    println!("### Variant not covered");
+fn print_unanswered() {
+    println!("### No genotype answer");
     println!();
     println!(
-        "Your variant calls don't cover `{RSID}` (the site wasn't sequenced, or the \
-         variant catalog doesn't carry it), so no result can be reported."
+        "No genotype answer is available for `{RSID}`. Reference sites in a \
+         variants-only file can be absent, as can missing calls or ambiguous \
+         records or placements. Absence does not imply two reference alleles."
     );
     println!();
 }
@@ -196,22 +217,21 @@ fn print_footer() {
 /// The lens exposes chromosome and position separately; the app composes the
 /// `chr:pos` form itself.
 fn print_technical_details(base: &Path) {
-    let leaf = |name: &str| {
-        fs::read_to_string(base.join(name))
-            .map(|s| s.trim().to_string())
-            .unwrap_or_default()
-    };
-    let (chrom, pos, reference) = (leaf("chromosome"), leaf("position"), leaf("reference"));
+    let (chrom, pos, reference) = (
+        leaf(base, "chromosome"),
+        leaf(base, "position"),
+        leaf(base, "reference"),
+    );
 
     println!("### Technical details");
     println!();
     println!("| Field | Value |");
     println!("| :--- | :--- |");
     println!("| **rsID** | `{RSID}` |");
-    if !chrom.is_empty() && !pos.is_empty() {
+    if let (Some(chrom), Some(pos)) = (chrom, pos) {
         println!("| **Locus** | `{chrom}:{pos}` |");
     }
-    if !reference.is_empty() {
+    if let Some(reference) = reference {
         println!("| **Reference allele** | `{reference}` |");
     }
     println!();

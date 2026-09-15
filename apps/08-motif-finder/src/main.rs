@@ -1,11 +1,10 @@
-//! Reading reference sequence, no genotype.
+//! Scans a gene's public sequence for restriction enzyme sites.
 //!
-//! This app reads only a gene's reference sequence and scans it for restriction
-//! enzyme recognition sites. It never touches your genotype, so it shows the
-//! genes/ lens used purely for sequence: the reference is just a string of bases
-//! you can compute over.
+//! The gene grant also covers personal changes, although this app reads only
+//! sequence. A grant always covers everything beneath its directory.
 
-use std::fs;
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::path::Path;
 
 const GENE: &str = "TAS2R38";
@@ -30,32 +29,40 @@ fn main() {
         );
         return;
     };
-
-    let reference =
-        fs::read_to_string(Path::new(&dir).join(LENS).join("reference")).unwrap_or_default();
-    let seq: String = reference
-        .chars()
-        .filter(|c| c.is_ascii_alphabetic())
-        .flat_map(|c| c.to_uppercase())
-        .collect();
-
-    println!("## Restriction map of {GENE}\n");
-    println!("Scanning {} bp of reference sequence.\n", seq.len());
-    println!("| Enzyme | Site | Cuts |");
-    println!("| :--- | :--- | ---: |");
-    for (name, site) in ENZYMES {
-        println!("| {name} | `{site}` | {} |", count_occurrences(&seq, site));
+    if let Err(err) = run(Path::new(&dir)) {
+        eprintln!("{err}");
+        std::process::exit(1);
     }
 }
 
-/// Counts non-overlapping-from-each-index (i.e. every starting offset) matches
-/// of `needle` in `haystack`.
-fn count_occurrences(haystack: &str, needle: &str) -> usize {
-    let (hay, ndl) = (haystack.as_bytes(), needle.as_bytes());
-    if ndl.is_empty() || hay.len() < ndl.len() {
-        return 0;
+fn run(root: &Path) -> Result<(), String> {
+    let file = File::open(root.join(LENS).join("sequence"))
+        .map_err(|err| format!("Could not open {GENE} sequence: {err}"))?;
+    let mut cuts = [0u64; ENZYMES.len()];
+    let mut length = 0u64;
+    let mut window = [0u8; 4];
+    // Keep a sliding window across reads, including overlapping sites.
+    for base in BufReader::new(file).bytes() {
+        let base = base.map_err(|err| format!("Could not read {GENE} sequence: {err}"))?;
+        window.rotate_left(1);
+        window[3] = base.to_ascii_uppercase();
+        length += 1;
+        for (i, (_, site)) in ENZYMES.iter().enumerate() {
+            if length >= 4 && window == site.as_bytes() {
+                cuts[i] += 1;
+            }
+        }
     }
-    (0..=hay.len() - ndl.len())
-        .filter(|&i| &hay[i..i + ndl.len()] == ndl)
-        .count()
+    if length == 0 {
+        return Err("The gene sequence is empty".into());
+    }
+
+    println!("## Restriction map of {GENE}\n");
+    println!("Scanning {length} bp of reference sequence.\n");
+    println!("| Enzyme | Site | Cuts |");
+    println!("| :--- | :--- | ---: |");
+    for ((name, site), count) in ENZYMES.iter().zip(cuts) {
+        println!("| {name} | `{site}` | {count} |");
+    }
+    Ok(())
 }

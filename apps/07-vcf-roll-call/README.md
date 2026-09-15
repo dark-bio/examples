@@ -1,26 +1,13 @@
-# 07 - vcf-roll-call (full)
+# 07 - vcf-roll-call
 
-Scanning the raw variant file. Unlike the lens apps, this asks for the whole
-`v1/genome/snp-indel` slot and streams the decompressed `vcf` view with
-[`noodles-vcf`](https://crates.io/crates/noodles-vcf), printing a coverage and QC
-report: record and sample counts, variant kinds, reference blocks, substitution
-ratios, and missing calls.
+The app streams the whole call file with
+[`noodles-vcf`](https://crates.io/crates/noodles-vcf) and reports on its records,
+first-sample genotypes, allele shapes, filters, depth and quality. A malformed
+record is counted and skipped, while a failed read stops the app, so a damaged
+file can't pass as a partial success. The report describes the file, not how
+much of a genome was sequenced.
 
-This is the broad-access tier. The manifest asks for the entire variant file,
-which is what the owner sees at approval, very different from "one variant." The
-grok version is [vcf-mini](../07-vcf-mini), which walks the same file with no
-genomics library. This is the full scan.
-
-It is not a formal coverage calculator; read depth from BAM/CRAM is out of scope.
-
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=07-vcf-roll-call

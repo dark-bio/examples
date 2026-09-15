@@ -1,20 +1,15 @@
 # 05 - genes-mini
 
-One gene through the `genes/` lens, in the fewest lines. It reads the scalar
-metadata leaves of `v1/genome/genes/TAS2R38` (chromosome, start, end, strand,
-biotype) and the length of its reference sequence, then prints them.
+The app grants one gene, `v1/genome/genes/TAS2R38`, and prints its chromosome,
+start, end, strand, biotype and sequence length. The length comes from the size
+of `sequence`, which always holds end - start + 1 bases, so the gene never has
+to fit in memory. An absent value prints as no answer, while a missing sequence
+is an error.
 
-This is the grok version of the genes lens. For the same data turned into a full
-report, see [bitter-meter](../05-bitter-meter).
+The gene grant also covers the owner's `changes` in it, even though this mini
+doesn't read them. [05-bitter-meter](../05-bitter-meter) does.
 
-## Build
-
-```sh
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-```
-
-## Run
+## Build and run
 
 ```sh
 make run APP=05-genes-mini

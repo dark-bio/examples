@@ -6,10 +6,10 @@
 //!
 //! This is the simplest real data access there is. The app asks for one
 //! directory and the `rsids/` lens hands back the genotype and coordinate as
-//! plain files. It never opens a variant file. See ../../docs/04-data-access.md.
+//! plain files. It never opens a variant file. See ../../docs/04-reading-data.md.
 
-use std::fs;
 use std::path::Path;
+use std::{fs, io};
 
 /// The variant this app reads, and the allele it counts.
 const RSID: &str = "rs72921001";
@@ -32,35 +32,58 @@ fn main() {
     // The run pass: everything comes from the one lens directory.
     let base = Path::new(&dir).join(LENS);
 
-    // The genotype leaf exists only where your calls cover the site. A missing
-    // file just means the site was not sequenced, so report that and stop.
-    let Ok(genotype) = fs::read_to_string(base.join("genotype")) else {
+    // ENOENT means no answer, including reference sites in variants-only calls.
+    let Some(genotype) = leaf(&base, "genotype") else {
         println!("## Cilantro taste\n");
-        println!("Your data does not cover `{RSID}`, so there is nothing to report.");
+        println!("No genotype answer for `{RSID}`. Absence does not imply two reference alleles.");
         return;
     };
-    let genotype = genotype.trim();
 
-    // The lens returns alleles as bases (`A/C`, or `C|C` when phased), so just
-    // count copies of the soapy allele. There is no REF/ALT index to decode.
-    let copies = genotype.split(['/', '|']).filter(|a| *a == SOAPY_ALLELE).count();
+    // This known SNP needs only a simple split; keep the original text for display.
+    let alleles: Vec<_> = genotype
+        .strip_prefix(['/', '|'])
+        .unwrap_or(&genotype)
+        .split(['/', '|'])
+        .collect();
+    let copies = alleles.iter().filter(|a| **a == SOAPY_ALLELE).count();
+    let missing = alleles.contains(&".");
 
     println!("## Cilantro taste\n");
     println!("Your genotype at `{RSID}` is `{genotype}`.\n");
-    match copies {
-        0 => println!("You carry no copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro probably tastes fresh and herby."),
-        1 => println!("You carry one copy of the soapy `{SOAPY_ALLELE}` allele. Cilantro may have a faint soapy note."),
-        _ => println!("You carry two copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro likely tastes like dish soap."),
+    if missing {
+        println!("The copy count is inconclusive because an allele is missing (`.`).");
+    } else {
+        match copies {
+            0 => println!(
+                "You carry no copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro probably tastes fresh and herby."
+            ),
+            1 => println!(
+                "You carry one copy of the soapy `{SOAPY_ALLELE}` allele. Cilantro may have a faint soapy note."
+            ),
+            n => println!(
+                "You carry {n} copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro likely tastes like dish soap."
+            ),
+        }
     }
 
-    // The coordinate, read from the lens's other leaves, shown for context.
-    let leaf = |name: &str| {
-        fs::read_to_string(base.join(name))
-            .map(|s| s.trim().to_string())
-            .unwrap_or_default()
-    };
-    let (chrom, pos, reference) = (leaf("chromosome"), leaf("position"), leaf("reference"));
-    if !chrom.is_empty() && !pos.is_empty() {
+    let (chrom, pos, reference) = (
+        leaf(&base, "chromosome"),
+        leaf(&base, "position"),
+        leaf(&base, "reference"),
+    );
+    if let (Some(chrom), Some(pos), Some(reference)) = (chrom, pos, reference) {
         println!("\nLocus `{chrom}:{pos}`, reference allele `{reference}`.");
+    }
+}
+
+/// Generated files hold exactly their value; only ENOENT means no answer.
+fn leaf(base: &Path, name: &str) -> Option<String> {
+    match fs::read_to_string(base.join(name)) {
+        Ok(value) => Some(value),
+        Err(err) if err.kind() == io::ErrorKind::NotFound => None,
+        Err(err) => {
+            eprintln!("Could not read {RSID} {name}: {err}");
+            std::process::exit(1);
+        }
     }
 }

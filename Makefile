@@ -66,7 +66,7 @@ if [ ! -d "$$dir" ]; then \
 fi; \
 mkdir -p "$(BUILD)"; \
 if [ -f "$$dir/Cargo.toml" ]; then \
-  ( cd "$$dir" && cargo build --release --target wasm32-wasip1 ); \
+  ( cd "$$dir" && cargo build --locked --release --target wasm32-wasip1 ); \
   wasm=; for candidate in "$$dir"/target/wasm32-wasip1/release/*.wasm; do [ -e "$$candidate" ] || break; wasm=$$candidate; break; done; \
   if [ -z "$$wasm" ]; then echo "no wasm output found for $$dir"; exit 1; fi; \
   cp "$$wasm" "$$out"; \
@@ -74,6 +74,7 @@ elif [ -f "$$dir/go.mod" ]; then \
   ( cd "$$dir" && GOOS=wasip1 GOARCH=wasm go build -o app.wasm . ); \
   mv "$$dir/app.wasm" "$$out"; \
 elif [ -f "$$dir/main.c" ]; then \
+  if [ ! -x "$(WASI_SDK)/bin/clang" ]; then echo "missing WASI clang; set WASI_SDK to its toolchain directory" >&2; exit 1; fi; \
   ( cd "$$dir" && "$(WASI_SDK)/bin/clang" --target=wasm32-wasip1 -O3 main.c -o app.wasm ); \
   mv "$$dir/app.wasm" "$$out"; \
 else \
