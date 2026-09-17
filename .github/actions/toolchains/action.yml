@@ -15,6 +15,10 @@ inputs:
     description: TinyGo release, or empty where no Go app is built
     required: false
     default: ""
+  go:
+    description: Go release TinyGo builds against, within the range it supports
+    required: false
+    default: stable
 
 runs:
   using: composite
@@ -43,6 +47,13 @@ runs:
         curl -fsSL "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${version%.*}/$name.tar.gz" | tar -xz
         sudo mv "$name" /opt/wasi-sdk
 
+    # TinyGo compiles against a Go toolchain, and accepts only a range of
+    # releases, which is narrower than whatever a runner image happens to carry.
+    - uses: actions/setup-go@v7
+      if: inputs.tinygo != ''
+      with:
+        go-version: ${{ inputs.go }}
+
     - name: Install TinyGo
       if: inputs.tinygo != ''
       shell: sh
@@ -61,5 +72,5 @@ runs:
         wasmtime --version
         wasm-opt --version
         /opt/wasi-sdk/bin/clang --version | head -n 1
-        command -v tinygo >/dev/null && tinygo version || true
+        command -v tinygo >/dev/null && tinygo version && go version || true
         python3 --version

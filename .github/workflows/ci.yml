@@ -26,6 +26,7 @@ jobs:
           binaryen: "132"
           wasi-sdk: "33.0"
           tinygo: "0.42.0"
+          go: "1.27"
 
       - name: Build, run and compare
         run: sh tools/check.sh $(ls apps | grep -v -- '-python$')
