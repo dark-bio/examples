@@ -12,110 +12,87 @@ permissions:
   contents: read
 
 jobs:
-  # Pull requests build against the versions the examples are written for, so a
-  # failure means the change broke something rather than the world moving.
+  # Pull requests build against the versions the documentation names, so a red
+  # build means the change broke something rather than the world moving.
   compiled:
     name: Rust, Go and C
     runs-on: ubuntu-latest
-    env:
-      WASMTIME_VERSION: "48.0.2"
-      BINARYEN_VERSION: "132"
-      TINYGO_VERSION: "0.42.0"
-      WASI_SDK_VERSION: "33.0"
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install wasmtime, Binaryen and wasi-sdk
-        run: .github/install.sh
-
-      - name: Install TinyGo
-        run: |
-          curl -fsSLO "https://github.com/tinygo-org/tinygo/releases/download/v$TINYGO_VERSION/tinygo_${TINYGO_VERSION}_amd64.deb"
-          sudo dpkg -i "tinygo_${TINYGO_VERSION}_amd64.deb"
-
-      - name: Add the WebAssembly target
-        run: rustup target add wasm32-wasip1
+      - uses: ./.github/actions/toolchains
+        with:
+          wasmtime: "48.0.2"
+          binaryen: "132"
+          wasi-sdk: "33.0"
+          tinygo: "0.42.0"
 
       - name: Build, run and compare
-        run: tools/check.sh $(ls apps | grep -v -- '-python$')
+        run: sh tools/check.sh $(ls apps | grep -v -- '-python$')
 
   # Kept apart from the job above so a broken interpreter build doesn't hide
-  # whether the other three languages still work.
+  # whether the other three languages still work. The Rust versions come along
+  # because the comparison needs something to compare against.
   python:
     name: Python
     runs-on: ubuntu-latest
-    env:
-      WASMTIME_VERSION: "48.0.2"
-      BINARYEN_VERSION: "132"
-      WASI_SDK_VERSION: "33.0"
-      CPYTHON_VERSION: "3.14"
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install wasmtime, Binaryen and wasi-sdk
-        run: .github/install.sh
+      - uses: ./.github/actions/toolchains
+        with:
+          wasmtime: "48.0.2"
+          binaryen: "132"
+          wasi-sdk: "33.0"
 
       - uses: actions/setup-python@v6
         id: python
         with:
-          python-version: ${{ env.CPYTHON_VERSION }}
+          python-version: "3.14"
 
       # The build compiles an interpreter to match this one, which takes minutes,
       # so every run that finds the same version and build tool reuses it.
-      - name: Cache the WebAssembly interpreter
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: build/python
-          key: cpython-${{ steps.python.outputs.python-version }}-wasi-${{ env.WASI_SDK_VERSION }}-${{ hashFiles('tools/python_build.py', 'tools/python_embed.c') }}
-
-      # The Rust versions come along so the comparison has something to compare.
-      - name: Add the WebAssembly target
-        run: rustup target add wasm32-wasip1
+          key: cpython-${{ steps.python.outputs.python-version }}-${{ hashFiles('tools/python_build.py', 'tools/python_embed.c') }}
 
       - name: Build, run and compare
-        run: tools/check.sh $(ls apps | grep -E -- '-(python|rust)$')
+        run: sh tools/check.sh $(ls apps | grep -E -- '-(python|rust)$')
 
-  # The docs tell readers that newer toolchains usually work. This is what tests
-  # that claim, nightly, against whatever those projects released since, with no
-  # interpreter cache so a fresh CPython gets built from scratch. Only wasi-sdk
-  # stays pinned, since a new one moves the sysroot the Python build compiles to.
+  # The documentation tells readers that newer toolchains usually work. This
+  # tests that claim nightly, against whatever those projects have released,
+  # with no cached interpreter so CPython is built from source as a reader
+  # would. Only wasi-sdk stays fixed, since a new one moves the sysroot the
+  # interpreter compiles against.
   latest:
     name: Newest toolchains
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    env:
-      WASI_SDK_VERSION: "33.0"
     steps:
       - uses: actions/checkout@v7
 
       - name: Resolve the newest releases
+        id: releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          wasmtime=$(gh release view --repo bytecodealliance/wasmtime --json tagName --jq '.tagName | ltrimstr("v")')
-          binaryen=$(gh release view --repo WebAssembly/binaryen --json tagName --jq '.tagName | ltrimstr("version_")')
-          tinygo=$(gh release view --repo tinygo-org/tinygo --json tagName --jq '.tagName | ltrimstr("v")')
-          echo "WASMTIME_VERSION=$wasmtime" >> "$GITHUB_ENV"
-          echo "BINARYEN_VERSION=$binaryen" >> "$GITHUB_ENV"
-          echo "TINYGO_VERSION=$tinygo" >> "$GITHUB_ENV"
-          echo "Testing wasmtime $wasmtime, Binaryen $binaryen and TinyGo $tinygo"
+          {
+            echo "wasmtime=$(gh release view --repo bytecodealliance/wasmtime --json tagName --jq '.tagName | ltrimstr("v")')"
+            echo "binaryen=$(gh release view --repo WebAssembly/binaryen --json tagName --jq '.tagName | ltrimstr("version_")')"
+            echo "tinygo=$(gh release view --repo tinygo-org/tinygo --json tagName --jq '.tagName | ltrimstr("v")')"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Install wasmtime, Binaryen and wasi-sdk
-        run: .github/install.sh
+      - uses: ./.github/actions/toolchains
+        with:
+          wasmtime: ${{ steps.releases.outputs.wasmtime }}
+          binaryen: ${{ steps.releases.outputs.binaryen }}
+          wasi-sdk: "33.0"
+          tinygo: ${{ steps.releases.outputs.tinygo }}
 
-      - name: Install TinyGo
-        run: |
-          curl -fsSLO "https://github.com/tinygo-org/tinygo/releases/download/v$TINYGO_VERSION/tinygo_${TINYGO_VERSION}_amd64.deb"
-          sudo dpkg -i "tinygo_${TINYGO_VERSION}_amd64.deb"
-
-      # No cached interpreter here, so the newest CPython is built from source
-      # the way a reader on a fresh machine would.
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
-      - name: Add the WebAssembly target
-        run: rustup target add wasm32-wasip1
-
       - name: Build, run and compare
-        run: tools/check.sh
+        run: sh tools/check.sh
