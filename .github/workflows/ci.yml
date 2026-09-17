@@ -1,0 +1,110 @@
+name: checks
+
+on:
+  workflow_call:
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  # Pull requests build against the versions the examples are written for, so a
+  # failure means the change broke something rather than the world moving.
+  compiled:
+    name: Rust, Go and C
+    runs-on: ubuntu-latest
+    env:
+      WASMTIME_VERSION: "48.0.2"
+      BINARYEN_VERSION: "132"
+      TINYGO_VERSION: "0.42.0"
+      WASI_SDK_VERSION: "33.0"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install wasmtime, Binaryen and wasi-sdk
+        run: .github/install.sh
+
+      - name: Install TinyGo
+        run: |
+          curl -fsSLO "https://github.com/tinygo-org/tinygo/releases/download/v$TINYGO_VERSION/tinygo_${TINYGO_VERSION}_amd64.deb"
+          sudo dpkg -i "tinygo_${TINYGO_VERSION}_amd64.deb"
+
+      - name: Add the WebAssembly target
+        run: rustup target add wasm32-wasip1
+
+      - name: Build, run and compare
+        run: tools/check.sh $(ls apps | grep -v -- '-python$')
+
+  python:
+    name: Python
+    runs-on: ubuntu-latest
+    env:
+      WASMTIME_VERSION: "48.0.2"
+      BINARYEN_VERSION: "132"
+      WASI_SDK_VERSION: "33.0"
+      CPYTHON_VERSION: "3.14"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install wasmtime, Binaryen and wasi-sdk
+        run: .github/install.sh
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.CPYTHON_VERSION }}
+
+      # The interpreter takes minutes to build and changes only with the pinned
+      # version or the build tool, so every other run reuses it.
+      - name: Cache the WebAssembly interpreter
+        uses: actions/cache@v4
+        with:
+          path: build/python
+          key: cpython-${{ env.CPYTHON_VERSION }}-wasi-${{ env.WASI_SDK_VERSION }}-${{ hashFiles('tools/python_build.py', 'tools/python_embed.c') }}
+
+      # The Rust versions come along so the comparison has something to compare.
+      - name: Add the WebAssembly target
+        run: rustup target add wasm32-wasip1
+
+      - name: Build, run and compare
+        run: tools/check.sh $(ls apps | grep -E -- '-(python|rust)$')
+
+  # The docs tell readers that newer toolchains usually work. This is what tests
+  # that claim, nightly, against whatever those projects released since.
+  # wasi-sdk stays pinned, because the Python build targets that sysroot.
+  latest:
+    name: Newest toolchains
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      WASI_SDK_VERSION: "33.0"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve the newest releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          wasmtime=$(gh release view --repo bytecodealliance/wasmtime --json tagName --jq '.tagName | ltrimstr("v")')
+          binaryen=$(gh release view --repo WebAssembly/binaryen --json tagName --jq '.tagName | ltrimstr("version_")')
+          tinygo=$(gh release view --repo tinygo-org/tinygo --json tagName --jq '.tagName | ltrimstr("v")')
+          echo "WASMTIME_VERSION=$wasmtime" >> "$GITHUB_ENV"
+          echo "BINARYEN_VERSION=$binaryen" >> "$GITHUB_ENV"
+          echo "TINYGO_VERSION=$tinygo" >> "$GITHUB_ENV"
+          echo "Testing wasmtime $wasmtime, Binaryen $binaryen and TinyGo $tinygo"
+
+      - name: Install wasmtime, Binaryen and wasi-sdk
+        run: .github/install.sh
+
+      - name: Install TinyGo
+        run: |
+          curl -fsSLO "https://github.com/tinygo-org/tinygo/releases/download/v$TINYGO_VERSION/tinygo_${TINYGO_VERSION}_amd64.deb"
+          sudo dpkg -i "tinygo_${TINYGO_VERSION}_amd64.deb"
+
+      - name: Add the WebAssembly target
+        run: rustup target add wasm32-wasip1
+
+      - name: Build, run and compare
+        run: tools/check.sh $(ls apps | grep -v -- '-python$')

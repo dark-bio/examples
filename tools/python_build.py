@@ -2,6 +2,7 @@
 import argparse
 import fcntl
 import hashlib
+import importlib.util
 import json
 import marshal
 import modulefinder
@@ -29,6 +30,16 @@ def native_names(path):
     return set(re.findall(r"^([a-zA-Z_]\w*)\s+[^\n]*\.c\b", text, re.M))
 
 
+def compatible(source):
+    # Frozen modules are compiled here and imported there, so both interpreters
+    # have to agree on the bytecode format. Every 3.x release shares one.
+    header = (source / "Include/internal/pycore_magic_number.h").read_text()
+    magic = re.search(r"^#define PYC_MAGIC_NUMBER (\d+)", header, re.M)
+    if not magic:
+        raise SystemExit("Could not read the bytecode magic number from the CPython source")
+    return int(magic[1]) == int.from_bytes(importlib.util.MAGIC_NUMBER[:2], "little")
+
+
 def runtime(work, sdk, opt, lto, jobs):
     source = work / f"Python-{VERSION}"
     archive = work / f"Python-{VERSION}.tar.xz"
@@ -41,6 +52,9 @@ def runtime(work, sdk, opt, lto, jobs):
     if not source.exists():
         with tarfile.open(archive) as bundle:
             bundle.extractall(work, filter="data")
+    if not compatible(source):
+        raise SystemExit(f"CPython {'.'.join(map(str, sys.version_info[:3]))} cannot freeze "
+                         f"bytecode for the {VERSION} it builds; use a {VERSION.rsplit('.', 1)[0]} release")
 
     flags = [f"-O{opt}", "-g0", "-ffunction-sections", "-fdata-sections",
              f"-ffile-prefix-map={ROOT}=.", f"-ffile-prefix-map={sdk}=wasi-sdk"]
@@ -132,8 +146,9 @@ def main():
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     parser.add_argument("--include", action="append", default=[], help="Include a dynamic import")
     args = parser.parse_args()
-    if sys.version_info[:3] != (3, 14, 7):
-        raise SystemExit(f"Python builds require CPython {VERSION}")
+    series = VERSION.rsplit(".", 1)[0]
+    if ".".join(map(str, sys.version_info[:2])) != series:
+        raise SystemExit(f"Python builds require CPython {series}")
     sdk = args.sdk.resolve()
     if not (sdk / "VERSION").exists() or not (sdk / "VERSION").read_text().startswith("33.0"):
         raise SystemExit("Python builds require wasi-sdk 33.0 in WASI_SDK; "

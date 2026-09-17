@@ -96,7 +96,7 @@ elif [ -f "$$dir/main.c" ]; then \
   mv "$$dir/app.wasm" "$$out"; \
   post="-O4"; \
 elif [ -f "$$dir/main.py" ]; then \
-  if ! command -v "$(PYTHON)" >/dev/null 2>&1; then echo "missing CPython 3.14.7; set PYTHON to its executable" >&2; exit 1; fi; \
+  if ! command -v "$(PYTHON)" >/dev/null 2>&1; then echo "missing CPython 3.14; set PYTHON to its executable" >&2; exit 1; fi; \
   "$(PYTHON)" tools/python_build.py "$$dir/main.py" "$$out" --sdk "$(WASI_SDK)"; \
   post="-Os --converge"; \
 else \
