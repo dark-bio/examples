@@ -1,12 +1,13 @@
-//! Powerhouse of the Cell: a Markdown report from one genome `regions/` lens.
+//! Powerhouse of the Cell: a report from one genome `regions/` lens.
 //!
 //! The mitochondrial chromosome is small enough to read as one range, which makes
 //! it a useful demo of the region lens: one granted interval exposes a streamed
-//! reference sequence plus all non-reference changes inside that span.
+//! reference sequence plus all non-reference changes inside that span, printed in
+//! the report shape docs/06-reports.md describes.
 //!
-//! Tutorial note for app authors: the app asks Ark for exactly one dataset path
-//! (`v1/genome/regions/chrM/1-16569`). The user-facing report below avoids
-//! teaching path details; those details belong here and in the README.
+//! Tutorial note for app authors: the app asks Ark for the interval's path
+//! (`v1/genome/regions/chrM/1-16569`) and for `v1/genome/reference`, which it
+//! reads only for the assembly build its coordinates are reported on.
 
 use std::collections::BTreeSet;
 use std::fs::{self, File};
@@ -25,17 +26,24 @@ fn main() {
         print!(
             "[package]\n\
              name = \"powerhouse-of-the-cell\"\n\
-             version = \"0.1.0\"\n\
-             datasets = [\"v1/genome/regions/chrM/1-16569\"]\n"
+             version = \"0.2.0\"\n\
+             datasets = [\"v1/genome/regions/chrM/1-16569\", \"v1/genome/reference\"]\n"
         );
         return;
     };
 
     let base = Path::new(&dir).join(LENS_PATH);
+    let build = match read_leaf(&Path::new(&dir).join("v1/genome/reference"), "build") {
+        Ok(build) => build,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(1);
+        }
+    };
     print_header();
 
     match RegionReport::load(&base) {
-        Ok(report) => report.print(),
+        Ok(report) => report.print(build.as_deref()),
         Err(err) => {
             eprintln!("{err}");
             std::process::exit(1);
@@ -69,85 +77,110 @@ impl RegionReport {
         Ok(Self { sequence, changes })
     }
 
-    fn print(&self) {
-        let Some(changes) = &self.changes else {
-            println!("No changes answer is available for this span.");
-            println!(
-                "Reference length: {} bp; GC: {:.1}%.",
-                self.sequence.len,
-                self.sequence.gc_percent()
-            );
-            return;
-        };
+    fn print(&self, build: Option<&str>) {
         let span = END - START + 1;
         let gc = self.sequence.gc_percent();
-        let density = per_kb(changes.len(), span);
-        let mixed = changes.iter().filter(|c| c.call == "mixed alleles").count();
-        let fixed = changes
-            .iter()
-            .filter(|c| c.call == "single change" || c.call == "all copies changed")
-            .count();
-        let uncertain = changes.iter().filter(|c| c.call == "uncertain").count();
-        let indels = changes.iter().filter(|c| c.kind == "indel").count();
-        let transitions = changes
-            .iter()
-            .filter(|c| c.substitution == "transition")
-            .count();
-        let transversions = changes
-            .iter()
-            .filter(|c| c.substitution == "transversion")
-            .count();
 
-        println!("## Your Result");
+        // The finding states the counts in words; the map and tables beneath
+        // carry every value they rest on.
+        match &self.changes {
+            Some(changes) if changes.is_empty() => {
+                println!(
+                    "Your call file lists no changes across the {} bp mitochondrial \
+                     chromosome. A map of where your calls differ from the reference, not a \
+                     haplogroup.",
+                    format_int(span)
+                );
+            }
+            Some(changes) => {
+                let density = per_kb(changes.len(), span);
+                let mixed = changes.iter().filter(|c| c.call == "mixed alleles").count();
+                let fixed = changes
+                    .iter()
+                    .filter(|c| c.call == "single change" || c.call == "all copies changed")
+                    .count();
+                let uncertain = changes.iter().filter(|c| c.call == "uncertain").count();
+                let unanswered = changes.iter().filter(|c| c.call == "no answer").count();
+                let indels = changes.iter().filter(|c| c.kind == "indel").count();
+                let transitions = changes
+                    .iter()
+                    .filter(|c| c.substitution == "transition")
+                    .count();
+                let transversions = changes
+                    .iter()
+                    .filter(|c| c.substitution == "transversion")
+                    .count();
+                print!(
+                    "Your mitochondrial chromosome, all {2} bp of it, carries {0} {1} in your \
+                     call file, {transitions} {3}, {transversions} {4} and {indels} {5}",
+                    changes.len(),
+                    plural(changes.len(), "change", "changes"),
+                    format_int(span),
+                    plural(transitions, "transition", "transitions"),
+                    plural(transversions, "transversion", "transversions"),
+                    plural(indels, "indel", "indels")
+                );
+                if mixed > 0 {
+                    print!(", {mixed} with mixed alleles and {fixed} in every copy");
+                }
+                if uncertain + unanswered > 0 {
+                    print!(", with {uncertain} uncertain and {unanswered} without an answer");
+                }
+                println!(
+                    ". That's {density:.2} per kb. A map of where your calls differ from the \
+                     reference, not a haplogroup."
+                );
+            }
+            None => {
+                println!(
+                    "No changes answer is available for this interval, so the app can't say \
+                     what your call file holds there. The reference sequence is {} bp with \
+                     {gc:.1}% GC.",
+                    format_int(self.sequence.len)
+                );
+            }
+        }
         println!();
-        println!("| Signal | Value |");
-        println!("| :--- | ---: |");
-        println!("| Interval | {}:{}-{} |", CHROM, START, END);
+
+        println!("## Evidence");
+        println!();
+        println!("### Interval");
+        println!();
+        println!("| Field | Value |");
+        println!("| :-- | :-- |");
+        match build {
+            Some(build) => println!("| Interval | {CHROM}:{START}-{END}, {build} |"),
+            None => println!("| Interval | {CHROM}:{START}-{END} |"),
+        }
         println!(
             "| Reference bases read | {} bp |",
             format_int(self.sequence.len)
         );
-        println!("| Reference GC | {:.1}% |", gc);
-        println!("| Observed changes | {} |", changes.len());
-        println!("| Change density | {:.2} / kb |", density);
-        println!("| Mixed-allele calls | {mixed} |");
-        println!("| Fixed or single-copy changes | {fixed} |");
-        println!("| Indels or complex alleles | {indels} |");
-        println!("| Transitions | {transitions} |");
-        println!("| Transversions | {transversions} |");
-        println!("| Uncertain calls | {uncertain} |");
-        println!(
-            "| Positions without an answer | {} |",
-            changes.iter().filter(|c| c.call == "no answer").count()
-        );
+        println!("| Reference GC | {gc:.1}% |");
         println!();
 
-        println!("## Variant Compass");
-        println!();
-        println!(
-            "Each `*` marks at least one non-reference change. `+` means multiple changes share a text column."
-        );
-        println!();
-        print_star_map(changes);
-        println!();
+        if let Some(changes) = &self.changes {
+            println!("### Variant compass");
+            println!();
+            println!(
+                "Each `*` marks a non-reference change along the chromosome, and `+` more \
+                 than one in the same column."
+            );
+            println!();
+            print_star_map(changes);
+            println!();
+            print_windows(changes);
+            print_change_table(changes);
+        }
 
-        print_windows(changes);
-        print_change_table(changes);
-        print_data_receipt();
-        print_meaning();
-        print_fine_print();
-        print_references();
+        print_method();
+        print_limitations();
+        print_sources();
     }
 }
 
 fn print_header() {
-    println!("# Powerhouse of the Cell");
-    println!();
-    println!(
-        "Your mitochondrial chromosome is compact enough to fit on a single \
-         report page. This map summarizes observed non-reference changes across \
-         `chrM` and shows where they fall along the 16.6 kb sequence."
-    );
+    println!("# Your Mitochondrial Genome");
     println!();
 }
 
@@ -401,7 +434,7 @@ fn print_star_map(changes: &[Change]) {
 }
 
 fn print_windows(changes: &[Change]) {
-    println!("## Density Windows");
+    println!("### Density windows");
     println!();
     println!("| Window | Changes | Label | Bar |");
     println!("| :--- | ---: | :--- | :--- |");
@@ -446,13 +479,11 @@ fn bar(count: usize) -> String {
 }
 
 fn print_change_table(changes: &[Change]) {
-    println!("## Change Receipt");
-    println!();
     if changes.is_empty() {
-        println!("No non-reference changes were listed under this mitochondrial interval.");
-        println!();
         return;
     }
+    println!("### Change receipt");
+    println!();
 
     println!("| Position | Reference | Genotype | Call | Kind | Substitution |");
     println!("| ---: | :---: | :---: | :--- | :--- | :--- |");
@@ -476,60 +507,54 @@ fn print_change_table(changes: &[Change]) {
     println!();
 }
 
-fn print_data_receipt() {
-    println!("## What Was Checked");
-    println!();
-    println!("This report checked:");
-    println!();
-    println!("- The mitochondrial interval `{CHROM}:{START}-{END}`");
-    println!("- The reference sequence for that interval, summarized as length and GC content");
-    println!("- Observed non-reference changes inside the interval, with reference and genotype");
-    println!();
-}
-
-fn print_meaning() {
-    println!("## What It Means");
+fn print_method() {
+    println!("## Method");
     println!();
     println!(
-        "This is a mitochondrial shape report. It shows how many observed \
-         non-reference calls appear across `chrM`, where they sit, and whether \
-         the calls look like substitutions or indels."
-    );
-    println!();
-    println!(
-        "It is not a haplogroup caller. Haplogroups need curated marker trees, \
-         careful handling of build and strand conventions, and usually more \
-         interpretation than this demo should do."
+        "Your mitochondrial chromosome is compact enough to fit on a single report page, so \
+         the app reads it as one interval. It streams the reference sequence for length and \
+         GC content, and lists every position under its changes where a record starting \
+         inside the \
+         interval holds an ALT allele. Each genotype is classified against the reference \
+         base by how many copies carry the change, as a substitution or an indel, and as \
+         a transition or a transversion. A position listed without leaves, where several \
+         records start, counts as no answer. The reference is the revised Cambridge \
+         sequence of Andrews et al. (1999), which GRCh38 carries as chrM."
     );
     println!();
 }
 
-fn print_fine_print() {
-    println!("## Fine Print");
+fn print_limitations() {
+    println!("## Limitations");
     println!();
     println!(
-        "The change list contains record starts within this span whose genotype \
-         holds an ALT allele. Records starting before the span are excluded. The absence of a listed change is not a \
-         medical or ancestry result. Mitochondrial data can also involve \
-         heteroplasmy and platform-specific calling choices that a simple genotype \
-         string does not fully describe."
+        "A map, not a haplogroup call. Haplogroups need curated marker trees and care with \
+         build and strand conventions, none of which this app has. The change list holds \
+         records starting inside the interval, and a position not listed isn't a result on \
+         its own. Mitochondria can also carry several versions at once, heteroplasmy, which \
+         a single genotype string doesn't capture."
     );
-    println!();
-    println!("This report is for demo and education only.");
     println!();
 }
 
-fn print_references() {
-    println!("## Further Reading");
+fn print_sources() {
+    println!("## Sources");
     println!();
-    println!("- NCBI Nucleotide `NC_012920.1`: https://www.ncbi.nlm.nih.gov/nuccore/NC_012920.1");
     println!(
-        "- MITOMAP human mitochondrial sequence resources: https://www.mitomap.org/MITOMAP/HumanMitoSeq"
+        "1. Andrews RM, et al. Reanalysis and revision of the Cambridge reference sequence \
+         for human mitochondrial DNA. Nature Genetics. 1999;23:147. \
+         https://pubmed.ncbi.nlm.nih.gov/10508508/"
     );
+    println!("2. NCBI Nucleotide, NC_012920.1. https://www.ncbi.nlm.nih.gov/nuccore/NC_012920.1");
     println!(
-        "- Andrews RM et al. (1999). Reanalysis and revision of the Cambridge reference sequence. PubMed: https://pubmed.ncbi.nlm.nih.gov/10508508/"
+        "3. MITOMAP, the human mitochondrial genome. https://www.mitomap.org/MITOMAP/HumanMitoSeq"
     );
     println!();
+}
+
+/// Picks the singular or plural form for a count.
+fn plural(n: usize, one: &'static str, many: &'static str) -> &'static str {
+    if n == 1 { one } else { many }
 }
 
 fn format_int(n: u64) -> String {

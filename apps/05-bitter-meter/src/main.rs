@@ -1,14 +1,14 @@
-//! Bitter Meter: a small Markdown report built from the genome `genes/` lens.
+//! Bitter Meter: a report built from the genome `genes/` lens.
 //!
 //! TAS2R38 is a bitter-taste receptor made famous by PTC/PROP tasting demos. This
 //! app deliberately keeps the claim narrower: it does not predict whether someone
 //! likes bitter greens or tastes a lab strip. It shows what a gene-scoped lens can
 //! reveal: gene metadata, reference sequence summary, and the non-reference changes
-//! carried inside that gene.
+//! carried inside that gene, in the report shape docs/06-reports.md describes.
 //!
-//! Tutorial note for app authors: the app asks Ark for exactly one dataset path
-//! (`v1/genome/genes/TAS2R38`). The user-facing report below avoids teaching
-//! path details; those details belong here and in the README.
+//! Tutorial note for app authors: the app asks Ark for the gene's path
+//! (`v1/genome/genes/TAS2R38`) and for `v1/genome/reference`, which it reads only
+//! for the assembly build its coordinates are reported on.
 
 use std::collections::BTreeSet;
 use std::fs::{self, File};
@@ -25,18 +25,31 @@ fn main() {
         print!(
             "[package]\n\
              name = \"bitter-meter\"\n\
-             version = \"0.1.0\"\n\
-             datasets = [\"v1/genome/genes/TAS2R38\"]\n"
+             version = \"0.2.0\"\n\
+             datasets = [\"v1/genome/genes/TAS2R38\", \"v1/genome/reference\"]\n"
         );
         return;
     };
 
     let base = Path::new(&dir).join(LENS_PATH);
+    let build = match read_leaf(&Path::new(&dir).join("v1/genome/reference"), "build") {
+        Ok(build) => build,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(1);
+        }
+    };
     print_header();
 
     match GeneReport::load(&base) {
-        Ok(Some(report)) => report.print(),
-        Ok(None) => println!("No metadata answer for {GENE}."),
+        Ok(Some(report)) => report.print(build.as_deref()),
+        Ok(None) => {
+            println!(
+                "No answer. The annotations on this Ark carry no coordinates for *{GENE}*, \
+                 so the app has nothing to describe."
+            );
+            println!();
+        }
         Err(err) => {
             eprintln!("{err}");
             std::process::exit(1);
@@ -98,89 +111,110 @@ impl GeneReport {
         }))
     }
 
-    fn print(&self) {
-        let Some(changes) = &self.changes else {
-            println!("No changes answer is available for this span.");
-            println!(
-                "Reference length: {} bp; GC: {:.1}%.",
-                self.sequence.len,
-                self.sequence.gc_percent()
-            );
-            return;
-        };
+    fn print(&self, build: Option<&str>) {
         let span = self.end.saturating_sub(self.start).saturating_add(1);
         let gc = self.sequence.gc_percent();
-        let density = per_kb(changes.len(), span);
-        let heterozygous = changes.iter().filter(|c| c.call == "heterozygous").count();
-        let homozygous = changes
-            .iter()
-            .filter(|c| c.call == "homozygous change")
-            .count();
-        let uncertain = changes.iter().filter(|c| c.call == "uncertain").count();
-        let indels = changes.iter().filter(|c| c.kind == "indel").count();
 
-        println!("## Your Result");
-        println!();
-        println!("| Signal | Value |");
-        println!("| :--- | ---: |");
-        println!("| Gene span | {} bp |", format_int(span));
-        println!("| Reference GC | {:.1}% |", gc);
-        println!("| Observed changes | {} |", changes.len());
-        println!("| Change density | {:.2} / kb |", density);
-        println!("| Heterozygous calls | {heterozygous} |");
-        println!("| Homozygous change calls | {homozygous} |");
-        println!("| Indels or complex alleles | {indels} |");
-        println!("| Uncertain calls | {uncertain} |");
-        println!(
-            "| Positions without an answer | {} |",
-            changes.iter().filter(|c| c.call == "no answer").count()
-        );
+        // The finding states the counts in words; the tables beneath carry
+        // every value they rest on.
+        match &self.changes {
+            Some(changes) if changes.is_empty() => {
+                println!(
+                    "Your call file lists no changes inside *{GENE}* across {} bp on {}. A \
+                     postcard of the gene as recorded, not a verdict on how you taste.",
+                    format_int(span),
+                    self.chromosome
+                );
+            }
+            Some(changes) => {
+                let density = per_kb(changes.len(), span);
+                let heterozygous = changes.iter().filter(|c| c.call == "heterozygous").count();
+                let homozygous = changes
+                    .iter()
+                    .filter(|c| c.call == "homozygous change")
+                    .count();
+                let uncertain = changes.iter().filter(|c| c.call == "uncertain").count();
+                let unanswered = changes.iter().filter(|c| c.call == "no answer").count();
+                let indels = changes.iter().filter(|c| c.kind == "indel").count();
+                print!(
+                    "Your bitter receptor gene *{GENE}* carries {} {} in your call file, \
+                     {heterozygous} heterozygous and {homozygous} homozygous, across {} bp on {}",
+                    changes.len(),
+                    if changes.len() == 1 {
+                        "change"
+                    } else {
+                        "changes"
+                    },
+                    format_int(span),
+                    self.chromosome
+                );
+                if indels > 0 {
+                    print!(
+                        ", {indels} of them {}",
+                        plural(indels, "an indel", "indels")
+                    );
+                }
+                if uncertain + unanswered > 0 {
+                    print!(", with {uncertain} uncertain and {unanswered} without an answer");
+                }
+                println!(
+                    ". That's {density:.2} per kb, {} for a gene this small. A postcard of \
+                     the gene as your call file records it, not a verdict on how you taste.",
+                    density_label(density)
+                );
+            }
+            None => {
+                println!(
+                    "No changes answer is available for *{GENE}*, so the app can't say what \
+                     your call file holds there. The reference sequence is {} bp with {gc:.1}% GC.",
+                    format_int(self.sequence.len)
+                );
+            }
+        }
         println!();
 
-        println!("## Gene Postcard");
+        println!("## Evidence");
+        println!();
+        println!("### Gene postcard");
         println!();
         println!("| Field | Value |");
-        println!("| :--- | :--- |");
-        println!("| Gene | `{GENE}` |");
-        println!(
-            "| Location | `{}:{}-{}` |",
-            self.chromosome, self.start, self.end
-        );
-        println!("| Strand | `{}` |", self.strand);
-        println!("| Biotype | `{}` |", self.biotype);
+        println!("| :-- | :-- |");
+        println!("| Gene | *{GENE}* |");
+        let location = format!("{}:{}-{}", self.chromosome, self.start, self.end);
+        match build {
+            Some(build) => println!("| Location | {location}, {build} |"),
+            None => println!("| Location | {location} |"),
+        }
+        println!("| Strand | {} |", self.strand);
+        println!("| Biotype | {} |", self.biotype);
         println!(
             "| Reference length | {} bp |",
             format_int(self.sequence.len)
         );
-        println!("| Local label | {} |", density_label(density));
+        println!("| Reference GC | {gc:.1}% |");
         println!();
 
-        println!("## Change Ruler");
-        println!();
-        println!(
-            "The ruler marks observed non-reference changes across the gene. `+` means more than one change landed in the same text column."
-        );
-        println!();
-        print_ruler(self.start, self.end, changes);
-        println!();
+        if let Some(changes) = &self.changes {
+            println!("### Change ruler");
+            println!();
+            println!(
+                "Each `*` marks a non-reference change along the gene, and `+` more than one \
+                 in the same column."
+            );
+            println!();
+            print_ruler(self.start, self.end, changes);
+            println!();
+            print_change_table(changes);
+        }
 
-        print_change_table(changes);
-        print_data_receipt();
-        print_meaning();
-        print_fine_print();
-        print_references();
+        print_method();
+        print_limitations();
+        print_sources();
     }
 }
 
 fn print_header() {
-    println!("# Bitter Meter: {GENE}");
-    println!();
-    println!(
-        "Some bitter flavors are sensed by tiny receptor proteins on the tongue. \
-         `{GENE}` is the famous bitter-taste receptor from PTC and PROP classroom \
-         genetics. This report keeps the claim modest: it summarizes the visible \
-         changes in this gene without trying to predict your taste preferences."
-    );
+    println!("# TAS2R38, the Bitter Taste Receptor Gene");
     println!();
 }
 
@@ -404,13 +438,11 @@ fn print_ruler(start: u64, end: u64, changes: &[Change]) {
 }
 
 fn print_change_table(changes: &[Change]) {
-    println!("## Change Receipt");
-    println!();
     if changes.is_empty() {
-        println!("No non-reference changes were listed under `changes/` for this gene.");
-        println!();
         return;
     }
+    println!("### Change receipt");
+    println!();
 
     println!("| Position | Reference | Genotype | Call | Kind |");
     println!("| ---: | :---: | :---: | :--- | :--- |");
@@ -433,60 +465,54 @@ fn print_change_table(changes: &[Change]) {
     println!();
 }
 
-fn print_data_receipt() {
-    println!("## What Was Checked");
-    println!();
-    println!("This report checked:");
-    println!();
-    println!("- `{GENE}` chromosome, start, end, strand, and biotype");
-    println!("- The reference sequence for this gene, summarized as length and GC content");
-    println!("- Observed non-reference changes inside this gene, with reference and genotype");
-    println!();
-}
-
-fn print_meaning() {
-    println!("## What It Means");
+fn print_method() {
+    println!("## Method");
     println!();
     println!(
-        "This is a gene postcard. It tells you where `{GENE}` sits, how large \
-         its reference sequence is, and which observed non-reference calls appear \
-         inside that span. The change count is useful for seeing how much personal \
-         variation is visible in this small taste-receptor gene."
-    );
-    println!();
-    println!(
-        "It is intentionally not a PTC or PROP taster prediction. The classic \
-         bitter-taste story involves specific coding variants and haplotypes, and \
-         this report does not assume phase or infer named rsIDs from the gene view."
+        "Some bitter flavors are sensed by tiny receptor proteins on the tongue, and \
+         *{GENE}* is the famous one from PTC and PROP classroom genetics. The app reads the \
+         gene's coordinates, strand and biotype from the annotations, \
+         streams its reference sequence for length and GC content, and lists every position \
+         under the gene's changes where a record starting inside the gene holds an ALT \
+         allele. Each genotype is classified against the reference base as heterozygous, \
+         homozygous or uncertain, and as a substitution or an indel. A position listed \
+         without leaves, where several records start, counts as no answer. Kim et al. \
+         (2003) mapped taste sensitivity to phenylthiocarbamide to this gene; that story \
+         rests on specific coding variants and haplotypes the app doesn't call."
     );
     println!();
 }
 
-fn print_fine_print() {
-    println!("## Fine Print");
+fn print_limitations() {
+    println!("## Limitations");
     println!();
     println!(
-        "The change list contains record starts within this span whose genotype \
-         holds an ALT allele. Records starting before the span are excluded. A position not shown here should not be \
-         treated as a standalone trait result. Taste is also shaped by other \
-         genes, age, exposure, diet, and plain preference."
+        "Not a PTC or PROP taster test. The classic bitter-taste story rests on specific \
+         coding variants and haplotypes, and this app doesn't phase calls or name rsIDs \
+         from the gene view. The change list holds records starting inside the span, so \
+         one starting just before it is left out, and a position not listed isn't a \
+         result on its own. Taste is also shaped by other genes, age, exposure, diet and \
+         plain preference."
     );
-    println!();
-    println!("This report is for demo and education only.");
     println!();
 }
 
-fn print_references() {
-    println!("## Further Reading");
+fn print_sources() {
+    println!("## Sources");
     println!();
-    println!("- NCBI Gene search for `TAS2R38`: https://www.ncbi.nlm.nih.gov/gene/?term=TAS2R38");
     println!(
-        "- Ensembl gene summary for `TAS2R38`: https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=TAS2R38"
+        "1. Kim UK, et al. Positional cloning of the human quantitative trait locus \
+         underlying taste sensitivity to phenylthiocarbamide. Science. 2003;299:1221-1225. \
+         https://pubmed.ncbi.nlm.nih.gov/12595690/"
     );
-    println!(
-        "- Kim U et al. (2003). Positional cloning of the human PTC taste-sensitivity locus. PubMed: https://pubmed.ncbi.nlm.nih.gov/12595690/"
-    );
+    println!("2. NCBI Gene, {GENE}. https://www.ncbi.nlm.nih.gov/gene/?term={GENE}");
+    println!("3. Ensembl, {GENE}. https://www.ensembl.org/Homo_sapiens/Gene/Summary?g={GENE}");
     println!();
+}
+
+/// Picks the singular or plural form for a count.
+fn plural(n: usize, one: &'static str, many: &'static str) -> &'static str {
+    if n == 1 { one } else { many }
 }
 
 fn format_int(n: u64) -> String {

@@ -23,7 +23,7 @@ An app is a [WebAssembly](https://webassembly.org/) module built for
 - **With no arguments**, the app prints a short TOML manifest naming itself and
   the data it wants. The Ark checks it and shows it to the owner for approval.
 - **With a data directory as its first argument**, the app reads its granted
-  files and prints its report.
+  files and prints its report, a Markdown page the owner reads first.
 
 ```rust
 fn main() {
@@ -88,6 +88,8 @@ and a full app turns the same read into a report.
 - [04-reading-data.md](docs/04-reading-data.md) covers absence, errors,
   sequences and genotypes, with a grant for every need.
 - [05-running.md](docs/05-running.md) covers running apps locally and on an Ark.
+- [06-reports.md](docs/06-reports.md) covers the report, its shape and its
+  voice.
 
 ## A note on scope
 

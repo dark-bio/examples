@@ -24,7 +24,7 @@ fn main() {
         print!(
             "[package]\n\
              name = \"motif-finder\"\n\
-             version = \"0.1.0\"\n\
+             version = \"0.2.0\"\n\
              datasets = [\"v1/genome/genes/TAS2R38\"]\n"
         );
         return;
@@ -57,12 +57,66 @@ fn run(root: &Path) -> Result<(), String> {
         return Err("The gene sequence is empty".into());
     }
 
-    println!("## Restriction map of {GENE}\n");
-    println!("Scanning {length} bp of reference sequence.\n");
+    // The finding names the totals; the table beneath it carries every count.
+    let total: u64 = cuts.iter().sum();
+    let (most, most_cuts) = ENZYMES
+        .iter()
+        .zip(cuts)
+        .max_by_key(|(_, count)| *count)
+        .map(|((name, _), count)| (*name, count))
+        .expect("the enzyme panel is not empty");
+    let uncut: Vec<&str> = ENZYMES
+        .iter()
+        .zip(cuts)
+        .filter(|(_, count)| *count == 0)
+        .map(|((name, _), _)| *name)
+        .collect();
+
+    println!("# Restriction Map of {GENE}\n");
+    print!(
+        "{} enzymes cut the {} bp reference sequence of *{GENE}* {total} times between \
+         them. {most} cuts most often, {most_cuts} times",
+        ENZYMES.len(),
+        commas(length)
+    );
+    match uncut.as_slice() {
+        [] => println!("."),
+        [one] => println!(", and {one} not at all."),
+        many => println!(", and {} never do.", many.join(", ")),
+    }
+    println!();
+    println!("## Evidence\n");
     println!("| Enzyme | Site | Cuts |");
-    println!("| :--- | :--- | ---: |");
+    println!("| :-- | :-- | --: |");
     for ((name, site), count) in ENZYMES.iter().zip(cuts) {
         println!("| {name} | `{site}` | {count} |");
     }
+    println!();
+    println!("## Method\n");
+    println!(
+        "The app streams the gene's reference sequence through a four-base window and \
+         counts every position where an enzyme's recognition site appears, overlaps \
+         included. Repeats are soft-masked in lowercase, so bases are uppercased before \
+         matching.\n"
+    );
+    println!("## Limitations\n");
+    println!(
+        "This is the reference sequence, not yours. The grant covers your changes in the \
+         gene, but the app never reads them, so a variant that creates or destroys a site \
+         isn't counted."
+    );
     Ok(())
+}
+
+/// Formats a count with thousands separators, so 1143 reads as 1,143.
+fn commas(n: u64) -> String {
+    let digits = n.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
 }

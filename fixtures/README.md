@@ -20,8 +20,9 @@ The rsID apps are `02-permissions`, the cilantro apps, `04-drunk-o-type` and
 make run APP=03-cilantro-mini-rust FIXTURES=fixtures/no-call
 ```
 
-The two smaller roots hold only the variant data those apps need, so any other
-app stops at its missing grants there.
+The two smaller roots hold only the variant data those apps need, plus the
+reference build they name coordinates on, so any other app stops at its missing
+grants there.
 
 ## Editing them
 
