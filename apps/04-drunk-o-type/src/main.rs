@@ -141,7 +141,6 @@ const TARGETS: &[SnpTarget] = &[
 
 #[derive(Debug, Clone)]
 struct GenotypeCall {
-    genotype: String,
     alleles: Vec<String>,
     // A missing allele makes the count inconclusive, never zero.
     risk_copies: Option<u32>,
@@ -375,14 +374,7 @@ fn combo_callout(flush_idx: usize, like_idx: usize) -> &'static str {
 // ── Output sections ────────────────────────────────────────────────────────
 
 fn print_app_header() {
-    println!("## 🍻 Drunk-o-type");
-    println!();
-    println!(
-        "Eleven SNPs across three axes: **Flush** (does alcohol make you sick?), \
-         **Like** (does your brain enjoy it?), and **Junk** (do drink additives - \
-         histamine, tannins, the fermented-stuff load - wreck you?). Each axis \
-         bins into 5 tiers."
-    );
+    println!("# 🍻 How Your Body Handles a Drink");
     println!();
 }
 
@@ -400,9 +392,34 @@ fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
         ("Inconclusive", "❓")
     };
 
+    // The labels are the fun part; the counts beside them are the finding.
     println!(
-        "### Your drunk-o-type: {} {} + {} {} + {} {}",
-        flush_emoji, flush_label, like_emoji, like_label, junk_emoji, junk_label
+        "**Your drunk-o-type:** {flush_emoji} {flush_label} + {like_emoji} {like_label} + \
+         {junk_emoji} {junk_label}. Flush from {} ALDH2 risk alleles and {} fast ADH1B \
+         alleles, Like from {} reward alleles, Junk from {} histamine alleles. Eleven \
+         variants across three axes: **Flush** (does alcohol make you sick?), **Like** \
+         (does your brain enjoy it?), and **Junk** (does the fermented-stuff load wreck \
+         you?), each binned into five tiers.",
+        copy_count(
+            flush_score.aldh2_risk,
+            flush_score.aldh2_copies,
+            flush_score.aldh2_observed
+        ),
+        copy_count(
+            flush_score.adh1b_risk,
+            flush_score.adh1b_copies,
+            flush_score.adh1b_observed == flush_score.adh1b_expected
+        ),
+        copy_count(
+            reward_score.risk,
+            reward_score.copies,
+            reward_score.fully_called()
+        ),
+        copy_count(
+            histamine_score.risk,
+            histamine_score.copies,
+            histamine_score.fully_called()
+        ),
     );
     println!();
 
@@ -421,7 +438,7 @@ fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
     }
 
     // Flush axis breakdown
-    println!("#### 🍻 Flush axis - {} {}", flush_label, flush_emoji);
+    println!("## 🍻 Flush: {flush_label} {flush_emoji}");
     println!();
     let aldh2_marker = if flush_score.aldh2_observed {
         "✓ found"
@@ -447,13 +464,10 @@ fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
     println!();
     println!("{}", flush_blurb(&flush_score));
     println!();
-    print_axis_table(results, Axis::Flush);
 
     // Like axis breakdown
     println!(
-        "#### 🧠 Like axis - {} {} ({} risk · {}/{} markers{})",
-        like_label,
-        like_emoji,
+        "## 🧠 Like: {like_label} {like_emoji} ({} risk · {}/{} markers{})",
         copy_count(
             reward_score.risk,
             reward_score.copies,
@@ -468,25 +482,20 @@ fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
         },
     );
     println!();
-    if !reward_score.fully_called() {
+    if reward_score.fully_called() {
+        println!("{}", like_blurb(reward_score.risk));
+    } else {
         println!(
             "*Incomplete calls: {} of {} reward markers have every allele \
              called. The Like score is inconclusive.*",
             reward_score.observed, reward_score.expected
         );
-        println!();
-    }
-    if reward_score.fully_called() {
-        println!("{}", like_blurb(reward_score.risk));
     }
     println!();
-    print_axis_table(results, Axis::Reward);
 
     // Junk axis breakdown
     println!(
-        "#### 🤧 Junk axis - fermented-drink sensitivity - {} {} ({} risk · {}/{} markers{})",
-        junk_label,
-        junk_emoji,
+        "## 🤧 Junk: {junk_label} {junk_emoji} ({} risk · {}/{} markers{})",
         copy_count(
             histamine_score.risk,
             histamine_score.copies,
@@ -501,19 +510,16 @@ fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
         },
     );
     println!();
-    if !histamine_score.fully_called() {
+    if histamine_score.fully_called() {
+        println!("{}", junk_blurb(histamine_score.risk));
+    } else {
         println!(
             "*Incomplete calls: {} of {} histamine markers have every allele \
              called. The Junk score is inconclusive.*",
             histamine_score.observed, histamine_score.expected
         );
-        println!();
-    }
-    if histamine_score.fully_called() {
-        println!("{}", junk_blurb(histamine_score.risk));
     }
     println!();
-    print_axis_table(results, Axis::Histamine);
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -605,42 +611,84 @@ fn score_sample(
     (flush, reward, histamine)
 }
 
-fn print_axis_table(results: &[(&'static SnpTarget, Option<GenotypeCall>)], axis: Axis) {
-    println!("| Variant | Gene | Genotype | Risk copies | Effect |");
-    println!("| :--- | :--- | :--- | :---: | :--- |");
-    for (target, call) in results.iter().filter(|(t, _)| t.axis == axis) {
-        let (gt, copies) = match call {
-            Some(c) => (
-                format!("`{}`", c.genotype.replace('|', "\\|")),
-                c.risk_copies
-                    .map_or_else(|| "inconclusive".to_string(), |n| n.to_string()),
-            ),
-            None => ("no answer".to_string(), "inconclusive".to_string()),
-        };
-        println!(
-            "| `{}` | *{}* | {} | {} | {} |",
-            target.rsid, target.gene, gt, copies, target.short
-        );
-    }
+// One table per axis. Alleles get a column each, so a phased call prints
+// exactly as the file holds it without a pipe fighting the table.
+fn print_evidence(results: &[(&'static SnpTarget, Option<GenotypeCall>)], build: Option<&str>) {
+    println!("## Evidence");
     println!();
+    println!(
+        "Resolved through the `rsids/` lens{}, without the app reading the call \
+         file. A missing genotype means there is no answer; it does not imply \
+         homozygous reference.",
+        match build {
+            Some(build) => format!(", with positions on {build}"),
+            None => String::new(),
+        }
+    );
+    println!();
+    for (heading, axis) in [
+        ("Flush", Axis::Flush),
+        ("Like", Axis::Reward),
+        ("Junk", Axis::Histamine),
+    ] {
+        println!("### {heading}");
+        println!();
+        println!("| Variant | Gene | Position | Reference | Allele 1 | Allele 2 | Risk copies |");
+        println!("| :-- | :-- | :-- | :-- | :-- | :-- | --: |");
+        for (target, call) in results.iter().filter(|(t, _)| t.axis == axis) {
+            let (position, reference, first, second, copies) = match call {
+                Some(c) => (
+                    if c.chromosome.is_empty() || c.position.is_empty() {
+                        "no answer".to_string()
+                    } else {
+                        format!("{}:{}", c.chromosome, c.position)
+                    },
+                    if c.reference.is_empty() {
+                        "no answer".to_string()
+                    } else {
+                        c.reference.clone()
+                    },
+                    c.alleles.first().cloned().unwrap_or_default(),
+                    c.alleles.get(1).cloned().unwrap_or_default(),
+                    c.risk_copies
+                        .map_or_else(|| "inconclusive".to_string(), |n| n.to_string()),
+                ),
+                None => (
+                    "no answer".to_string(),
+                    "no answer".to_string(),
+                    "no answer".to_string(),
+                    String::new(),
+                    "inconclusive".to_string(),
+                ),
+            };
+            println!(
+                "| {} | *{}* | {} | {} | {} | {} | {} |",
+                target.rsid, target.gene, position, reference, first, second, copies
+            );
+        }
+        println!();
+    }
 }
 
 fn print_science_section() {
-    println!("### How this works");
+    println!("## Method");
     println!();
     println!(
         "Alcohol metabolism is a two-step pipeline. **ADH** (alcohol dehydrogenase) \
          turns ethanol into **acetaldehyde** - a toxic intermediate responsible for \
          flushing, headaches, nausea, and rapid heart rate. **ALDH2** then converts \
          acetaldehyde into harmless acetate. The flush axis measures how much \
-         acetaldehyde you accumulate (faster ADH1B in, slower ALDH2 out → more flush)."
+         acetaldehyde you accumulate (faster ADH1B in, slower ALDH2 out → more flush). \
+         ALDH2 is dominant-negative, one broken subunit poisons the whole tetramer, so \
+         the Flush tier is set by the ALDH2 count first and the ADH1B count after."
     );
     println!();
     println!(
         "Whether you *like* drinking is a different question. The **mu-opioid \
          receptor** (OPRM1) and **dopamine system** (DRD2/ANKK1) determine how \
          rewarding alcohol feels. **GABA-A** receptors govern its anxiolytic \
-         effect - the chill. The like axis stacks these three reward pathways."
+         effect - the chill. The like axis adds up the risk alleles across these \
+         three reward pathways."
     );
     println!();
     println!(
@@ -649,103 +697,20 @@ fn print_science_section() {
          and your body clears it via two enzymes: **DAO** (gut/blood, encoded \
          by AOC1) and **HNMT** (CNS/airways). Variants in either pathway slow \
          clearance, and histamine then drives the wine headache, the stuffy \
-         nose, the racing heart, the post-drink itch. The junk axis stacks DAO \
-         and HNMT loss-of-function variants. *Sulfites and tyramine don't have \
+         nose, the racing heart, the post-drink itch. The junk axis adds up DAO \
+         and HNMT loss-of-function alleles. *Sulfites and tyramine don't have \
          clean common SNPs* - those phenotypes exist but the panel-level \
          genetics isn't there yet."
     );
     println!();
-}
-
-fn print_fine_print() {
-    println!("### Fine print");
-    println!();
     println!(
-        "Eleven SNPs is a long way from the whole story. Body weight, gut \
-         microbiome, sleep, food in your stomach, history of drinking, sulfite \
-         and tyramine and tannin loads, hormones, and dozens of other genes \
-         all shape your response. This is a toy demo, not medical advice. \
-         Don't drink your way around your genotype."
+        "Each variant counts the allele the studies tied to the effect, which is not \
+         always the ALT allele. What each one does:"
     );
-    println!();
-}
-
-fn print_further_reading() {
-    println!("### Further reading");
-    println!();
-    println!(
-        "- Brooks PJ *et al.* (2009). \"The Alcohol Flushing Response: An \
-         Unrecognized Risk Factor for Esophageal Cancer.\" *PLoS Med* 6(3):e50."
-    );
-    println!(
-        "- Edenberg HJ (2007). \"The Genetics of Alcohol Metabolism.\" \
-         *Alcohol Research & Health* 30(1):5-13."
-    );
-    println!(
-        "- Ray LA, Barr CS, Blendy JA, Oslin D, Goldman D, Anton RF (2012). \
-         \"The role of the OPRM1 gene in alcohol use disorder and treatment \
-         response.\" *Addiction Biology* 17(3):525-540."
-    );
-    println!(
-        "- Edenberg HJ *et al.* (2004). \"Variations in GABRA2, encoding the α2 \
-         subunit of the GABA-A receptor, are associated with alcohol \
-         dependence and with brain oscillations.\" *Am J Hum Genet* 74(4):705-714."
-    );
-    println!(
-        "- Maintz L, Yu CF, Rodríguez E, *et al.* (2011). \"Association of \
-         single nucleotide polymorphisms in the diamine oxidase gene with \
-         diamine oxidase serum activities.\" *Allergy* 66(7):893-902."
-    );
-    println!(
-        "- Hrubisko M *et al.* (2021). \"Histamine intolerance - the more we know, \
-         the less we know. A review.\" *Nutrients* 13(7):2228."
-    );
-    println!();
-}
-
-fn print_technical_details(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
-    println!("### Technical details");
-    println!();
-    println!(
-        "Resolved through the `rsids/` lens on the Ark's reference assembly, \
-         without the app reading the variant file. A missing genotype means \
-         there is no answer; it does not imply homozygous reference."
-    );
-    println!();
-    println!("| rsID | Gene | Locus | Reference | Status |");
-    println!("| :--- | :--- | :--- | :--- | :--- |");
-    for (target, call) in results {
-        let (locus, reference, status) = match call {
-            Some(c) => (
-                if c.chromosome.is_empty() || c.position.is_empty() {
-                    "no answer".to_string()
-                } else {
-                    format!("`{}:{}`", c.chromosome, c.position)
-                },
-                if c.reference.is_empty() {
-                    "no answer".to_string()
-                } else {
-                    format!("`{}`", c.reference)
-                },
-                if c.risk_copies.is_some() {
-                    "✓ found"
-                } else {
-                    "⚠️ missing allele"
-                },
-            ),
-            None => ("-".to_string(), "-".to_string(), "⚠️ no genotype answer"),
-        };
-        println!(
-            "| `{}` | *{}* | {} | {} | {} |",
-            target.rsid, target.gene, locus, reference, status
-        );
-    }
-    println!();
-    println!("#### What each SNP does");
     println!();
     for target in TARGETS {
         println!(
-            "- **`{}`** ({}, *{}*) - {}",
+            "- **{}** ({}, *{}*), {}. {}",
             target.rsid,
             match target.axis {
                 Axis::Flush => "Flush",
@@ -753,9 +718,59 @@ fn print_technical_details(results: &[(&'static SnpTarget, Option<GenotypeCall>)
                 Axis::Histamine => "Junk",
             },
             target.gene,
+            target.short,
             target.blurb
         );
     }
+    println!();
+}
+
+fn print_fine_print() {
+    println!("## Limitations");
+    println!();
+    println!(
+        "Eleven SNPs is a long way from the whole story. Body weight, gut \
+         microbiome, sleep, food in your stomach, history of drinking, sulfite \
+         and tyramine and tannin loads, hormones, and dozens of other genes \
+         all shape your response. The GABRA2 direction is debated in the \
+         literature, and the DAO effects are modest with mixed replication. \
+         Don't drink your way around your genotype."
+    );
+    println!();
+}
+
+fn print_further_reading() {
+    println!("## Sources");
+    println!();
+    println!(
+        "1. Brooks PJ, et al. The alcohol flushing response: an unrecognized risk factor \
+         for esophageal cancer from alcohol consumption. PLoS Medicine. 2009;6(3):e1000050. \
+         https://doi.org/10.1371/journal.pmed.1000050"
+    );
+    println!(
+        "2. Edenberg HJ. The genetics of alcohol metabolism: role of alcohol \
+         dehydrogenase and aldehyde dehydrogenase variants. Alcohol Research & Health. \
+         2007;30(1):5-13. https://pubmed.ncbi.nlm.nih.gov/17718394/"
+    );
+    println!(
+        "3. Ray LA, et al. The role of the OPRM1 gene in alcohol use disorder and \
+         treatment response. Addiction Biology. 2012;17(3):525-540."
+    );
+    println!(
+        "4. Edenberg HJ, et al. Variations in GABRA2, encoding the α2 subunit of the \
+         GABA-A receptor, are associated with alcohol dependence and with brain \
+         oscillations. American Journal of Human Genetics. 2004;74(4):705-714. \
+         https://doi.org/10.1086/383283"
+    );
+    println!(
+        "5. Maintz L, et al. Association of single nucleotide polymorphisms in the \
+         diamine oxidase gene with diamine oxidase serum activities. Allergy. \
+         2011;66(7):893-902."
+    );
+    println!(
+        "6. Hrubisko M, et al. Histamine intolerance, the more we know the less we know. \
+         A review. Nutrients. 2021;13(7):2228. https://doi.org/10.3390/nu13072228"
+    );
     println!();
 }
 
@@ -764,7 +779,7 @@ fn print_technical_details(results: &[(&'static SnpTarget, Option<GenotypeCall>)
 const METADATA: &str = "\
 [package]
 name = \"drunk-o-type\"
-version = \"0.2.0\"
+version = \"0.3.0\"
 datasets = [
     \"v1/genome/rsids/rs671\",
     \"v1/genome/rsids/rs1229984\",
@@ -777,6 +792,7 @@ datasets = [
     \"v1/genome/rsids/rs1049793\",
     \"v1/genome/rsids/rs2052129\",
     \"v1/genome/rsids/rs11558538\",
+    \"v1/genome/reference\",
 ]
 ";
 
@@ -812,7 +828,6 @@ fn resolve_target(base: &Path, target: &SnpTarget) -> Result<Option<GenotypeCall
 
     // Scalar leaves hold exactly their value, without a trailing newline.
     Ok(Some(GenotypeCall {
-        genotype,
         alleles,
         risk_copies,
         chromosome: read_leaf(base, "chromosome")?.unwrap_or_default(),
@@ -829,6 +844,8 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     let dir = std::env::args().nth(1).unwrap();
     let rsids = Path::new(&dir).join("v1/genome/rsids");
+    // The reference grant is read for one file, the assembly the positions are on.
+    let build = read_leaf(&Path::new(&dir).join("v1/genome/reference"), "build")?;
 
     let results: Vec<(&'static SnpTarget, Option<GenotypeCall>)> = TARGETS
         .iter()
@@ -837,10 +854,10 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     print_app_header();
     print_sample_report(&results);
+    print_evidence(&results, build.as_deref());
     print_science_section();
     print_fine_print();
     print_further_reading();
-    print_technical_details(&results);
 
     Ok(())
 }

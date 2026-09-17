@@ -1,4 +1,5 @@
-//! VCF Roll Call: a full-VCF Markdown sanity report.
+//! VCF Roll Call: a full-VCF sanity report, in the shape docs/06-reports.md
+//! describes.
 //!
 //! Tutorial note for app authors: this is deliberately a broad-permission demo.
 //! It asks Ark for `v1/genome/snp-indel` and streams `vcf` with `noodles-vcf`.
@@ -28,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         print!(
             "[package]\n\
              name = \"vcf-roll-call\"\n\
-             version = \"0.1.0\"\n\
+             version = \"0.2.0\"\n\
              datasets = [\"v1/genome/snp-indel\"]\n"
         );
         return Ok(());
@@ -177,41 +178,32 @@ enum GenotypeClass {
 
 impl Report {
     fn print(&self) {
-        println!("## Your Result");
-        println!();
-        println!("| Signal | Value |");
-        println!("| :--- | ---: |");
-        println!("| VCF version | `{}` |", self.file_format);
-        println!("| Samples | {} |", self.samples);
-        println!("| Records scanned | {} |", format_int(self.records));
+        // The finding says what the file is and how it reads, in words, and
+        // the check table beneath it grades the same facts.
         let (primary_count, other_count) = contig_counts(&self.chromosomes);
-        println!("| Primary chromosomes seen | {primary_count} |");
-        println!("| Other contigs seen | {other_count} |");
-        println!(
-            "| Variant records | {} |",
-            format_int(self.variant_records())
-        );
-        println!(
-            "| All-reference records | {} |",
-            format_int(self.genotype.hom_ref)
-        );
-        println!(
-            "| Reference-block span | {} bp |",
-            format_int(self.reference_blocks.bases)
-        );
-        println!("| Median DP | {} |", optional_metric(self.depth.median()));
-        println!("| Median GQ | {} |", optional_metric(self.quality.median()));
-        println!(
-            "| Missing GT calls | {} |",
+        print!(
+            "Your call file holds {} records for {} {} in {} format, across {primary_count} primary \
+             chromosomes and {other_count} other contigs. {} carry a non-reference \
+             genotype, {} are all-reference and {} have a missing call",
+            format_int(self.records),
+            self.samples,
+            if self.samples == 1 {
+                "sample"
+            } else {
+                "samples"
+            },
+            self.file_format,
+            format_int(self.variant_records()),
+            format_int(self.genotype.hom_ref),
             format_int(self.genotype.missing)
         );
-        println!(
-            "| Parse errors skipped | {} |",
-            format_int(self.parse_errors)
-        );
-        println!();
-
-        println!("## VCF Roll Call");
+        if self.parse_errors > 0 {
+            print!(
+                ", and {} could not be parsed and were skipped",
+                format_int(self.parse_errors)
+            );
+        }
+        println!(". {}", self.shape_sentence());
         println!();
         println!("| Check | Status | Detail |");
         println!("| :--- | :--- | :--- |");
@@ -242,12 +234,29 @@ impl Report {
         );
         println!();
 
+        println!("## Evidence");
+        println!();
         print_genotype_table(&self.genotype);
         print_variant_table(&self.variants);
         print_quality_table(self);
         print_chromosome_table(&self.chromosomes);
-        print_meaning(self);
-        print_fine_print();
+        print_method();
+        print_limitations(self);
+        print_sources();
+    }
+
+    /// One sentence on what the file's shape lets a reader conclude.
+    fn shape_sentence(&self) -> &'static str {
+        if self.reference_blocks.records > 0 {
+            "The file carries reference blocks, so it says where calls were possible, \
+             not only where they differ."
+        } else if self.genotype.hom_ref > 0 {
+            "The file carries all-reference calls at some sites, but no reference \
+             blocks, so it doesn't say how much of the genome was callable."
+        } else {
+            "The file records variants only, so a sparse stretch is low variant density, \
+             not evidence of low coverage."
+        }
     }
 
     fn variant_records(&self) -> u64 {
@@ -610,19 +619,12 @@ fn sample_integer(header: &vcf::Header, record: &vcf::Record, key: &str) -> Opti
 }
 
 fn print_header() {
-    println!("# VCF Roll Call");
-    println!();
-    println!(
-        "This report scans the loaded variant calls for signs that the file is \
-         healthy: chromosomes are present, genotype calls are readable, depth and \
-         quality fields appear when available, and reference blocks are counted \
-         when the VCF contains them."
-    );
+    println!("# Call File Health Check");
     println!();
 }
 
 fn print_genotype_table(stats: &GenotypeStats) {
-    println!("## Genotype Calls");
+    println!("### Genotype calls");
     println!();
     println!("| Class | Records |");
     println!("| :--- | ---: |");
@@ -643,7 +645,7 @@ fn print_genotype_table(stats: &GenotypeStats) {
 }
 
 fn print_variant_table(stats: &VariantStats) {
-    println!("## Variant Shape");
+    println!("### Variant shape");
     println!();
     println!("| Signal | Records |");
     println!("| :--- | ---: |");
@@ -660,7 +662,7 @@ fn print_variant_table(stats: &VariantStats) {
 }
 
 fn print_quality_table(report: &Report) {
-    println!("## Depth And Quality");
+    println!("### Depth and quality");
     println!();
     println!("| Signal | Value |");
     println!("| :--- | ---: |");
@@ -686,7 +688,7 @@ fn print_quality_table(report: &Report) {
 }
 
 fn print_chromosome_table(chromosomes: &BTreeMap<String, ChromStats>) {
-    println!("## Chromosome Scoreboard");
+    println!("### Chromosome scoreboard");
     println!();
     println!(
         "Primary chromosomes are listed separately from alternate, random, unplaced, and patch contigs."
@@ -713,7 +715,7 @@ fn print_chromosome_table(chromosomes: &BTreeMap<String, ChromStats>) {
             .map(|(_, stats)| stats.reference_block_bases)
             .sum();
         println!();
-        println!("## Other Contigs");
+        println!("### Other contigs");
         println!();
         println!("| Signal | Value |");
         println!("| :--- | ---: |");
@@ -752,48 +754,46 @@ fn print_contig_row(name: &str, stats: &ChromStats) {
     );
 }
 
-fn print_meaning(report: &Report) {
-    println!("## What It Means");
-    println!();
-    if report.reference_blocks.records > 0 {
-        println!(
-            "This VCF includes reference-block style records, so the report can \
-             make a rough callable-span estimate from those blocks. That is a \
-             stronger coverage hint than variant density alone."
-        );
-    } else if report.genotype.hom_ref > 0 {
-        println!(
-            "This VCF includes homozygous-reference calls, which proves some \
-             reference sites were emitted. It does not provide a complete callable \
-             span estimate unless those calls cover intervals."
-        );
-    } else {
-        println!(
-            "This looks like a variant-only VCF. Sparse windows in this report \
-             should be read as low variant density, not as proof of low sequencing \
-             coverage."
-        );
-    }
+fn print_method() {
+    println!("## Method");
     println!();
     println!(
-        "The most useful red flags are missing genotype calls, absent DP/GQ fields \
-         when you expected sequencing data, unexpectedly missing chromosomes, or \
-         parse errors while scanning records."
+        "The app streams the whole call file one record at a time and classifies the \
+         first sample's genotype, each record's allele shape, its filters, and its DP \
+         and GQ fields when present. A record whose END reaches past its reference \
+         allele, or whose alternate is a non-reference placeholder, counts as a \
+         reference block, and their spans add up to a rough callable span. A record \
+         that can't be parsed is counted and skipped, while a failed read stops the \
+         app. The signs it looks for are missing genotype calls, absent DP or GQ fields \
+         where sequencing data was expected, missing chromosomes and parse errors."
     );
     println!();
 }
 
-fn print_fine_print() {
-    println!("## Fine Print");
+fn print_limitations(report: &Report) {
+    println!("## Limitations");
     println!();
     println!(
-        "This is a VCF sanity check, not a formal coverage calculator. True base-by-base \
-         depth normally comes from alignment data or a gVCF with reference blocks. \
-         Genotyping arrays, imputed VCFs, and variant-only exports can all look \
-         sparse while still being valid for their intended purpose."
+        "This is a check of the file, not of how much of a genome was sequenced. \
+         Base-by-base depth comes from alignment data or a gVCF with reference blocks, \
+         and this file {}. Genotyping arrays, imputed files and variant-only exports \
+         all look sparse while being valid for their purpose.",
+        if report.reference_blocks.records > 0 {
+            "carries such blocks, so its callable span is an estimate from them"
+        } else {
+            "carries none, so nothing here measures coverage"
+        }
     );
     println!();
-    println!("This report is for demo and data-quality triage only.");
+}
+
+fn print_sources() {
+    println!("## Sources");
+    println!();
+    println!(
+        "1. The Variant Call Format specification, VCFv4.5. \
+         https://samtools.github.io/hts-specs/VCFv4.5.pdf"
+    );
     println!();
 }
 

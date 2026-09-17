@@ -1,11 +1,12 @@
-//! Cilantro Soapiness: the cilantro taste test as a polished Ark report.
+//! Cilantro Soapiness: the cilantro taste test as a full Ark report.
 //!
 //! This is the full version of the cilantro example. The mini version
 //! (../03-cilantro-mini-rust) shows the bare lens read in a handful of lines;
-//! this one wraps the same single genotype in a complete Markdown report with a
-//! verdict, a result table, caveats, references, and a technical-details section.
-//! The data access is identical. Everything extra here is presentation, which is
-//! what separates a demo from an app someone would actually want to run.
+//! this one wraps the same single genotype in a complete report in the shape
+//! docs/06-reports.md describes: a finding, the evidence behind it, the method,
+//! its limitations and sources. The data access is identical.
+//! Everything extra here is presentation, which is what separates a demo from
+//! an app someone would actually want to run.
 //!
 //! Some people taste cilantro as soap. The trait tracks a SNP near the olfactory
 //! receptor gene OR6A2: the more copies of the C allele at rs72921001 you carry,
@@ -18,58 +19,78 @@ use std::{fs, io};
 const RSID: &str = "rs72921001";
 /// Allele associated with tasting cilantro as soapy; the app counts copies of it.
 const RISK_BASE: &str = "C";
-/// dbSNP page for the SNP, linked from the report's further-reading section.
-const NIH_SNP_URL: &str = "https://www.ncbi.nlm.nih.gov/snp/rs72921001";
 
 fn main() {
-    // With no data directory, print the manifest the host reads to grant access.
+    // With no data directory, print the manifest the Ark reads to grant access.
+    // The reference grant is there for one file, the assembly build the
+    // coordinate is reported on.
     let Some(dir) = std::env::args().nth(1) else {
         print!(
             "[package]\n\
              name = \"cilantro-soapiness\"\n\
-             version = \"0.3.0\"\n\
-             datasets = [\"v1/genome/rsids/rs72921001\"]\n"
+             version = \"0.4.0\"\n\
+             datasets = [\"v1/genome/rsids/rs72921001\", \"v1/genome/reference\"]\n"
         );
         return;
     };
 
     // Everything comes from one lens directory: the user's genotype and the
     // variant's coordinate. The app reads plain files, never a genomic format.
-    let base = Path::new(&dir).join("v1/genome/rsids").join(RSID);
+    let genome = Path::new(&dir).join("v1/genome");
+    let base = genome.join("rsids").join(RSID);
+    let build = leaf(&genome.join("reference"), "build");
 
-    print_header();
-    match read_call(&base) {
+    println!("# 🌿 Cilantro Taste Test");
+    println!();
+
+    let reference = leaf(&base, "reference");
+    let call = read_call(&base);
+    match &call {
         Call::Called(genotype) => {
-            let copies = genotype
-                .split(['/', '|'])
-                .filter(|a| *a == RISK_BASE)
-                .count();
-            let ploidy = genotype
+            let alleles: Vec<&str> = genotype
                 .strip_prefix(['/', '|'])
-                .unwrap_or(&genotype)
+                .unwrap_or(genotype)
                 .split(['/', '|'])
-                .count();
-            if ploidy == 2 {
-                print_result(&genotype, copies);
+                .collect();
+            let copies = alleles.iter().filter(|a| **a == RISK_BASE).count();
+            if alleles.len() == 2 {
+                print!("{}", finding(copies));
+                if reference.as_deref() == Some(RISK_BASE) && copies == 2 {
+                    print!(
+                        " C is also the reference base here, so a call file that lists only \
+                         variants would have stayed quiet about it. Yours didn't."
+                    );
+                }
+                println!();
             } else {
-                println!("### Your result: copy count\n");
                 println!(
-                    "Genotype `{genotype}` has {copies} copies of `{RISK_BASE}` across {ploidy} alleles.\n"
+                    "**No verdict.** Genotype `{genotype}` holds {copies} copies of C across \
+                     {} alleles, and the taste comparison is built for two-allele calls.",
+                    alleles.len()
                 );
-                println!("The taste comparison uses two-copy SNP calls.\n");
             }
-            print_footer();
-            print_technical_details(&base);
         }
         Call::Uncertain(genotype) => {
-            print_uncertain(&genotype);
-            print_footer();
+            println!(
+                "**Inconclusive** ⚠️. Your genotype at {RSID} is `{genotype}`, with at least \
+                 one allele missing, so the copies of C can't be counted."
+            );
         }
         Call::Unanswered => {
-            print_unanswered();
-            print_footer();
+            println!(
+                "**No answer.** No genotype is available at {RSID}, so this app has no \
+                 result. An absent genotype is not a reference call. A call file that \
+                 records only variants has no record at a reference site, and none at a \
+                 site it didn't cover, and the two can't be told apart here."
+            );
         }
     }
+    println!();
+
+    print_evidence(&base, &call, reference.as_deref(), build.as_deref());
+    print_method();
+    print_limitations();
+    print_sources();
 }
 
 /// What the lens can tell us about the user at this site.
@@ -98,141 +119,99 @@ fn leaf(base: &Path, name: &str) -> Option<String> {
         Ok(value) => Some(value),
         Err(err) if err.kind() == io::ErrorKind::NotFound => None,
         Err(err) => {
-            eprintln!("Could not read {RSID} {name}: {err}");
+            eprintln!("Could not read {}: {err}", base.join(name).display());
             std::process::exit(1);
         }
     }
 }
 
-/// How a given risk-allele copy count is presented in the report.
-struct Verdict {
-    emoji: &'static str,
-    heading: &'static str,
-    detail: &'static str,
-}
-
-/// Maps the risk-allele copy count (0, 1, or 2) to its report presentation.
-fn interpret(copies: usize) -> Verdict {
+/// The finding for a two-allele call, by the number of C copies it holds. The
+/// verdict leads, and the count it rests on follows in the same breath.
+fn finding(copies: usize) -> &'static str {
     match copies {
-        0 => Verdict {
-            emoji: "🌿",
-            heading: "Cilantro lover",
-            detail: "You carry **zero** copies of the risk allele at this locus. \
-                     Most people with this genotype perceive cilantro as herby or citrusy.",
-        },
-        1 => Verdict {
-            emoji: "🫧",
-            heading: "On the fence",
-            detail: "You carry **one** copy of the risk allele (heterozygous). \
-                     The effect is partial. You may notice a mild soapy note \
-                     or none at all, depending on other genetic and environmental factors.",
-        },
-        _ => Verdict {
-            emoji: "🧼",
-            heading: "Soap detector",
-            detail: "You carry **two** copies of the risk allele (homozygous). \
-                     This is the genotype most strongly associated with perceiving \
-                     cilantro as soapy or unpleasant in published GWAS data.",
-        },
+        0 => {
+            "**Cilantro lover** 🌿. You carry no copy of C at rs72921001, the genotype with \
+             no soapy association. Most people built this way taste cilantro as herby or \
+             citrusy."
+        }
+        1 => {
+            "**On the fence** 🫧. You carry one copy of C at rs72921001, so the soapy \
+             association is partial. You may notice a mild soapy note, or none at all, \
+             depending on the rest of your genome and what you grew up eating."
+        }
+        _ => {
+            "**Soap detector** 🧼. You carry two copies of C at rs72921001, the genotype most \
+             strongly tied to tasting cilantro as dish soap. Blame *OR6A2*, the olfactory \
+             receptor next door."
+        }
     }
 }
 
-/// Intro: what the test measures and the gene behind it.
-fn print_header() {
-    println!("## 🌿 Cilantro Taste Test");
+/// The values the finding rests on: the variant, its coordinate on the assembly
+/// this Ark holds, and the genotype exactly as the call file records it. The
+/// lens exposes chromosome and position separately; the app composes the
+/// `chr:pos` form itself, and labels it only when the build could be read.
+fn print_evidence(base: &Path, call: &Call, reference: Option<&str>, build: Option<&str>) {
+    println!("## Evidence");
     println!();
-    println!(
-        "Some people love cilantro. Others think it tastes like dish soap. \
-         Blame *OR6A2*, an olfactory receptor gene on chromosome 11. \
-         A 2012 GWAS (Eriksson *et al.*) pinpointed `{RSID}` as the SNP \
-         behind it. More copies of the **{RISK_BASE}** allele, more soap."
-    );
+    println!("| Variant | Nearest gene | Position |");
+    println!("| :-- | :-- | :-- |");
+    let position = match (leaf(base, "chromosome"), leaf(base, "position"), build) {
+        (Some(chrom), Some(pos), Some(build)) => format!("{chrom}:{pos}, {build}"),
+        (Some(chrom), Some(pos), None) => format!("{chrom}:{pos}"),
+        _ => "unknown".to_string(),
+    };
+    println!("| {RSID} | *OR6A2* | {position} |");
     println!();
-}
-
-/// The result for a confident genotype: the copy count and its interpretation.
-fn print_result(genotype: &str, copies: usize) {
-    let verdict = interpret(copies);
-    println!("### Your result: {} {}", verdict.heading, verdict.emoji);
-    println!();
-    println!("| Genotype | Risk-allele copies |");
-    println!("| :---: | :---: |");
-    println!(
-        "| `{}` | **{copies}**×{RISK_BASE} |",
-        genotype.replace('|', "\\|")
-    );
-    println!();
-    println!("{}", verdict.detail);
-    println!();
-}
-
-/// The result when an allele is missing, so no copy count can be reported.
-fn print_uncertain(genotype: &str) {
-    println!("### Your result: inconclusive ⚠️");
-    println!();
-    println!(
-        "Your genotype at `{RSID}` is `{genotype}` - at least one allele is \
-         missing, so the risk-allele count can't be determined."
-    );
-    println!();
-}
-
-/// The result when the lens has no genotype at this site.
-fn print_unanswered() {
-    println!("### No genotype answer");
-    println!();
-    println!(
-        "No genotype answer is available for `{RSID}`. Reference sites in a \
-         variants-only file can be absent, as can missing calls or ambiguous \
-         records or placements. Absence does not imply two reference alleles."
-    );
-    println!();
-}
-
-/// Caveats and references, shown after every result.
-fn print_footer() {
-    println!("### Fine print");
-    println!();
-    println!(
-        "One SNP doesn't tell the whole story. Taste is polygenic and shaped by \
-         diet, culture, and exposure. Two copies doesn't mean you hate cilantro, \
-         zero copies doesn't mean you love it."
-    );
-    println!();
-    println!("### Further reading");
-    println!();
-    println!(
-        "- Eriksson N *et al.* (2012). \"A genetic variant near olfactory receptor genes influences cilantro preference.\" *Flavour* 1:22."
-    );
-    println!(
-        "- NCBI dbSNP [*{RSID}*]({NIH_SNP_URL}): population frequencies, genomic context, and submission history."
-    );
-    println!(
-        "- NCBI Gene [*OR6A2*](https://www.ncbi.nlm.nih.gov/gene/8590): olfactory receptor family 6 subfamily A member 2."
-    );
-    println!();
-}
-
-/// The resolved locus and reference allele, read from the lens's scalar leaves.
-/// The lens exposes chromosome and position separately; the app composes the
-/// `chr:pos` form itself.
-fn print_technical_details(base: &Path) {
-    let (chrom, pos, reference) = (
-        leaf(base, "chromosome"),
-        leaf(base, "position"),
-        leaf(base, "reference"),
-    );
-
-    println!("### Technical details");
-    println!();
-    println!("| Field | Value |");
-    println!("| :--- | :--- |");
-    println!("| **rsID** | `{RSID}` |");
-    if let (Some(chrom), Some(pos)) = (chrom, pos) {
-        println!("| **Locus** | `{chrom}:{pos}` |");
-    }
-    if let Some(reference) = reference {
-        println!("| **Reference allele** | `{reference}` |");
+    let recorded = match call {
+        Call::Called(genotype) | Call::Uncertain(genotype) => {
+            format!("Your call file says `{genotype}` here")
+        }
+        Call::Unanswered => "Your call file has no record here".to_string(),
+    };
+    match reference {
+        Some(reference) => println!("{recorded}, and the reference base is {reference}."),
+        None => println!("{recorded}."),
     }
     println!();
+}
+
+/// How the finding follows from the evidence, and where the association comes from.
+fn print_method() {
+    println!("## Method");
+    println!();
+    println!(
+        "Some people love cilantro. Others think it tastes like dish soap. Eriksson et al. \
+         (2012) went looking for why, in a genome-wide study of self-reported preference \
+         among European-ancestry participants, and {RSID} is what they found. The app \
+         counts your copies of C. Two is the strongest association, one is somewhere in \
+         between, and zero is none. More copies, more soap."
+    );
+    println!();
+}
+
+/// What the app didn't read and what the finding doesn't establish.
+fn print_limitations() {
+    println!("## Limitations");
+    println!();
+    println!(
+        "One variant, one modest effect. The study measured what people said they \
+         preferred, not what they tasted, and taste is polygenic and shaped by diet, \
+         culture and exposure besides. Two copies doesn't mean you hate cilantro, and \
+         zero doesn't mean you love it. The study was mostly people of European ancestry, \
+         so elsewhere the effect is less well known, and this app doesn't know how common \
+         your genotype is."
+    );
+    println!();
+}
+
+/// The studies Method names, in that order, with a stable address for each.
+fn print_sources() {
+    println!("## Sources");
+    println!();
+    println!(
+        "1. Eriksson N, et al. A genetic variant near olfactory receptor genes influences \
+         cilantro preference. Flavour. 2012;1:22. https://doi.org/10.1186/2044-7248-1-22"
+    );
+    println!("2. NCBI dbSNP, {RSID}. https://www.ncbi.nlm.nih.gov/snp/{RSID}");
 }

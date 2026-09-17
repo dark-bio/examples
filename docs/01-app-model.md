@@ -29,8 +29,8 @@ An app picks its pass by counting arguments:
 | C | `argc < 2` | otherwise |
 | Python | `len(sys.argv) < 2` | otherwise |
 
-Write the report as Markdown, since that is how it is shown. Headings, tables
-and emphasis all help.
+The report is Markdown, since that is how it is shown, and
+[06-reports.md](06-reports.md) covers its shape.
 
 ## Before the owner is asked
 

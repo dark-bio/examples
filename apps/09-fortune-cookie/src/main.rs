@@ -28,7 +28,7 @@ fn main() {
         print!(
             "[package]\n\
              name = \"fortune-cookie\"\n\
-             version = \"0.1.0\"\n\
+             version = \"0.2.0\"\n\
              datasets = [\
              \"v1/genome/rsids/rs72921001\", \
              \"v1/genome/rsids/rs671\", \
@@ -61,11 +61,18 @@ fn main() {
     }
 
     let pick = (acc % FORTUNES.len() as u64) as usize;
-    println!("## Your genomic fortune\n");
+    println!("# Your Genomic Fortune\n");
     println!("> {}\n", FORTUNES[pick]);
-    println!("Genotypes without an answer: {unanswered}.\n");
+    println!("## Method\n");
     println!(
-        "The sandbox has no randomness, so this is derived entirely from your \
-         genotypes. Run it again on the same data and the fortune is the same."
+        "The sandbox has no randomness, so the fortune is derived entirely from your \
+         genotypes at three variants, folded into one number that picks a line. Run it \
+         again on the same data and the fortune is the same. A genotype without an answer \
+         adds nothing to the number, and this run had {unanswered} of those.\n"
+    );
+    println!("## Limitations\n");
+    println!(
+        "A fortune is a fortune. Nothing here reads your genes for meaning, only for \
+         bytes."
     );
 }
