@@ -22,9 +22,9 @@ All of these ship for macOS, Linux and Windows. The `make` targets and
   you unpacked it. C alone also accepts any clang with a WASI sysroot, such as
   Homebrew's `llvm`, `lld`, `wasi-libc` and `wasi-runtimes`, which the build
   falls back to.
-- Python also needs `make` and any
-  [CPython](https://www.python.org/downloads/) 3.14 release. Set `PYTHON` when
-  the executable is not `python3.14`.
+- Python also needs `make` and a
+  [CPython](https://www.python.org/downloads/) of 3.13 or newer. Set `PYTHON`
+  when the one to build with is not `python3`.
 
 Package managers cover everything except wasi-sdk, which is a tarball to unpack.
 With Homebrew that is:
@@ -39,16 +39,14 @@ standalone modules can't open the files the Ark mounts.
 
 These examples are built and measured with wasmtime 48.0.2, Binaryen 132, Rust
 1.98.0, TinyGo 0.42.0, wasi-sdk 33.0 and CPython 3.14.7. Newer versions usually
-work. CPython is the exception, since the build compiles each app with the
-interpreter that runs `tools/python_build.py` and embeds the result in the one
-it builds. Any 3.14 release does, because they share a bytecode format, and the
-build checks that rather than the version.
+work.
 
-That build downloads the pinned CPython source into `build/python`, builds one
-shared runtime and freezes each app's static imports, linking the native
-extensions they need. The first one takes a few minutes, and every later Python
-app reuses the runtime. Dynamic imports go in `--include` when calling
-`tools/python_build.py` directly.
+The Python build takes its version from the interpreter you run it with, because
+CPython can only be cross compiled by its own release series. It downloads that
+exact source into `build/python`, builds one shared runtime from it and freezes
+each app's imports, linking the native extensions they need. The first build
+takes a few minutes, and every later Python app reuses the runtime. Dynamic
+imports go in `--include` when calling `tools/python_build.py` directly.
 
 ### Building and running
 

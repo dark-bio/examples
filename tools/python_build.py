@@ -2,12 +2,12 @@
 import argparse
 import fcntl
 import hashlib
-import importlib.util
 import json
 import marshal
 import modulefinder
 import os
 from pathlib import Path
+import platform
 import re
 import shutil
 import subprocess
@@ -15,8 +15,10 @@ import sys
 import tarfile
 import urllib.request
 
-VERSION = "3.14.7"
-SOURCE_SHA256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
+# The interpreter running this script also builds the one the app embeds, which
+# CPython requires of a cross build, so the app is built for whatever is here.
+VERSION = platform.python_version()
+SERIES = f"{sys.version_info.major}.{sys.version_info.minor}"
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = Path(__file__).resolve().parent
 
@@ -30,16 +32,6 @@ def native_names(path):
     return set(re.findall(r"^([a-zA-Z_]\w*)\s+[^\n]*\.c\b", text, re.M))
 
 
-def compatible(source):
-    # Frozen modules are compiled here and imported there, so both interpreters
-    # have to agree on the bytecode format. Every 3.x release shares one.
-    header = (source / "Include/internal/pycore_magic_number.h").read_text()
-    magic = re.search(r"^#define PYC_MAGIC_NUMBER (\d+)", header, re.M)
-    if not magic:
-        raise SystemExit("Could not read the bytecode magic number from the CPython source")
-    return int(magic[1]) == int.from_bytes(importlib.util.MAGIC_NUMBER[:2], "little")
-
-
 def runtime(work, sdk, opt, lto, jobs):
     source = work / f"Python-{VERSION}"
     archive = work / f"Python-{VERSION}.tar.xz"
@@ -47,14 +39,14 @@ def runtime(work, sdk, opt, lto, jobs):
         url = f"https://www.python.org/ftp/python/{VERSION}/{archive.name}"
         with urllib.request.urlopen(url) as response, archive.open("wb") as output:
             shutil.copyfileobj(response, output)
-    if hashlib.sha256(archive.read_bytes()).hexdigest() != SOURCE_SHA256:
-        raise SystemExit("CPython source checksum mismatch; remove the downloaded archive and retry")
     if not source.exists():
         with tarfile.open(archive) as bundle:
             bundle.extractall(work, filter="data")
-    if not compatible(source):
-        raise SystemExit(f"CPython {'.'.join(map(str, sys.version_info[:3]))} cannot freeze "
-                         f"bytecode for the {VERSION} it builds; use a {VERSION.rsplit('.', 1)[0]} release")
+    site = next((source / name for name in ("Tools/wasm/wasi/config.site-wasm32-wasi",
+                                            "Tools/wasm/config.site-wasm32-wasi")
+                 if (source / name).exists()), None)
+    if site is None:
+        raise SystemExit(f"CPython {VERSION} carries no WASI build configuration")
 
     flags = [f"-O{opt}", "-g0", "-ffunction-sections", "-fdata-sections",
              f"-ffile-prefix-map={ROOT}=.", f"-ffile-prefix-map={sdk}=wasi-sdk"]
@@ -64,7 +56,7 @@ def runtime(work, sdk, opt, lto, jobs):
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PATH=f"{sdk / 'bin'}:{os.environ['PATH']}",
                CC=str(sdk / "bin/clang"), CPP=f"{sdk / 'bin/clang'} -E", AR=str(sdk / "bin/llvm-ar"),
                RANLIB=str(sdk / "bin/llvm-ranlib"), CFLAGS=" ".join(flags),
-               CONFIG_SITE=str(source / "Tools/wasm/wasi/config.site-wasm32-wasi"),
+               CONFIG_SITE=str(site),
                PKG_CONFIG_LIBDIR=str(sdk / "share/wasi-sysroot/lib/pkgconfig"))
     if not (dest / "Makefile").exists():
         build = subprocess.check_output([str(source / "config.guess")], text=True).strip()
@@ -74,8 +66,8 @@ def runtime(work, sdk, opt, lto, jobs):
         if lto != "none":
             config.append(f"--with-lto={lto}")
         run(config, dest, env)
-    if not (dest / "libpython3.14.a").exists():
-        run(["make", f"-j{jobs}", "libpython3.14.a"], dest, env)
+    if not (dest / f"libpython{SERIES}.a").exists():
+        run(["make", f"-j{jobs}", f"libpython{SERIES}.a"], dest, env)
     return source, dest, flags, env
 
 
@@ -146,12 +138,11 @@ def main():
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     parser.add_argument("--include", action="append", default=[], help="Include a dynamic import")
     args = parser.parse_args()
-    series = VERSION.rsplit(".", 1)[0]
-    if ".".join(map(str, sys.version_info[:2])) != series:
-        raise SystemExit(f"Python builds require CPython {series}")
+    if sys.version_info < (3, 13) or sys.version_info.releaselevel != "final":
+        raise SystemExit(f"Python builds need a released CPython 3.13 or newer, not {VERSION}")
     sdk = args.sdk.resolve()
-    if not (sdk / "VERSION").exists() or not (sdk / "VERSION").read_text().startswith("33.0"):
-        raise SystemExit("Python builds require wasi-sdk 33.0 in WASI_SDK; "
+    if not (sdk / "share/wasi-sysroot").is_dir():
+        raise SystemExit("Python builds need a wasi-sdk install in WASI_SDK; "
                          "see docs/05-running.md")
     work = args.output.resolve().parent / "python"
     work.mkdir(parents=True, exist_ok=True)
@@ -167,9 +158,10 @@ def main():
     (dest / "dependencies.json").write_text(json.dumps({"frozen_modules": sorted(modules),
          "native_extensions": sorted(selected), "explicit_includes": args.include}, indent=2) + "\n")
     archives = [*sorted((lib / "Modules/_hacl").glob("*.a")),
-                lib / "Modules/_decimal/libmpdec/libmpdec.a", lib / "Modules/expat/libexpat.a"]
+                *(path for path in (lib / "Modules/_decimal/libmpdec/libmpdec.a",
+                                    lib / "Modules/expat/libexpat.a") if path.exists())]
     command = [str(sdk / "bin/clang"), *flags, f"-I{lib}", f"-I{source / 'Include'}", f"-I{dest}",
-               str(TOOLS / "python_embed.c"), str(dest / "config.c"), str(lib / "libpython3.14.a"),
+               str(TOOLS / "python_embed.c"), str(dest / "config.c"), str(lib / f"libpython{SERIES}.a"),
                *map(str, archives), "-lm", "-ldl", "-lwasi-emulated-signal", "-lwasi-emulated-getpid",
                "-lwasi-emulated-process-clocks", "-lpthread", "-Wl,--stack-first",
                f"-Wl,-z,stack-size={args.stack}", f"-Wl,--initial-memory={args.initial_memory}",
