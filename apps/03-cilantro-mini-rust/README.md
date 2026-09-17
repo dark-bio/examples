@@ -10,9 +10,9 @@ makes the count inconclusive. An absent genotype is reported as no answer, never
 as two reference alleles. Any other read error stops the app.
 [04-reading-data.md](../../docs/04-reading-data.md) explains why.
 
-The same mini exists in [Go](../03-cilantro-mini-go) and
-[C](../03-cilantro-mini-c), and [03-cilantro-soapiness](../03-cilantro-soapiness)
-turns it into a report.
+The same mini exists in [Go](../03-cilantro-mini-go),
+[C](../03-cilantro-mini-c) and [Python](../03-cilantro-mini-python), and
+[03-cilantro-soapiness](../03-cilantro-soapiness) turns it into a report.
 
 ## Build and run
 

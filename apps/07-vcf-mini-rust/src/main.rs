@@ -32,14 +32,25 @@ fn run(root: &Path) -> Result<(), String> {
     let (mut headers, mut records) = (0u64, 0u64);
     let mut first = None;
     // Whole-genome VCFs exceed sandbox memory; keep only one line at a time.
-    for line in BufReader::new(file).lines() {
-        let line = line.map_err(|err| format!("Could not read VCF: {err}"))?;
-        if line.starts_with('#') {
+    // A large buffer matters, since each refill is a call out of the sandbox,
+    // and reusing one line keeps millions of records from each allocating.
+    let mut reader = BufReader::with_capacity(64 * 1024, file);
+    let mut line = String::new();
+    loop {
+        line.clear();
+        let read = reader
+            .read_line(&mut line)
+            .map_err(|err| format!("Could not read VCF: {err}"))?;
+        if read == 0 {
+            break;
+        }
+        let record = line.trim_end_matches('\n').trim_end_matches('\r');
+        if record.starts_with('#') {
             headers += 1;
-        } else if !line.is_empty() {
+        } else if !record.is_empty() {
             records += 1;
             if first.is_none() {
-                first = Some(line.split('\t').take(5).collect::<Vec<_>>().join(" "));
+                first = Some(record.split('\t').take(5).collect::<Vec<_>>().join(" "));
             }
         }
     }

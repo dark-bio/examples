@@ -8,22 +8,45 @@ data in this repository run both passes on a laptop. When the app works, the
 
 ### Toolchains
 
-- [`wasmtime`](https://wasmtime.dev/) runs the modules.
-- Rust needs `rustup` with the `wasm32-wasip1` target.
-- Go needs version 1.24 or newer.
-- C needs a WASI clang, either a [wasi-sdk](https://github.com/WebAssembly/wasi-sdk)
-  install at `/opt/wasi-sdk` or Homebrew's `llvm`, `lld`, `wasi-libc` and
-  `wasi-runtimes`. Set `WASI_SDK` for an install elsewhere.
+All of these ship for macOS, Linux and Windows. The `make` targets and
+`tools/run.sh` need a POSIX shell, so build from WSL on Windows.
 
-On macOS with Homebrew:
+- [`wasmtime`](https://wasmtime.dev/) runs the modules.
+- [Binaryen](https://github.com/WebAssembly/binaryen/releases) supplies
+  `wasm-opt`, which every build runs over its module.
+- Rust needs `rustup` with the `wasm32-wasip1` target.
+- Go builds with [TinyGo](https://tinygo.org/getting-started/install/), which
+  emits a much smaller module than the standard toolchain.
+- C and Python need a [wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases)
+  release. The build looks in `/opt/wasi-sdk`, and `WASI_SDK` points it wherever
+  you unpacked it. C alone also accepts any clang with a WASI sysroot, such as
+  Homebrew's `llvm`, `lld`, `wasi-libc` and `wasi-runtimes`, which the build
+  falls back to.
+- Python also needs `make` and
+  [CPython](https://www.python.org/downloads/) 3.14.7. Set `PYTHON` when the
+  executable is not `python3.14`.
+
+Package managers cover everything except wasi-sdk, which is a tarball to unpack.
+With Homebrew that is:
 
 ```sh
-brew install wasmtime go llvm lld wasi-libc wasi-runtimes
+brew install wasmtime binaryen tinygo python@3.14
 rustup target add wasm32-wasip1
 ```
 
 C apps build with a WASI toolchain rather than Emscripten, because Emscripten's
 standalone modules can't open the files the Ark mounts.
+
+These examples are built and measured with wasmtime 48.0.2, Binaryen 132, Rust
+1.98.0, TinyGo 0.42.0, wasi-sdk 33.0 and CPython 3.14.7. Newer versions usually
+work, except for CPython, which has to be 3.14.7 exactly, since the Python build
+freezes each app with the interpreter it embeds.
+
+That build downloads the pinned CPython source into `build/python`, builds one
+shared runtime and freezes each app's static imports, linking the native
+extensions they need. The first one takes a few minutes, and every later Python
+app reuses the runtime. Dynamic imports go in `--include` when calling
+`tools/python_build.py` directly.
 
 ### Building and running
 
@@ -39,6 +62,21 @@ with no arguments to collect its manifest, mounts only the declared datasets
 from the fixture root, read-only, and runs the module again with `/` as its
 first argument. An undeclared path is never mounted, which is how
 [02-permissions](../apps/02-permissions) can show a blocked read on a laptop.
+
+### Small modules
+
+An Ark uploads and starts a smaller module faster, so every build here is tuned
+for size. Rust uses `opt-level = "z"`, fat link-time optimization, a single
+codegen unit and stripped symbols, all set in each app's `Cargo.toml`. Go builds
+with TinyGo at `-opt=z`. C builds with `-Oz` and drops unused sections. Python
+builds a trimmed interpreter carrying only the extensions the app imports. Every
+module then goes through `wasm-opt`.
+
+The language decides most of it. The C, Go and Rust modules here are tens to a
+few hundred kilobytes, while a Python one runs to megabytes because it carries
+the interpreter, and it starts noticeably slower on an Ark. Reach for Python
+when the libraries or the clarity are worth that, and for the others when
+startup matters.
 
 ### Fixtures
 
@@ -66,6 +104,8 @@ missing grants there.
   `develop` were set.
 - **The generated tree.** Plain directories list everything, and no read fails
   with an I/O error or "file too large".
+- **Startup cost.** A laptop starts a module far faster than an Ark does, so a
+  heavy module feels cheaper here than it is there.
 
 ## On an Ark
 

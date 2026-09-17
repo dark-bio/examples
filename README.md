@@ -63,16 +63,16 @@ and a full app turns the same read into a report.
 
 | App | What it shows | Languages |
 | :-- | :-- | :-- |
-| `01-hello` | the manifest pass and the run pass | Rust, Go, C |
+| `01-hello` | the manifest pass and the run pass | Rust, Go, C, Python |
 | `02-permissions` | requesting data, least privilege and the `develop` flag | Rust |
-| `03-cilantro-mini` | one variant through `rsids/` | Rust, Go, C |
+| `03-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
 | `03-cilantro-soapiness` | the same variant as a report | Rust |
 | `04-drunk-o-type` | a panel of variants | Rust |
-| `05-genes-mini` | one gene through `genes/` | Rust |
+| `05-genes-mini` | one gene through `genes/` | Rust, Go, C, Python |
 | `05-bitter-meter` | the gene and its changes as a report | Rust |
-| `06-regions-mini` | an interval through `regions/` | Rust |
+| `06-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
 | `06-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
-| `07-vcf-mini` | streaming the raw call file | Rust |
+| `07-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
 | `07-vcf-roll-call` | parsing the whole call file as a report | Rust |
 | `08-motif-finder` | computing over a gene's reference sequence | Rust |
 | `09-fortune-cookie` | why the sandbox is deterministic | Rust |

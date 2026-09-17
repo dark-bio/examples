@@ -331,7 +331,8 @@ impl Report {
 
 fn scan_vcf(path: &Path) -> Result<Report, Box<dyn Error>> {
     let file = File::open(path)?;
-    scan_reader(BufReader::new(file))
+    // Each refill is a call out of the sandbox, so read in large blocks.
+    scan_reader(BufReader::with_capacity(64 * 1024, file))
 }
 
 fn scan_reader(input: impl BufRead) -> Result<Report, Box<dyn Error>> {

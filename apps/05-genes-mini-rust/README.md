@@ -1,4 +1,4 @@
-# 05 - genes-mini
+# 05 - genes-mini (Rust)
 
 The app grants one gene, `v1/genome/genes/TAS2R38`, and prints its chromosome,
 start, end, strand, biotype and sequence length. The length comes from the size
@@ -9,8 +9,11 @@ is an error.
 The gene grant also covers the owner's `changes` in it, even though this mini
 doesn't read them. [05-bitter-meter](../05-bitter-meter) does.
 
+The same mini exists in [Go](../05-genes-mini-go), [C](../05-genes-mini-c) and
+[Python](../05-genes-mini-python).
+
 ## Build and run
 
 ```sh
-make run APP=05-genes-mini
+make run APP=05-genes-mini-rust
 ```

@@ -2,7 +2,7 @@
 
 An Ark app is a WebAssembly module built for WASI Preview 1, with a standard
 `_start` entry point. Anything that compiles to that target can be an app, and
-these examples cover Rust, Go and C.
+these examples cover Rust, Go, C and Python.
 
 The Ark doesn't need to trust an app. It trusts the sandbox the app runs in, and
 everything below follows from that.
@@ -27,6 +27,7 @@ An app picks its pass by counting arguments:
 | Rust | `std::env::args().nth(1).is_none()` | otherwise |
 | Go | `len(os.Args) < 2` | otherwise |
 | C | `argc < 2` | otherwise |
+| Python | `len(sys.argv) < 2` | otherwise |
 
 Write the report as Markdown, since that is how it is shown. Headings, tables
 and emphasis all help.
@@ -63,7 +64,7 @@ An app that needs a random-looking choice derives it from its input.
 
 | | Manifest pass | Run pass |
 | :-- | :-- | :-- |
-| Memory | 15.75 MiB | 100 MiB |
+| Memory | 16.125 MiB | 100 MiB |
 | Standard output | 1 KiB | 1 MiB |
 | Standard error | 1 KiB | 1 MiB |
 | Time | 250 ms | none, but cancellable |
