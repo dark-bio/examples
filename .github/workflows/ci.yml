@@ -72,15 +72,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # A release page redirects to its tag, which needs no API and no token.
       - name: Resolve the newest releases
         id: releases
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
+          latest() {
+            curl -sI "https://github.com/$1/releases/latest" |
+              awk -F/ 'tolower($0) ~ /^location:/ {gsub(/\r/, ""); print $NF}' |
+              sed "s/^$2//"
+          }
           {
-            echo "wasmtime=$(gh release view --repo bytecodealliance/wasmtime --json tagName --jq '.tagName | ltrimstr("v")')"
-            echo "binaryen=$(gh release view --repo WebAssembly/binaryen --json tagName --jq '.tagName | ltrimstr("version_")')"
-            echo "tinygo=$(gh release view --repo tinygo-org/tinygo --json tagName --jq '.tagName | ltrimstr("v")')"
+            echo "wasmtime=$(latest bytecodealliance/wasmtime v)"
+            echo "binaryen=$(latest WebAssembly/binaryen version_)"
+            echo "tinygo=$(latest tinygo-org/tinygo v)"
           } >> "$GITHUB_OUTPUT"
 
       - uses: ./.github/actions/toolchains
