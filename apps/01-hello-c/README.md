@@ -4,20 +4,24 @@
 toolchain rather than Emscripten, because Emscripten's standalone modules can't
 open the files an Ark mounts.
 
-## Build and run
-
-The Makefile finds a wasi-sdk install at `/opt/wasi-sdk` or Homebrew's WASI
-toolchain, and `WASI_SDK` points it anywhere else:
+The Makefile finds a wasi-sdk install at `/opt/wasi-sdk`, or falls back to
+Homebrew's WASI toolchain. `WASI_SDK` points it at any other clang that carries
+a WASI sysroot:
 
 ```sh
-make run APP=01-hello-c
 make run APP=01-hello-c WASI_SDK=/path/to/wasi-sdk
 ```
 
-By hand:
+## Build and run
 
 ```sh
-$WASI_SDK/bin/clang --target=wasm32-wasip1 -O3 main.c -o app.wasm
-wasmtime app.wasm     # manifest pass
-wasmtime app.wasm /   # run pass
+make run APP=01-hello-c
+```
+
+To see each pass by hand, build the module and run it twice:
+
+```sh
+make build APP=01-hello-c
+wasmtime build/01-hello-c.wasm     # manifest pass
+wasmtime build/01-hello-c.wasm /   # run pass
 ```

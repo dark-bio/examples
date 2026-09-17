@@ -9,11 +9,14 @@
 #
 # Every app builds to a single module at build/<app>.wasm, whatever its language.
 # The run target uses the wasmtime CLI against the fixtures/ tree, which stands
-# in for the data an Ark would mount. See docs/05-running-locally.md.
+# in for the data an Ark would mount. See docs/05-running.md.
 
 FIXTURES := fixtures
 WASMTIME := wasmtime
 BUILD := build
+PYTHON := python3.14
+TINYGO := tinygo
+WASM_OPT := wasm-opt
 APPS := $(sort $(notdir $(wildcard apps/*)))
 BREW_LLVM := $(shell command -v brew >/dev/null 2>&1 && brew --prefix llvm 2>/dev/null)
 
@@ -26,6 +29,11 @@ else
 WASI_SDK := /opt/wasi-sdk
 endif
 endif
+
+WASM_FEATURES := --mvp-features --enable-mutable-globals --enable-sign-ext \
+  --enable-nontrapping-float-to-int --enable-bulk-memory --enable-bulk-memory-opt \
+  --enable-simd --enable-relaxed-simd --enable-multivalue --enable-reference-types \
+  --enable-tail-call --enable-extended-const
 
 ifeq ($(strip $(APP)),)
 SELECTED_APPS := $(APPS)
@@ -50,9 +58,8 @@ list:
 
 all: build
 
-# Build one app to build/<app>.wasm, or every app when APP is unset. The
-# toolchain is picked from the files present (Cargo.toml, go.mod, or main.c) and
-# the resulting wasm is collected into the single build/ directory.
+# Pick the language from Cargo.toml, go.mod, main.c or main.py.
+# Every app produces one module in the build directory.
 build: $(addprefix build-,$(SELECTED_APPS))
 
 define build_app
@@ -65,22 +72,39 @@ if [ ! -d "$$dir" ]; then \
   exit 1; \
 fi; \
 mkdir -p "$(BUILD)"; \
+if ! command -v "$(WASM_OPT)" >/dev/null 2>&1; then echo "missing wasm-opt; install Binaryen or set WASM_OPT" >&2; exit 1; fi; \
 if [ -f "$$dir/Cargo.toml" ]; then \
-  ( cd "$$dir" && cargo build --locked --release --target wasm32-wasip1 ); \
+  ( cd "$$dir" && CARGO_ENCODED_RUSTFLAGS="$$(printf '%s\037%s\037%s' \
+      '--remap-path-prefix=$(CURDIR)=.' \
+      "--remap-path-prefix=$${CARGO_HOME:-$$HOME/.cargo}=cargo" \
+      "--remap-path-prefix=$$(rustc --print sysroot)=rust")" \
+    cargo build --locked --release --target wasm32-wasip1 ); \
   wasm=; for candidate in "$$dir"/target/wasm32-wasip1/release/*.wasm; do [ -e "$$candidate" ] || break; wasm=$$candidate; break; done; \
   if [ -z "$$wasm" ]; then echo "no wasm output found for $$dir"; exit 1; fi; \
   cp "$$wasm" "$$out"; \
+  post="-O3"; \
 elif [ -f "$$dir/go.mod" ]; then \
-  ( cd "$$dir" && GOOS=wasip1 GOARCH=wasm go build -o app.wasm . ); \
+  if ! command -v "$(TINYGO)" >/dev/null 2>&1; then echo "missing TinyGo; install it or set TINYGO" >&2; exit 1; fi; \
+  ( cd "$$dir" && "$(TINYGO)" build -target=wasip1 -opt=z -no-debug \
+    -gc=precise -scheduler=asyncify -panic=trap -o app.wasm . ); \
   mv "$$dir/app.wasm" "$$out"; \
+  post="-Os --converge"; \
 elif [ -f "$$dir/main.c" ]; then \
   if [ ! -x "$(WASI_SDK)/bin/clang" ]; then echo "missing WASI clang; set WASI_SDK to its toolchain directory" >&2; exit 1; fi; \
-  ( cd "$$dir" && "$(WASI_SDK)/bin/clang" --target=wasm32-wasip1 -O3 main.c -o app.wasm ); \
+  ( cd "$$dir" && "$(WASI_SDK)/bin/clang" --target=wasm32-wasip1 -Oz \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--strip-all main.c -o app.wasm ); \
   mv "$$dir/app.wasm" "$$out"; \
+  post="-O4"; \
+elif [ -f "$$dir/main.py" ]; then \
+  if ! command -v "$(PYTHON)" >/dev/null 2>&1; then echo "missing CPython 3.14.7; set PYTHON to its executable" >&2; exit 1; fi; \
+  "$(PYTHON)" tools/python_build.py "$$dir/main.py" "$$out" --sdk "$(WASI_SDK)"; \
+  post="-Os --converge"; \
 else \
   echo "don't know how to build $$dir"; \
   exit 1; \
 fi; \
+"$(WASM_OPT)" $(WASM_FEATURES) $$post "$$out" -o "$$out.tmp"; \
+mv "$$out.tmp" "$$out"; \
 echo "built $$out"
 endef
 

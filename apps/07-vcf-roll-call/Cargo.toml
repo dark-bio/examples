@@ -5,3 +5,11 @@ edition = "2024"
 
 [dependencies]
 noodles-vcf = "0.88.0"
+
+# A smaller module uploads and starts faster on an Ark.
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

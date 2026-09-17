@@ -23,9 +23,9 @@ match fs::read_to_string(base.join("genotype")) {
 }
 ```
 
-In Go, test for absence with `errors.Is(err, fs.ErrNotExist)`, and in C with
-`errno == ENOENT`. A file holds exactly its value with no trailing newline, so
-there's nothing to trim.
+In Go, test for absence with `errors.Is(err, fs.ErrNotExist)`, in C with
+`errno == ENOENT`, and in Python by catching `FileNotFoundError`. A file holds
+exactly its value with no trailing newline, so there's nothing to trim.
 
 Keep in mind what absence means. A genotype can be absent for someone carrying
 two reference alleles, since a variants-only call file has no records at
@@ -70,9 +70,9 @@ Grant one `rsids/<rsid>` directory and read its `genotype`, `chromosome`,
 datasets = ["v1/genome/rsids/rs72921001"]
 ```
 
-[03-cilantro-mini-rust](../apps/03-cilantro-mini-rust), with Go and C twins,
-shows the bare read. [03-cilantro-soapiness](../apps/03-cilantro-soapiness)
-turns it into a report.
+[03-cilantro-mini-rust](../apps/03-cilantro-mini-rust), with its Go, C and
+Python siblings, shows the bare read.
+[03-cilantro-soapiness](../apps/03-cilantro-soapiness) turns it into a report.
 
 ### A panel of variants
 
@@ -91,7 +91,7 @@ Grant `genes/<gene>` to read its `chromosome`, `start`, `end`, `strand`,
 `biotype` and `sequence`, and its `changes`, one directory per position where a
 record starting inside the gene holds an ALT allele. A gene can have no
 `changes` directory at all, and a very long or very variable one fails with
-"file too large". [05-genes-mini](../apps/05-genes-mini) shows the bare read,
+"file too large". [05-genes-mini-rust](../apps/05-genes-mini-rust) shows the bare read,
 and [05-bitter-meter](../apps/05-bitter-meter) turns TAS2R38 into a report.
 
 ### An interval
@@ -99,7 +99,7 @@ and [05-bitter-meter](../apps/05-bitter-meter) turns TAS2R38 into a report.
 Grant `regions/<chr>/<start>-<end>` for any stretch of a chromosome, with the
 same `sequence` and `changes` as a gene. When `changes` fails with "file too
 large", split the interval and list each half.
-[06-regions-mini](../apps/06-regions-mini) shows the bare read, and
+[06-regions-mini-rust](../apps/06-regions-mini-rust) shows the bare read, and
 [06-powerhouse-of-the-cell](../apps/06-powerhouse-of-the-cell) reads the whole
 mitochondrial genome as one interval.
 
@@ -111,9 +111,11 @@ yet its grant still covers the gene's variants.
 
 Grant `snp-indel` to read the `vcf` itself, when no lens answers the question.
 It is the broadest request there is, and the file runs to gigabytes, so read it
-line by line. [07-vcf-mini](../apps/07-vcf-mini) counts records with a plain
-line scan, and [07-vcf-roll-call](../apps/07-vcf-roll-call) parses the whole
-file with `noodles-vcf`.
+line by line, through a large buffer. Every refill leaves the sandbox, so a
+small default buffer can cost ten times the scan time.
+[07-vcf-mini-rust](../apps/07-vcf-mini-rust) counts records with a plain line
+scan, and [07-vcf-roll-call](../apps/07-vcf-roll-call) parses the whole file
+with `noodles-vcf`.
 
 ## Least privilege
 
