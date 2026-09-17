@@ -1,0 +1,65 @@
+name: toolchains
+description: Install the toolchains the example apps build with.
+
+inputs:
+  wasmtime:
+    description: wasmtime release that runs the modules
+    required: true
+  binaryen:
+    description: Binaryen release supplying wasm-opt
+    required: true
+  wasi-sdk:
+    description: wasi-sdk release carrying the C sysroot
+    required: true
+  tinygo:
+    description: TinyGo release, or empty where no Go app is built
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install wasmtime
+      shell: sh
+      run: |
+        name="wasmtime-v${{ inputs.wasmtime }}-x86_64-linux"
+        curl -fsSL "https://github.com/bytecodealliance/wasmtime/releases/download/v${{ inputs.wasmtime }}/$name.tar.xz" | tar -xJ
+        sudo install "$name/wasmtime" /usr/local/bin/
+
+    - name: Install Binaryen
+      shell: sh
+      run: |
+        name="binaryen-version_${{ inputs.binaryen }}"
+        curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/version_${{ inputs.binaryen }}/$name-x86_64-linux.tar.gz" | tar -xz
+        sudo cp -r "$name/bin" "$name/lib" /usr/local/
+
+    # The sysroot is what the Python build compiles against, and what separates a
+    # wasi-sdk from a plain clang.
+    - name: Install wasi-sdk
+      shell: sh
+      run: |
+        version="${{ inputs.wasi-sdk }}"
+        name="wasi-sdk-$version-x86_64-linux"
+        curl -fsSL "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${version%.*}/$name.tar.gz" | tar -xz
+        sudo mv "$name" /opt/wasi-sdk
+
+    - name: Install TinyGo
+      if: inputs.tinygo != ''
+      shell: sh
+      run: |
+        name="tinygo_${{ inputs.tinygo }}_amd64.deb"
+        curl -fsSLO "https://github.com/tinygo-org/tinygo/releases/download/v${{ inputs.tinygo }}/$name"
+        sudo dpkg -i "$name"
+
+    - name: Add the WebAssembly target
+      shell: sh
+      run: rustup target add wasm32-wasip1
+
+    - name: Report the versions in use
+      shell: sh
+      run: |
+        wasmtime --version
+        wasm-opt --version
+        /opt/wasi-sdk/bin/clang --version | head -n 1
+        command -v tinygo >/dev/null && tinygo version || true
+        python3 --version
