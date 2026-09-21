@@ -2,8 +2,10 @@
 
 This repository teaches how to write apps for the Ark. Read `README.md` first,
 then `docs/01-app-model.md` through `docs/06-reports.md` in order. They are
-short and they are the rules. When a real Ark is involved, `ark help agents`
-comes before anything else.
+short and they are the rules. When an Ark is involved, `ark help agents` comes
+before anything else. Without hardware, Ark Emulator from
+https://github.com/dark-bio/emulator boots one on this computer, and
+`ark-emulator help agents` covers running it.
 
 ## Commands
 

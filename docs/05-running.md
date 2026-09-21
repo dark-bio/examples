@@ -2,7 +2,7 @@
 
 You don't need an Ark to write an app. A WebAssembly runtime and the fixture
 data in this repository run both passes on a laptop. When the app works, the
-`ark` command line tool runs it on a real Ark.
+`ark` command line tool runs it on an Ark, whether hardware or emulated.
 
 ## Locally
 
@@ -107,19 +107,21 @@ missing grants there.
 - **Startup cost.** A laptop starts a module far faster than an Ark does, so a
   heavy module feels cheaper here than it is there.
 
+An emulated Ark has all of these except the startup cost, since it runs the real
+firmware at your computer's speed.
+
 ## On an Ark
 
-Install the `ark` tool:
-
-```sh
-brew install dark-bio/tap/ark-cli                                                        # macOS
-curl -fsSL https://github.com/dark-bio/cli/releases/latest/download/ark-installer.sh | sh # Linux
-cargo install darkbio-ark --locked                                                       # anywhere with Rust
-```
+Install the [`ark`](https://github.com/dark-bio/cli) command line tool as its
+README describes. It talks to an Ark plugged in over USB, or to one that
+[Ark Emulator](https://github.com/dark-bio/emulator) boots on your computer from
+the real firmware. The emulator keeps its data in a plain file, and
+`ark-emulator start` boots one.
 
 An Ark is paired with `ark pair` once, and unlocked with `ark unlock` after each
-power loss, both approved on the owner's phone. Then check what the Ark holds and
-run the app:
+power loss, both approved on the owner's phone in Ark Companion. A fresh
+emulator is first enrolled at Ark Hub, in a browser, at the address `ark enroll`
+prints. Then check what the Ark holds and run the app:
 
 ```sh
 ark status                                    # trust, firmware, pairing and lock state
@@ -130,4 +132,5 @@ ark app run build/03-cilantro-mini-rust.wasm > report.md
 `ark app run` uploads the module and waits while the owner approves it on their
 phone. It then writes the report to standard output. A refused app comes back
 with the reason. `ark help apps` covers manifests and grants, and
-`ark help datasets` covers the data commands.
+`ark help datasets` covers the data commands. Scripts and AI agents read
+`ark help agents` first, and `ark-emulator help agents` for the emulator.
