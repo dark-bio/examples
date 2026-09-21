@@ -2,7 +2,7 @@
 
 Worked examples for writing apps that run on an Ark.
 
-[dark.bio](https://dark.bio) · [Whitepaper](https://dark.bio/whitepaper) · [GitHub](https://github.com/dark-bio) · [Bluesky](https://bsky.app/profile/dark.bio) · [X](https://x.com/dark_dot_bio)
+[dark.bio](https://dark.bio) · [Whitepaper](https://dark.bio/whitepaper.pdf) · [GitHub](https://github.com/dark-bio) · [Bluesky](https://bsky.app/profile/dark.bio) · [X](https://x.com/dark_dot_bio)
 
 An Ark holds a person's genome on a device only they control. Apps never receive
 a copy of that data. They are sent to it instead, and run in a deterministic
@@ -10,7 +10,8 @@ sandbox on the Ark with no network and no writable storage. An app reads the
 data it was granted as plain files and prints a report. The owner approves every
 run on their phone and decides whether to release the result. Because the
 sandbox contains the code, anyone can write an app and anyone can run anyone
-else's. The [whitepaper](https://dark.bio/whitepaper) lays out the trust model.
+else's. The [whitepaper](https://dark.bio/whitepaper.pdf) lays out the trust
+model.
 
 These examples teach that model one idea at a time, from printing a line to
 scanning a whole call file. Every app is a single source file.
@@ -45,16 +46,21 @@ make run APP=01-hello-rust   # one app
 make run                     # every app
 ```
 
-Run it on a real Ark with the [`ark`](https://github.com/dark-bio/cli) tool,
-approving it on your phone:
+Run it on an Ark with the [`ark`](https://github.com/dark-bio/cli) tool. The
+owner approves the run on their phone, in Ark Companion for
+[iOS](https://apps.apple.com/app/id6751324700) or
+[Android](https://play.google.com/store/apps/details?id=bio.dark.companion).
+Without hardware, [Ark Emulator](https://github.com/dark-bio/emulator) boots
+the real Ark firmware on your computer, and `ark` runs apps on it the same way.
 
 ```sh
 ark data paths                                 # what apps can read on this Ark
 ark app run build/01-hello-rust.wasm > report.md
 ```
 
-[docs/05-running.md](docs/05-running.md) covers the toolchains, the fixtures, and
-what a laptop can't reproduce.
+Scripts and AI agents driving an Ark read `ark help agents` first.
+[docs/05-running.md](docs/05-running.md) covers the toolchains, the fixtures,
+what a laptop can't reproduce, and running on an Ark or an emulator.
 
 ## The examples
 
@@ -87,7 +93,8 @@ and a full app turns the same read into a report.
   every path follows.
 - [04-reading-data.md](docs/04-reading-data.md) covers absence, errors,
   sequences and genotypes, with a grant for every need.
-- [05-running.md](docs/05-running.md) covers running apps locally and on an Ark.
+- [05-running.md](docs/05-running.md) covers running apps locally, on an
+  emulator and on an Ark.
 - [06-reports.md](docs/06-reports.md) covers the report, its shape and its
   voice.
 
