@@ -63,6 +63,11 @@ from the fixture root, read-only, and runs the module again with `/` as its
 first argument. An undeclared path is never mounted, which is how
 [02-permissions](../apps/02-permissions) can show a blocked read on a laptop.
 
+An app kept outside this repository runs against these fixtures the same way,
+since `tools/run.sh` takes any module, as in
+`sh tools/run.sh path/to/app.wasm fixtures`. Build it with the `wasm-opt`
+feature flags in `tools/build.sh`, because an Ark's runtime accepts only those.
+
 ### Small modules
 
 An Ark uploads and starts a smaller module faster, so every build here is tuned
@@ -132,5 +137,5 @@ ark app run build/03-cilantro-mini-rust.wasm > report.md
 `ark app run` uploads the module and waits while the owner approves it on their
 phone. It then writes the report to standard output. A refused app comes back
 with the reason. `ark help apps` covers manifests and grants, and
-`ark help datasets` covers the data commands. Scripts and AI agents read
-`ark help agents` first, and `ark-emulator help agents` for the emulator.
+`ark help datasets` covers the data commands. AI agents read `ark help agents`
+first, and `ark-emulator help agents` for the emulator.

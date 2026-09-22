@@ -14,7 +14,7 @@ make build APP=<app>          # one module into build/<app>.wasm
 make run APP=<app>            # build, then both passes against fixtures/
 make run APP=<app> FIXTURES=fixtures/no-call
 make run APP=<app> FIXTURES=fixtures/unanswered
-tools/check.sh                # what CI runs: links, builds, runs, ports
+sh tools/check.sh             # what CI runs: links, builds, runs, ports
 ```
 
 `make run` mounts only the paths an app's manifest declares, read-only, and
@@ -35,8 +35,9 @@ stops before its run pass there, which is expected.
   genotype can take are in `docs/04-reading-data.md`.
 - Nothing in the sandbox is random or timed. Sort anything you list.
 - Keep the module small. Rust apps carry the release profile from any sibling's
-  `Cargo.toml`.
-- Run `tools/check.sh` before proposing a change. New fixtures follow
+  `Cargo.toml`, and commit their own `Cargo.lock`, since the build runs with
+  `--locked`. One plain `cargo build` in the app's folder writes it.
+- Run `sh tools/check.sh` before proposing a change. New fixtures follow
   `fixtures/README.md`, with no trailing newline in any value file.
 
 ## The report
