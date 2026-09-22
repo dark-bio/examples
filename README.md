@@ -58,14 +58,16 @@ ark data paths                                 # what apps can read on this Ark
 ark app run build/01-hello-rust.wasm > report.md
 ```
 
-Scripts and AI agents driving an Ark read `ark help agents` first.
+AI agents driving an Ark read `ark help agents` first.
 [docs/05-running.md](docs/05-running.md) covers the toolchains, the fixtures,
 what a laptop can't reproduce, and running on an Ark or an emulator.
 
 ## The examples
 
 Most data comes in two versions. A *mini* shows the bare read in a few lines,
-and a full app turns the same read into a report.
+and a full app turns the same read into a report. Each row is a folder under
+`apps/`, with the language appended for the minis, such as
+`03-cilantro-mini-rust`, and that folder name is what `APP=` takes.
 
 | App | What it shows | Languages |
 | :-- | :-- | :-- |

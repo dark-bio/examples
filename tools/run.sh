@@ -17,14 +17,21 @@ printf '%s\n' "$manifest"
 
 # Mount only the datasets the manifest declares, each at its own path, so the app
 # sees exactly what it asked for and nothing else, like the device does.
+# wasmtime lets a guest write to every directory it mounts, so the datasets are
+# copied into a scratch tree without write permission and mounted from there.
+stage="$(mktemp -d)"
+trap 'chmod -R u+w "$stage"; rm -rf "$stage"' EXIT
 set --
 for dataset in $(printf '%s\n' "$manifest" | grep -oE '"v1/[^"]*"' | tr -d '"'); do
   if [ ! -d "$fixtures/$dataset" ]; then
     printf 'fixture root has no declared dataset: %s\n' "$dataset" >&2
     exit 1
   fi
-  set -- "$@" --dir "$fixtures/$dataset::/$dataset"
+  mkdir -p "$stage/$(dirname "$dataset")"
+  cp -R "$fixtures/$dataset" "$stage/$dataset"
+  set -- "$@" --dir "$stage/$dataset::/$dataset"
 done
+chmod -R a-w "$stage"
 
 echo
 echo "== run pass =="
