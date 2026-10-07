@@ -16,11 +16,13 @@ const DENIED: &str = "v1/genome/snp-indel/vcf";
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"permissions\"\n\
              version = \"0.1.0\"\n\
-             datasets = [\"v1/genome/rsids/rs72921001\"]\n\
-             develop = true\n"
+             develop = true\n\n\
+             [reads]\n\
+             paths = [\"v1/genome/rsids/rs72921001\"]\n"
         );
         return;
     };

@@ -64,8 +64,8 @@ static uint64_t coordinate(const char *value) {
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    printf("[package]\nname = \"genes-mini\"\nversion = \"0.1.0\"\n"
-           "datasets = [\"" LENS "\"]\n");
+    printf("manifest = 1\n\n[app]\nname = \"genes-mini\"\nversion = \"0.1.0\"\n\n"
+           "[reads]\npaths = [\"" LENS "\"]\n");
     return 0;
   }
 

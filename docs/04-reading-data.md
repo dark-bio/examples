@@ -36,7 +36,7 @@ reference sites. An app must never read absence as a result.
 A gene's or an interval's `sequence` holds exactly end - start + 1 bases, so
 the file's size is the span's length and byte offset i is position start + i.
 Repeats are soft-masked in lowercase, so uppercase bases before matching them.
-A long sequence can outgrow an app's 100 MiB of memory, so read it in chunks
+A long sequence can outgrow an app's 128 MiB of memory, so read it in chunks
 through a buffered reader rather than whole.
 
 ## Parsing genotypes
@@ -67,7 +67,8 @@ Grant one `rsids/<rsid>` directory and read its `genotype`, `chromosome`,
 `position` and `reference`.
 
 ```toml
-datasets = ["v1/genome/rsids/rs72921001"]
+[reads]
+paths = ["v1/genome/rsids/rs72921001"]
 ```
 
 [03-cilantro-mini-rust](../apps/03-cilantro-mini-rust), with its Go, C and

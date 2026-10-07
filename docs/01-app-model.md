@@ -35,14 +35,21 @@ The report is Markdown, since that is how it is shown, and
 ## Before the owner is asked
 
 When an app is scheduled, the Ark checks it before any prompt reaches the owner's
-phone, and refuses it if a check fails.
+phone, in this order, and refuses it at the first check that fails. The refusal
+names the rule that broke.
 
-- A module with a WebAssembly start section is refused, since a run begins at
-  `_start`.
-- A name or version that is empty, too long, or holds control characters, line
-  separators or text direction controls is refused.
-- A dataset path that is misspelled or can't be granted is refused, and so is
-  one whose data isn't on the Ark.
+1. **The module.** A module with a WebAssembly start section is refused, since a
+   run begins at `_start`. So is a component, or a module with more than one
+   linear memory or table. A module that starts with more memory or table space
+   than the limits below is refused, and so is one that imports anything but
+   WASI Preview 1 functions. The module has to export `_start` as a function
+   without parameters or results.
+2. **The manifest pass.** A pass that traps, runs out of time, exits with a
+   status other than 0 or prints more than 64 KiB is refused.
+3. **The manifest.** A manifest that breaks a rule of
+   [02-manifest.md](02-manifest.md) is refused.
+4. **The paths.** A path that is misspelled or can't be granted is refused, and
+   so is one whose data isn't on the Ark. The refusal names the missing data.
 
 ## The sandbox
 
@@ -64,19 +71,20 @@ An app that needs a random-looking choice derives it from its input.
 
 | | Manifest pass | Run pass |
 | :-- | :-- | :-- |
-| Memory | 16.125 MiB | 100 MiB |
-| Standard output | 1 KiB | 1 MiB |
-| Standard error | 1 KiB | 1 MiB |
+| Memory | 32 MiB | 128 MiB |
+| Table | 65,536 elements | 65,536 elements |
+| Standard output | 64 KiB | 1 MiB |
+| Standard error | 1 KiB, never returned | 1 MiB |
 | Time | 250 ms | none, but cancellable |
 | Data | none | granted paths, read-only |
 
-Output past a cap is dropped. The module itself can be up to 256 MiB.
+A manifest pass that prints more than 64 KiB is refused, and a run that prints
+more than 1 MiB to either stream fails. The module itself can be up to 256 MiB.
 
 ## The develop flag
 
-By default the Ark returns an app's standard output only when the app exits
-successfully, and never returns its standard error, so a failed run returns
-nothing.
+By default the Ark returns an app's standard output only when its run succeeds,
+and never returns its standard error, so a failed run returns nothing.
 
 Setting `develop = true` in the manifest returns standard output even on failure,
 and standard error every time. It is a debugging switch, and the owner sees a
@@ -86,8 +94,8 @@ developer mode warning when approving such an app. Leave it out of apps you ship
 
 1. A developer sends the module to the Ark, for example with
    `ark app run app.wasm`.
-2. The Ark runs the manifest pass, then checks the module, its name and version,
-   and every dataset path.
+2. The Ark checks the module, runs the manifest pass, then checks the manifest
+   and every path it grants.
 3. The owner sees the app's name, version and requested paths on their phone,
    and approves or declines.
 4. On approval, the Ark mounts the granted paths read-only and runs the app.

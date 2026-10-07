@@ -8,13 +8,13 @@
 int main(int argc, char *argv[]) {
   (void)argv;
   // The manifest pass: no data directory was given, so describe the app and
-  // stop. This app reads nothing, so its dataset list is empty.
+  // stop. This app reads nothing, so it has no reads table.
   if (argc < 2) {
     printf(
-      "[package]\n"
+      "manifest = 1\n\n"
+      "[app]\n"
       "name = \"hello-c\"\n"
-      "version = \"0.1.0\"\n"
-      "datasets = []\n");
+      "version = \"0.1.0\"\n");
     return 0;
   }
 

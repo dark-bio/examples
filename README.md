@@ -29,7 +29,7 @@ An app is a [WebAssembly](https://webassembly.org/) module built for
 ```rust
 fn main() {
     if std::env::args().nth(1).is_none() {
-        print!("[package]\nname = \"hello\"\nversion = \"0.1.0\"\ndatasets = []\n");
+        print!("manifest = 1\n\n[app]\nname = \"hello\"\nversion = \"0.1.0\"\n");
         return;
     }
     println!("Hello from an Ark app.");

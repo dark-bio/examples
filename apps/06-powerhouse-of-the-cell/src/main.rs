@@ -24,10 +24,12 @@ const MAX_CHANGE_ROWS: usize = 28;
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"powerhouse-of-the-cell\"\n\
-             version = \"0.2.0\"\n\
-             datasets = [\"v1/genome/regions/chrM/1-16569\", \"v1/genome/reference\"]\n"
+             version = \"0.2.0\"\n\n\
+             [reads]\n\
+             paths = [\"v1/genome/regions/chrM/1-16569\", \"v1/genome/reference\"]\n"
         );
         return;
     };

@@ -5,8 +5,8 @@ can send out of the sandbox. The owner reads it first, on their phone, and
 decides whether it goes any further. Whoever ran the app then gets its exact
 bytes, in a terminal from `ark app run`, or rendered as Markdown. So a report is
 read three ways, on a phone, as raw text and as a rendered page, and it has to
-work in all of them. This page is a guideline for that, not a format the Ark
-checks. The Ark returns whatever the app printed, up to 1 MiB.
+work in all of them. This page is a guideline for that. The Ark itself checks
+only that a report is text, as [Form](#form) says.
 
 ## What a report has to do
 
@@ -23,11 +23,11 @@ Two things follow from the sandbox. The run is deterministic, so a report
 carries no date and no run id. The same app over the same data prints the same
 report, which is what lets last year's be diffed against this year's, and an
 app that lists a directory sorts the listing before printing it, since listing
-order isn't promised. And the output is capped, so a report summarises. It
-lists the evidence for its finding and counts the rest, since output past the
-cap is dropped without a mark.
+order isn't promised. And the output is capped at 1 MiB, and a run that prints
+more fails, so a report summarizes. It lists the evidence for its finding and
+counts the rest.
 
-An app that exits non-zero returns nothing. Without `develop = true` the Ark
+A run that fails returns nothing, and an app that exits non-zero fails. Without `develop = true` the Ark
 withholds standard output on failure and never returns standard error, so the
 owner is left with a blank screen after approving the run. A failure exit is
 for data that couldn't be read. Everything an app can state, including that
@@ -188,6 +188,12 @@ and paths in code. Every number with its unit, every percentile with its
 reference population. Title Case for the title, sentence case for headings.
 
 ## Form
+
+A report is text. It has to be valid UTF-8, without control characters other
+than line feed and tab, line or paragraph separators, or text direction
+controls. Emoji are fine, joined ones included. The Ark drops a report that
+breaks this, and the run fails. A develop build's standard error is held to
+the same rule.
 
 Plain Markdown, and a small subset of it, because the subset is what keeps a
 report readable everywhere. One `#`, the `##` sections above, and `###` to

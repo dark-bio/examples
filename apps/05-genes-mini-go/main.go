@@ -15,8 +15,8 @@ const lens = "v1/genome/genes/TAS2R38"
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Printf("[package]\nname = \"genes-mini\"\nversion = \"0.1.0\"\n"+
-			"datasets = [\"%s\"]\n", lens)
+		fmt.Printf("manifest = 1\n\n[app]\nname = \"genes-mini\"\nversion = \"0.1.0\"\n\n"+
+			"[reads]\npaths = [\"%s\"]\n", lens)
 		return
 	}
 	if err := run(filepath.Join(os.Args[1], lens)); err != nil {

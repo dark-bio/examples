@@ -10,8 +10,8 @@
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    printf("[package]\nname = \"regions-mini\"\nversion = \"0.1.0\"\n"
-           "datasets = [\"" LENS "\"]\n");
+    printf("manifest = 1\n\n[app]\nname = \"regions-mini\"\nversion = \"0.1.0\"\n\n"
+           "[reads]\npaths = [\"" LENS "\"]\n");
     return 0;
   }
   size_t size = strlen(argv[1]) + sizeof(LENS) + sizeof("/sequence") + 1;

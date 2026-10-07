@@ -1,33 +1,48 @@
 # The manifest
 
 The manifest is the TOML an app prints in its manifest pass. It names the app and
-lists the data the app wants. The Ark reads it to decide what to check, what to
+lists the data the app reads. The Ark reads it to decide what to check, what to
 show the owner and what to mount.
 
 ```toml
-[package]
+manifest = 1
+
+[app]
 name = "cilantro"
 version = "0.1.0"
-datasets = ["v1/genome/rsids/rs72921001"]
+
+[reads]
+paths = ["v1/genome/rsids/rs72921001"]
 ```
 
-## Fields
+## Format
 
-All fields live under `[package]`.
+A manifest is a TOML 1.1 document. It opens with `manifest = 1`, the version of
+this format, followed by the tables below. The Ark refuses a manifest with
+another `manifest` value, a top-level table or key it doesn't know, or a key it
+doesn't know in the tables below. The whole manifest has to fit in the manifest
+pass's 64 KiB of output.
 
-- **`name`** is the app's name, shown to the owner, from 1 to 64 characters.
-- **`version`** is shown beside the name, from 1 to 32 characters.
-- **`datasets`** lists the paths the app wants. It may be empty.
+### `[app]`
+
+- **`name`** is the app's name, shown to the owner, from 1 to 64 characters. It
+  can't hold control characters, line or paragraph separators, or text
+  direction controls.
+- **`version`** is shown beside the name. It is a
+  [Semantic Versioning 2.0.0](https://semver.org/) version of at most 32
+  characters, such as `0.4.0` or `1.0.0-beta.1`, with no leading `v` and no
+  build metadata after a `+`.
 - **`develop`** is optional and `false` by default. See
   [01-app-model.md](01-app-model.md).
 
-Names and versions can't hold control characters, line or paragraph separators,
-or text direction controls. The whole manifest has to fit in the manifest pass's
-1 KiB of output, which holds a panel of a dozen paths with room to spare.
+### `[reads]`
+
+- **`paths`** lists the directories the app reads. An app that reads nothing
+  leaves the table out.
 
 ## Granting data
 
-Each dataset is a directory under the Ark's data root. Granting it gives the app
+Each path is a directory under the Ark's data root. Granting it gives the app
 that directory and everything beneath it, read-only. At run time the grants sit
 under the data directory the app receives as its first argument, so with `/` as
 that argument, a grant of `v1/genome/rsids/rs72921001` is read at
@@ -45,6 +60,9 @@ fails.
   paths, empty, `.` or `..` segments, a trailing `/`, other spellings such as
   `chr01` or `rs0334`, files, `changes` directories, the data root and `v1/`
   itself are all refused.
+- **A path is listed once.** A path listed twice is refused, and so is one
+  inside another listed path's directory, which already grants it. A manifest
+  lists at most 1,024 paths.
 - **Its data must be on the Ark.** A well-formed path is refused when it points
   into an empty slot, names a gene the annotations don't carry or an rsID dbSNP
   doesn't carry, or names a position past the end of its chromosome.

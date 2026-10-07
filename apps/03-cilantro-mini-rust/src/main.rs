@@ -21,10 +21,12 @@ fn main() {
     // The manifest pass: name the app and ask for the one variant directory.
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"cilantro-mini\"\n\
-             version = \"0.1.0\"\n\
-             datasets = [\"{LENS}\"]\n"
+             version = \"0.1.0\"\n\n\
+             [reads]\n\
+             paths = [\"{LENS}\"]\n"
         );
         return;
     };

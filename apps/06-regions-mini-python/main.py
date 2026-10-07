@@ -7,8 +7,8 @@ LENS = "v1/genome/regions/chrM/1-16569"
 
 def main():
     if len(sys.argv) < 2:
-        print('[package]\nname = "regions-mini"\nversion = "0.1.0"\n'
-              f'datasets = ["{LENS}"]')
+        print('manifest = 1\n\n[app]\nname = "regions-mini"\nversion = "0.1.0"\n\n'
+              f'[reads]\npaths = ["{LENS}"]')
         return
 
     length = gc = 0

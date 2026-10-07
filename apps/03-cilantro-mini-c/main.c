@@ -62,10 +62,12 @@ static char *read_leaf(const char *dir, const char *name) {
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    printf("[package]\n"
+    printf("manifest = 1\n\n"
+           "[app]\n"
            "name = \"cilantro-mini\"\n"
-           "version = \"0.1.0\"\n"
-           "datasets = [\"" LENS "\"]\n");
+           "version = \"0.1.0\"\n\n"
+           "[reads]\n"
+           "paths = [\"" LENS "\"]\n");
     return 0;
   }
 

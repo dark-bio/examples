@@ -6,13 +6,13 @@
 
 fn main() {
     // The manifest pass: no data directory was given, so describe the app and
-    // stop. This app reads nothing, so its dataset list is empty.
+    // stop. This app reads nothing, so it has no reads table.
     if std::env::args().nth(1).is_none() {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"hello-rust\"\n\
-             version = \"0.1.0\"\n\
-             datasets = []\n"
+             version = \"0.1.0\"\n"
         );
         return;
     }

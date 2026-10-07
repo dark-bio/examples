@@ -27,10 +27,12 @@ const METRIC_MAX: usize = 512;
 fn main() -> Result<(), Box<dyn Error>> {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"vcf-roll-call\"\n\
-             version = \"0.2.0\"\n\
-             datasets = [\"v1/genome/snp-indel\"]\n"
+             version = \"0.2.0\"\n\n\
+             [reads]\n\
+             paths = [\"v1/genome/snp-indel\"]\n"
         );
         return Ok(());
     };

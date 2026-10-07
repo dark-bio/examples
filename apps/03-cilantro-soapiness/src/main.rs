@@ -26,10 +26,12 @@ fn main() {
     // coordinate is reported on.
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"cilantro-soapiness\"\n\
-             version = \"0.4.0\"\n\
-             datasets = [\"v1/genome/rsids/rs72921001\", \"v1/genome/reference\"]\n"
+             version = \"0.4.0\"\n\n\
+             [reads]\n\
+             paths = [\"v1/genome/rsids/rs72921001\", \"v1/genome/reference\"]\n"
         );
         return;
     };

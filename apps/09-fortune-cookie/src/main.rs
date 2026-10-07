@@ -26,10 +26,12 @@ const FORTUNES: &[&str] = &[
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "[package]\n\
+            "manifest = 1\n\n\
+             [app]\n\
              name = \"fortune-cookie\"\n\
-             version = \"0.2.0\"\n\
-             datasets = [\
+             version = \"0.2.0\"\n\n\
+             [reads]\n\
+             paths = [\
              \"v1/genome/rsids/rs72921001\", \
              \"v1/genome/rsids/rs671\", \
              \"v1/genome/rsids/rs1229984\"]\n"

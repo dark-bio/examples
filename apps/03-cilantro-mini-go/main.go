@@ -27,10 +27,12 @@ const (
 func main() {
 	// The manifest pass: name the app and ask for the one variant directory.
 	if len(os.Args) < 2 {
-		fmt.Printf("[package]\n"+
+		fmt.Printf("manifest = 1\n\n"+
+			"[app]\n"+
 			"name = \"cilantro-mini\"\n"+
-			"version = \"0.1.0\"\n"+
-			"datasets = [\"%s\"]\n", lens)
+			"version = \"0.1.0\"\n\n"+
+			"[reads]\n"+
+			"paths = [\"%s\"]\n", lens)
 		return
 	}
 

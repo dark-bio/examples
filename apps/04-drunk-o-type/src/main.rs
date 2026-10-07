@@ -776,11 +776,15 @@ fn print_further_reading() {
 
 // ── Entry point ────────────────────────────────────────────────────────────
 
-const METADATA: &str = "\
-[package]
+const MANIFEST: &str = "\
+manifest = 1
+
+[app]
 name = \"drunk-o-type\"
 version = \"0.3.0\"
-datasets = [
+
+[reads]
+paths = [
     \"v1/genome/rsids/rs671\",
     \"v1/genome/rsids/rs1229984\",
     \"v1/genome/rsids/rs2066702\",
@@ -838,7 +842,7 @@ fn resolve_target(base: &Path, target: &SnpTarget) -> Result<Option<GenotypeCall
 
 fn run() -> Result<(), Box<dyn Error>> {
     if std::env::args().len() < 2 {
-        print!("{}", METADATA);
+        print!("{}", MANIFEST);
         return Ok(());
     }
 

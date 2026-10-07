@@ -95,7 +95,7 @@ value instead of a file format to parse.
 - **Sequences stream.** A `sequence` file holds exactly end - start + 1 bases,
   so its size is its length, and byte offset i is position start + i. Repeats
   are soft-masked in lowercase. Read long sequences as streams, since an app has
-  100 MiB of memory.
+  128 MiB of memory.
 - **The stored datasets are big.** `snp-indel/vcf` and `reference/fa` are
   decompressed on read and run to gigabytes, so read them line by line.
 - **`available`** means the data a path needs is on the Ark, not that every gene

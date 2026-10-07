@@ -5,7 +5,7 @@ import sys
 def main():
     # With no data directory, print the manifest and stop.
     if len(sys.argv) < 2:
-        print('[package]\nname = "hello-python"\nversion = "0.1.0"\ndatasets = []')
+        print('manifest = 1\n\n[app]\nname = "hello-python"\nversion = "0.1.0"')
         return
 
     # The run pass receives a data directory, even when no data is requested.

@@ -12,13 +12,13 @@ import (
 
 func main() {
 	// The manifest pass: no data directory was given, so describe the app and
-	// stop. This app reads nothing, so its dataset list is empty.
+	// stop. This app reads nothing, so it has no reads table.
 	if len(os.Args) < 2 {
 		fmt.Print(
-			"[package]\n" +
+			"manifest = 1\n\n" +
+				"[app]\n" +
 				"name = \"hello-go\"\n" +
-				"version = \"0.1.0\"\n" +
-				"datasets = []\n")
+				"version = \"0.1.0\"\n")
 		return
 	}
 

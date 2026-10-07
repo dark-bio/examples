@@ -14,8 +14,8 @@ const lens = "v1/genome/snp-indel"
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Printf("[package]\nname = \"vcf-mini\"\nversion = \"0.1.0\"\n"+
-			"datasets = [\"%s\"]\n", lens)
+		fmt.Printf("manifest = 1\n\n[app]\nname = \"vcf-mini\"\nversion = \"0.1.0\"\n\n"+
+			"[reads]\npaths = [\"%s\"]\n", lens)
 		return
 	}
 	if err := run(os.Args[1]); err != nil {
