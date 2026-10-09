@@ -1,8 +1,9 @@
 #!/bin/sh
 # Check the examples the way CI does. Every documentation link resolves, every
 # app builds, and every app runs against each fixture root that holds its data.
-# Apps with optional grants also run with those grants declined. The language
-# versions of one demo all print the same report.
+# Apps with optional grants also run with those grants declined. Language ports
+# print the same manifest apart from source URLs, and the same report except
+# for the hello apps.
 #
 # Usage: tools/check.sh [app ...]
 set -eu
@@ -65,6 +66,14 @@ build_and_run() {
       continue
     fi
 
+    # Capture each built module's manifest without its port-specific source URL
+    if ! "${WASMTIME:-wasmtime}" "${BUILD:-build}/$app.wasm" > "$work/manifest-$app" 2> "$work/manifest-error-$app"; then
+      fail "$app does not print its manifest"
+      cat "$work/manifest-error-$app"
+      continue
+    fi
+    sed '/^source = /d' "$work/manifest-$app" > "$work/manifest-compared-$app"
+
     # Keep the default report for language comparisons and check declined grants
     for root in $(fixture_roots); do
       run_app "$app" "$root"
@@ -105,9 +114,25 @@ compare_languages() {
   echo "compared language versions"
 }
 
+# Compare each port's manifest with Rust when both were built in this run.
+compare_manifests() {
+  for app in $apps; do
+    family=$(printf '%s' "$app" | sed -E 's/-(c|go|python|rust)$//')
+    reference=$family-rust
+    [ "$family" != "$app" ] || continue
+    { [ "$app" != "$reference" ] && [ -d "apps/$reference" ]; } || continue
+    mine=$work/manifest-compared-$app
+    theirs=$work/manifest-compared-$reference
+    { [ -e "$mine" ] && [ -e "$theirs" ]; } || continue
+    diff "$theirs" "$mine" > /dev/null || fail "$app manifest differs from $reference"
+  done
+  echo "compared language manifests"
+}
+
 check_links
 build_and_run
 compare_languages
+compare_manifests
 
 [ "$failures" -eq 0 ] || { printf '%d check(s) failed\n' "$failures"; exit 1; }
 echo "all checks passed"

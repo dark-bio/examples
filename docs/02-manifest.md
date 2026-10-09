@@ -1,34 +1,44 @@
 # The manifest
 
 The manifest is the TOML an app prints in its manifest pass. It names the app,
-lists the data the app reads and asks the owner any questions the app needs
-answered. The Ark reads it to decide what to check, what to show the owner and
-what to mount.
+lists the data the app reads, asks the owner any questions the app needs
+answered, and carries the text a listing shows. The Ark reads it to decide what
+to check, what to show the owner and what to mount.
 
 ```toml
 manifest = 1
 
 [app]
-name = "cilantro"
-version = "0.1.0"
+name = "Cilantro Taste Test"
+version = "0.4.0"
 
 [reads]
-paths = ["v1/genome/rsids/rs72921001"]
+paths = ["v1/genome/rsids/rs72921001", "v1/genome/reference"]
+
+[listing]
+language = "en"
+icon = "🌿"
+summary = "Does cilantro taste like soap to you? One variant near OR6A2 has a say."
+category = "traits"
+license = "BSD-3-Clause"
 ```
+
+[04-cilantro-soapiness](../apps/04-cilantro-soapiness) prints this manifest,
+with a longer listing.
 
 ## Format
 
 A manifest is a TOML 1.1 document. It opens with `manifest = 1`, the version of
 this format, followed by the tables below. The Ark refuses a manifest with
 another `manifest` value, a top-level table or key it doesn't know, or a key it
-doesn't know in the tables below. The whole manifest has to fit in the manifest
-pass's 64 KiB of output.
+doesn't know in the tables below, and skips `[listing]` without reading it. The
+whole manifest has to fit in the manifest pass's 64 KiB of output.
 
 ### `[app]`
 
-- **`name`** is the app's name, shown to the owner, from 1 to 64 characters. It
-  can't hold control characters, line or paragraph separators, or text
-  direction controls.
+- **`name`** is the app's name as the owner sees it, on the phone, in the
+  journal and on a listing, from 1 to 64 characters. It can't hold control
+  characters, line or paragraph separators, or text direction controls.
 - **`version`** is shown beside the name. It is a
   [Semantic Versioning 2.0.0](https://semver.org/) version of at most 32
   characters, such as `0.4.0` or `1.0.0-beta.1`, with no leading `v` and no
@@ -48,6 +58,11 @@ An app that reads nothing leaves the table out.
 
 Each table asks the owner one question, which
 [Asking the owner](#asking-the-owner) covers.
+
+### `[listing]`
+
+The text Ark Hub shows when it lists the app, which
+[Listing an app](#listing-an-app) covers.
 
 ## Granting data
 
@@ -95,6 +110,19 @@ It suits data that adds to a report without being needed for its answer.
 
 [02-permissions](../apps/02-permissions) asks for one optional variant.
 
+## Choosing grants
+
+The owner reads the list of paths before approving, so ask for the narrowest
+ones that do the job. One variant reads very differently from the whole call
+file. [04-reading-data.md](04-reading-data.md) walks through the options, from
+narrowest to broadest. Data that only enriches a report belongs in `optional`,
+so an owner who would rather not share it can still run the app.
+
+Some grants reach further than they look. A gene or interval grant includes its
+`changes`, which hold the owner's variants, even when the app only reads the
+sequence. Only `v1/genome/reference` and `v1/genome/annotations` hold nothing but
+public data.
+
 ## Asking the owner
 
 An app can ask the owner questions, which they answer on the phone as part of
@@ -136,15 +164,34 @@ Inputs never change what an app reads. An app whose reads depend on an answer
 grants everything the answer can select. The Ark's journal records which inputs
 the owner filled in, never the answers.
 
-## Choosing grants
+## Listing an app
 
-The owner reads the list of paths before approving, so ask for the narrowest
-ones that do the job. One variant reads very differently from the whole call
-file. [04-reading-data.md](04-reading-data.md) walks through the options, from
-narrowest to broadest. Data that only enriches a report belongs in `optional`,
-so an owner who would rather not share it can still run the app.
+`[listing]` holds what Ark Hub shows when it lists the app. The Ark never reads
+it and it never reaches the phone, so it changes nothing about what an app can
+do. Ark Hub needs the first five keys before it lists an app, and every example
+carries a full listing.
 
-Some grants reach further than they look. A gene or interval grant includes its
-`changes`, which hold the owner's variants, even when the app only reads the
-sequence. Only `v1/genome/reference` and `v1/genome/annotations` hold nothing but
-public data.
+| Key | To be listed | Rules |
+| :-- | :-- | :-- |
+| `language` | required | The language of the listing and of the report, a BCP 47 tag such as `en` |
+| `icon` | required | Exactly one emoji |
+| `summary` | required | Display text of at most 80 characters |
+| `category` | required | `traits`, `tools` or `developer` |
+| `license` | required | An SPDX expression, such as `BSD-3-Clause` |
+| `source` | optional | An `https` URL where the app's source lives |
+| `description` | optional | Restricted Markdown of at most 8 KiB |
+| `keywords` | optional | At most 5, each display text of at most 20 characters |
+| `purposes` | optional | For each grant, why the app reads it |
+
+A description allows paragraphs, emphasis, inline code, fenced code blocks and
+lists, and no headings, links, images, HTML, tables or footnotes. A purpose is
+display text of at most 80 characters, keyed by a path from `[reads]`:
+
+```toml
+[listing.purposes]
+"v1/genome/rsids/rs72921001" = "The variant near OR6A2 tied to tasting cilantro as soap"
+```
+
+Purposes appear on the listing only. The phone describes every grant in the
+Ark's own words, never the app's. A module holds one language, so an app in
+another language is a separate app.

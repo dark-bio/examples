@@ -64,8 +64,23 @@ static uint64_t coordinate(const char *value) {
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    printf("manifest = 1\n\n[app]\nname = \"genes-mini\"\nversion = \"0.1.0\"\n\n"
-           "[reads]\npaths = [\"" LENS "\"]\n");
+    printf("manifest = 1\n\n[app]\nname = \"One Gene\"\nversion = \"0.1.0\"\n\n"
+           "[reads]\npaths = [\"" LENS "\"]\n\n"
+           "[listing]\n"
+           "language = \"en\"\n"
+           "icon = \"🧬\"\n"
+           "summary = \"A gene's coordinates and sequence length, through the genes lens.\"\n"
+           "category = \"developer\"\n"
+           "license = \"BSD-3-Clause\"\n"
+           "source = \"https://github.com/dark-bio/examples/tree/main/apps/06-genes-mini-c\"\n"
+           "keywords = [\"tutorial\", \"genes\", \"sequence\", \"TAS2R38\"]\n"
+           "description = '''\n"
+           "Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `sequence` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.\n\n"
+           "An absent value prints as no answer. A missing sequence is an error.\n\n"
+           "A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.\n"
+           "'''\n\n"
+           "[listing.purposes]\n"
+           "\"v1/genome/genes/TAS2R38\" = \"A gene to read coordinates and sequence length from\"\n");
     return 0;
   }
 

@@ -18,15 +18,37 @@ const SOAPY_ALLELE: &str = "C";
 const LENS: &str = "v1/genome/rsids/rs72921001";
 
 fn main() {
-    // The manifest pass: name the app and ask for the one variant directory.
+    // The manifest pass names the app and asks for the one variant directory
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"cilantro-mini\"\n\
-             version = \"0.1.0\"\n\n\
-             [reads]\n\
-             paths = [\"{LENS}\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "One Variant"
+version = "0.1.0"
+
+[reads]
+paths = ["{LENS}"]
+
+[listing]
+language = "en"
+icon = "🌱"
+summary = "The smallest real data access, through the rsids lens, in four languages."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-rust"
+keywords = ["tutorial", "rsids", "genotype", "four languages"]
+description = '''
+The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
+
+Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.
+
+The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.
+'''
+
+[listing.purposes]
+"v1/genome/rsids/rs72921001" = "The one variant this tutorial reads"
+"#
         );
         return;
     };

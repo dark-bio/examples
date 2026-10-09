@@ -12,25 +12,46 @@ fn main() {
     // Print the questions when no data root was passed
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"sundae-order\"\n\
-             version = \"0.1.0\"\n\n\
-             [inputs.flavor]\n\
-             type = \"choice\"\n\
-             prompt = \"Which flavor should the scoop be?\"\n\
-             choices = [\"Vanilla\", \"Chocolate\", \"Strawberry\", \"Pistachio\"]\n\
-             default = \"Vanilla\"\n\n\
-             [inputs.toppings]\n\
-             type = \"choice\"\n\
-             prompt = \"Which toppings go on top?\"\n\
-             choices = [\"Sprinkles\", \"Hot fudge\", \"Whipped cream\", \"Cherry\"]\n\
-             multiple = true\n\
-             default = [\"Hot fudge\", \"Cherry\"]\n\n\
-             [inputs.card]\n\
-             type = \"text\"\n\
-             prompt = \"What should the card say?\"\n\
-             max = 40\n"
+            r#"manifest = 1
+
+[app]
+name = "Sundae Order"
+version = "0.1.0"
+
+[inputs.flavor]
+type = "choice"
+prompt = "Which flavor should the scoop be?"
+choices = ["Vanilla", "Chocolate", "Strawberry", "Pistachio"]
+default = "Vanilla"
+
+[inputs.toppings]
+type = "choice"
+prompt = "Which toppings go on top?"
+choices = ["Sprinkles", "Hot fudge", "Whipped cream", "Cherry"]
+multiple = true
+default = ["Hot fudge", "Cherry"]
+
+[inputs.card]
+type = "text"
+prompt = "What should the card say?"
+max = 40
+
+[listing]
+language = "en"
+icon = "🍨"
+summary = "A flavor, some toppings and a card. The first app that asks you questions."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/03-sundae-order"
+keywords = ["tutorial", "inputs", "choices", "text input"]
+description = '''
+An app can ask you questions when you approve it. This one asks for a flavor, any number of toppings and the words on the card, then prints your sundae.
+
+Each answer reaches the app as a plain file under `inputs`. A choice holds the picked choice, a multiple choice holds one pick per line, and a text holds exactly what you typed. The app reads none of your genome, so approving it shares only your answers with it.
+
+Answers never change what an app can read. The grants on the approval are the whole of it.
+'''
+"#
         );
         return;
     };

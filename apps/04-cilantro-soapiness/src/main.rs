@@ -26,12 +26,37 @@ fn main() {
     // coordinate is reported on.
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"cilantro-soapiness\"\n\
-             version = \"0.4.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/rsids/rs72921001\", \"v1/genome/reference\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "Cilantro Taste Test"
+version = "0.4.0"
+
+[reads]
+paths = ["v1/genome/rsids/rs72921001", "v1/genome/reference"]
+
+[listing]
+language = "en"
+icon = "🌿"
+summary = "Does cilantro taste like soap to you? One variant near OR6A2 has a say."
+category = "traits"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-soapiness"
+keywords = ["cilantro", "taste", "smell", "OR6A2", "rs72921001"]
+description = '''
+Some people love cilantro. Others taste dish soap. A 2012 study by Eriksson and colleagues tied the difference to one variant, `rs72921001`, near the _OR6A2_ olfactory receptor gene on chromosome 11. Each copy of the C allele makes the soapy reading more likely.
+
+The app reads that one variant and the reference base beside it. The report says which reading your genotype is, the evidence it rests on and what it does not establish. A missing call or an absent genotype gets its own explanation instead of a verdict.
+
+**How to read the result.** Two C copies is the genotype most strongly associated with the soapy taste. One copy sits in between. Zero copies is the fresh, herby reading. Taste is polygenic and shaped by diet and exposure, so the verdict is a tendency, not a fact about you.
+
+**Further reading.** Eriksson N et al. (2012), A genetic variant near olfactory receptor genes influences cilantro preference, _Flavour_ 1:22.
+'''
+
+[listing.purposes]
+"v1/genome/rsids/rs72921001" = "The variant near OR6A2 tied to tasting cilantro as soap"
+"v1/genome/reference" = "The reference build, to name the variant's coordinates"
+"#
         );
         return;
     };

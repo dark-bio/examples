@@ -27,12 +27,34 @@ const METRIC_MAX: usize = 512;
 fn main() -> Result<(), Box<dyn Error>> {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"vcf-roll-call\"\n\
-             version = \"0.2.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/snp-indel\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "VCF Roll Call"
+version = "0.2.0"
+
+[reads]
+paths = ["v1/genome/snp-indel"]
+
+[listing]
+language = "en"
+icon = "📋"
+summary = "An inventory of your call file, from record counts to depth and quality."
+category = "tools"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/08-vcf-roll-call"
+keywords = ["VCF", "call file", "statistics", "data quality", "noodles"]
+description = '''
+Most apps ask for a variant, a gene or a region. This one asks for the call file itself and streams it end to end with the noodles VCF parser. The report describes the file rather than you. It counts records per chromosome, classifies genotype calls, checks whether depth and quality fields are present, measures missingness and totals the span covered by reference blocks.
+
+A malformed record is counted and skipped. A failed read stops the app, so a damaged file cannot pass as a partial success.
+
+This is the broadest grant an app can ask for. Your phone shows it as the whole call file, and that is exactly what the app can read.
+'''
+
+[listing.purposes]
+"v1/genome/snp-indel" = "Your whole call file, to describe its contents"
+"#
         );
         return Ok(());
     };

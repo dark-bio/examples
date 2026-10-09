@@ -13,12 +13,34 @@ const LENS: &str = "v1/genome/snp-indel";
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"vcf-mini\"\n\
-             version = \"0.1.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/snp-indel\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "The Call File"
+version = "0.1.0"
+
+[reads]
+paths = ["v1/genome/snp-indel"]
+
+[listing]
+language = "en"
+icon = "📄"
+summary = "Count the records of a whole genome one line at a time."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/08-vcf-mini-rust"
+keywords = ["tutorial", "VCF", "call file", "streaming"]
+description = '''
+Grant `v1/genome/snp-indel` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.
+
+Two details matter at that scale. Every buffer refill leaves the sandbox, so the app reads through a 64 KiB buffer, and it reuses one line instead of allocating one per record.
+
+This is the broadest grant there is. VCF Roll Call parses the same file with a library.
+'''
+
+[listing.purposes]
+"v1/genome/snp-indel" = "Your whole call file, to count its records"
+"#
         );
         return;
     };

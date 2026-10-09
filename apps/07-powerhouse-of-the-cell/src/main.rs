@@ -24,12 +24,35 @@ const MAX_CHANGE_ROWS: usize = 28;
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"powerhouse-of-the-cell\"\n\
-             version = \"0.2.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/regions/chrM/1-16569\", \"v1/genome/reference\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "Powerhouse of the Cell"
+version = "0.2.0"
+
+[reads]
+paths = ["v1/genome/regions/chrM/1-16569", "v1/genome/reference"]
+
+[listing]
+language = "en"
+icon = "⚡"
+summary = "Your whole mitochondrial genome on one page, with your changes mapped."
+category = "tools"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/07-powerhouse-of-the-cell"
+keywords = ["mitochondria", "chrM", "GC content", "variants"]
+description = '''
+The mitochondrial chromosome is 16,569 bases long, small enough to read as a single interval. This app grants `chrM:1-16569` through the regions lens, streams the reference sequence for GC content and density windows, and lists your non reference changes with a text map of where they fall along the sequence.
+
+It counts transitions and transversions, flags indels and mixed allele calls, and reports positions without an answer. It is not a haplogroup caller, an ancestry test or a medical report.
+
+An interval grant covers your variants inside it, so approving this app shares every mitochondrial change in your call file with it.
+'''
+
+[listing.purposes]
+"v1/genome/regions/chrM/1-16569" = "Your whole mitochondrial genome, its sequence and your changes in it"
+"v1/genome/reference" = "The reference build, to name positions"
+"#
         );
         return;
     };

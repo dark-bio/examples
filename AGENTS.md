@@ -31,9 +31,12 @@ its report pass there, which is expected.
 - Copy the nearest example. One source file, in `apps/<nn>-<name>-<lang>/` for
   a mini and `apps/<nn>-<name>/` for a full app, with a short `README.md` that
   says what it shows and how to run it.
-- The manifest names the app, its version and the narrowest grants that answer
-  the question. Spell every path exactly as `ark data paths` shows it, with
-  `v1/` kept and no trailing `/`. `docs/02-manifest.md` has the rules.
+- The manifest gives the app's name as the owner should see it, its version and
+  the narrowest grants that answer the question. Spell every path exactly as
+  `ark data paths` shows it, with `v1/` kept and no trailing `/`. A full
+  `[listing]` ends it, with a purpose for every grant, and every language port
+  of an app prints the same one apart from `source`. `docs/02-manifest.md` has
+  the rules.
 - An app that asks the owner something declares `[inputs.<name>]` tables and
   keeps sample answers in its `inputs/` folder, one file per input with no
   trailing newline, which `make run` mounts.

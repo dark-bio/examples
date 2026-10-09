@@ -23,12 +23,35 @@ const RULER_WIDTH: usize = 64;
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"bitter-meter\"\n\
-             version = \"0.2.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/genes/TAS2R38\", \"v1/genome/reference\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "Bitter Meter"
+version = "0.2.0"
+
+[reads]
+paths = ["v1/genome/genes/TAS2R38", "v1/genome/reference"]
+
+[listing]
+language = "en"
+icon = "🥦"
+summary = "A postcard from TAS2R38, the bitter taste receptor, with your changes in it."
+category = "traits"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/06-bitter-meter"
+keywords = ["bitter taste", "TAS2R38", "PTC", "taste receptor"]
+description = '''
+_TAS2R38_ is the bitter taste receptor from the PTC and PROP classroom experiments. This app reads the gene through the genes lens. It streams the reference sequence for its GC content and lists every position inside the gene where your call file holds a non reference allele, with the reference base and your genotype at each.
+
+The report is deliberately a postcard, not a taster prediction. The classic taster story depends on specific coding variants and their phase, and this app does not infer either from the gene view.
+
+One grant covers the whole gene, including your variants in it. The app walks the changes listing carefully. A position without leaves still counts, genotypes are split around symbolic alleles, and a listing that fails stops the app instead of reading as no changes.
+'''
+
+[listing.purposes]
+"v1/genome/genes/TAS2R38" = "The bitter taste receptor gene, its sequence and your changes in it"
+"v1/genome/reference" = "The reference build, to name positions"
+"#
         );
         return;
     };

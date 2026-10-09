@@ -13,12 +13,34 @@ const LENS: &str = "v1/genome/genes/TAS2R38";
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"genes-mini\"\n\
-             version = \"0.1.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/genes/TAS2R38\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "One Gene"
+version = "0.1.0"
+
+[reads]
+paths = ["v1/genome/genes/TAS2R38"]
+
+[listing]
+language = "en"
+icon = "🧬"
+summary = "A gene's coordinates and sequence length, through the genes lens."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/06-genes-mini-rust"
+keywords = ["tutorial", "genes", "sequence", "TAS2R38"]
+description = '''
+Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `sequence` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.
+
+An absent value prints as no answer. A missing sequence is an error.
+
+A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.
+'''
+
+[listing.purposes]
+"v1/genome/genes/TAS2R38" = "A gene to read coordinates and sequence length from"
+"#
         );
         return;
     };

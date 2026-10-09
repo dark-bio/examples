@@ -22,12 +22,32 @@ const ENZYMES: &[(&str, &str)] = &[
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"motif-finder\"\n\
-             version = \"0.2.0\"\n\n\
-             [reads]\n\
-             paths = [\"v1/genome/genes/TAS2R38\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "Motif Finder"
+version = "0.2.0"
+
+[reads]
+paths = ["v1/genome/genes/TAS2R38"]
+
+[listing]
+language = "en"
+icon = "✂️"
+summary = "Where five classic restriction enzymes would cut the TAS2R38 reference sequence."
+category = "tools"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/09-motif-finder"
+keywords = ["restriction enzymes", "motifs", "TAS2R38", "reference genome"]
+description = '''
+A restriction enzyme cuts DNA at a short fixed motif. This app streams the reference sequence of _TAS2R38_ and counts the sites of five classic enzymes, AluI, HaeIII, RsaI, TaqI and Sau3AI. It keeps a four base window across chunks so a site spanning two reads still counts, and uppercases bases because repeats are soft masked.
+
+The app reads only public reference sequence. Its grant is still the gene, and a gene grant also covers your variants in it. You approve the grant, not what the code happens to read, and the listing shows the grant.
+'''
+
+[listing.purposes]
+"v1/genome/genes/TAS2R38" = "The gene whose reference sequence the app scans for cut sites"
+"#
         );
         return;
     };

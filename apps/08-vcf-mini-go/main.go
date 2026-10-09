@@ -14,8 +14,23 @@ const lens = "v1/genome/snp-indel"
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Printf("manifest = 1\n\n[app]\nname = \"vcf-mini\"\nversion = \"0.1.0\"\n\n"+
-			"[reads]\npaths = [\"%s\"]\n", lens)
+		fmt.Printf("manifest = 1\n\n[app]\nname = \"The Call File\"\nversion = \"0.1.0\"\n\n"+
+			"[reads]\npaths = [\"%s\"]\n\n"+
+			"[listing]\n"+
+			"language = \"en\"\n"+
+			"icon = \"📄\"\n"+
+			"summary = \"Count the records of a whole genome one line at a time.\"\n"+
+			"category = \"developer\"\n"+
+			"license = \"BSD-3-Clause\"\n"+
+			"source = \"https://github.com/dark-bio/examples/tree/main/apps/08-vcf-mini-go\"\n"+
+			"keywords = [\"tutorial\", \"VCF\", \"call file\", \"streaming\"]\n"+
+			"description = '''\n"+
+			"Grant `v1/genome/snp-indel` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.\n\n"+
+			"Two details matter at that scale. Every buffer refill leaves the sandbox, so the app reads through a 64 KiB buffer, and it reuses one line instead of allocating one per record.\n\n"+
+			"This is the broadest grant there is. VCF Roll Call parses the same file with a library.\n"+
+			"'''\n\n"+
+			"[listing.purposes]\n"+
+			"\"v1/genome/snp-indel\" = \"Your whole call file, to count its records\"\n", lens)
 		return
 	}
 	if err := run(os.Args[1]); err != nil {

@@ -31,8 +31,34 @@ def coordinate(value):
 
 def main():
     if len(sys.argv) < 2:
-        print('manifest = 1\n\n[app]\nname = "genes-mini"\nversion = "0.1.0"\n\n'
-              f'[reads]\npaths = ["{LENS}"]')
+        print(f"""manifest = 1
+
+[app]
+name = "One Gene"
+version = "0.1.0"
+
+[reads]
+paths = ["{LENS}"]
+
+[listing]
+language = "en"
+icon = "🧬"
+summary = "A gene's coordinates and sequence length, through the genes lens."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/06-genes-mini-python"
+keywords = ["tutorial", "genes", "sequence", "TAS2R38"]
+description = '''
+Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `sequence` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.
+
+An absent value prints as no answer. A missing sequence is an error.
+
+A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.
+'''
+
+[listing.purposes]
+"v1/genome/genes/TAS2R38" = "A gene to read coordinates and sequence length from"
+""", end="")
         return
 
     base = f"{sys.argv[1]}/{LENS}"

@@ -25,14 +25,29 @@ const (
 )
 
 func main() {
-	// The manifest pass: name the app and ask for the one variant directory.
+	// The manifest pass names the app and asks for the one variant directory
 	if len(os.Args) < 2 {
 		fmt.Printf("manifest = 1\n\n"+
 			"[app]\n"+
-			"name = \"cilantro-mini\"\n"+
+			"name = \"One Variant\"\n"+
 			"version = \"0.1.0\"\n\n"+
 			"[reads]\n"+
-			"paths = [\"%s\"]\n", lens)
+			"paths = [\"%s\"]\n\n"+
+			"[listing]\n"+
+			"language = \"en\"\n"+
+			"icon = \"🌱\"\n"+
+			"summary = \"The smallest real data access, through the rsids lens, in four languages.\"\n"+
+			"category = \"developer\"\n"+
+			"license = \"BSD-3-Clause\"\n"+
+			"source = \"https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-go\"\n"+
+			"keywords = [\"tutorial\", \"rsids\", \"genotype\", \"four languages\"]\n"+
+			"description = '''\n"+
+			"The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.\n\n"+
+			"Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.\n\n"+
+			"The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.\n"+
+			"'''\n\n"+
+			"[listing.purposes]\n"+
+			"\"v1/genome/rsids/rs72921001\" = \"The one variant this tutorial reads\"\n", lens)
 		return
 	}
 

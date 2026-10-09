@@ -25,15 +25,34 @@ const FORTUNES: &[&str] = &[
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"fortune-cookie\"\n\
-             version = \"0.2.0\"\n\n\
-             [reads]\n\
-             paths = [\
-             \"v1/genome/rsids/rs72921001\", \
-             \"v1/genome/rsids/rs671\", \
-             \"v1/genome/rsids/rs1229984\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "Fortune Cookie"
+version = "0.2.0"
+
+[reads]
+paths = ["v1/genome/rsids/rs72921001", "v1/genome/rsids/rs671", "v1/genome/rsids/rs1229984"]
+
+[listing]
+language = "en"
+icon = "🥠"
+summary = "A fortune derived from three of your genotypes. The same one every time."
+category = "traits"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/10-fortune-cookie"
+keywords = ["fortune", "deterministic", "sandbox", "hashing"]
+description = '''
+The Ark's sandbox hands apps zero random bytes and clocks that only count. There is no randomness to draw a fortune from, so this app hashes the genotypes of three variants into one. Run it again on the same data and you get the same fortune.
+
+An absent genotype adds nothing to the hash and is noted in the report. Any other read error stops the app. It is a demonstration of a deterministic sandbox, wrapped in a cookie.
+'''
+
+[listing.purposes]
+"v1/genome/rsids/rs72921001" = "One of three genotypes hashed into your fortune"
+"v1/genome/rsids/rs671" = "One of three genotypes hashed into your fortune"
+"v1/genome/rsids/rs1229984" = "One of three genotypes hashed into your fortune"
+"#
         );
         return;
     };

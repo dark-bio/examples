@@ -7,8 +7,34 @@ LENS = "v1/genome/regions/chrM/1-16569"
 
 def main():
     if len(sys.argv) < 2:
-        print('manifest = 1\n\n[app]\nname = "regions-mini"\nversion = "0.1.0"\n\n'
-              f'[reads]\npaths = ["{LENS}"]')
+        print(f"""manifest = 1
+
+[app]
+name = "One Region"
+version = "0.1.0"
+
+[reads]
+paths = ["{LENS}"]
+
+[listing]
+language = "en"
+icon = "📏"
+summary = "Stream an interval's sequence without ever loading it whole."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/07-regions-mini-python"
+keywords = ["tutorial", "regions", "streaming", "mitochondria"]
+description = '''
+Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `sequence` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.
+
+Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.
+
+An interval grant covers your variants inside it, which Powerhouse of the Cell lists.
+'''
+
+[listing.purposes]
+"v1/genome/regions/chrM/1-16569" = "The mitochondrial genome, to stream its sequence"
+""", end="")
         return
 
     length = gc = 0

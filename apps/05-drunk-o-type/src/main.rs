@@ -776,29 +776,59 @@ fn print_further_reading() {
 
 // ── Entry point ────────────────────────────────────────────────────────────
 
-const MANIFEST: &str = "\
-manifest = 1
+/// App identity, grants and listing printed by the manifest pass.
+const MANIFEST: &str = r#"manifest = 1
 
 [app]
-name = \"drunk-o-type\"
-version = \"0.3.0\"
+name = "Drunk-o-type"
+version = "0.3.0"
 
 [reads]
 paths = [
-    \"v1/genome/rsids/rs671\",
-    \"v1/genome/rsids/rs1229984\",
-    \"v1/genome/rsids/rs2066702\",
-    \"v1/genome/rsids/rs1799971\",
-    \"v1/genome/rsids/rs1800497\",
-    \"v1/genome/rsids/rs279858\",
-    \"v1/genome/rsids/rs10156191\",
-    \"v1/genome/rsids/rs1049742\",
-    \"v1/genome/rsids/rs1049793\",
-    \"v1/genome/rsids/rs2052129\",
-    \"v1/genome/rsids/rs11558538\",
-    \"v1/genome/reference\",
+    "v1/genome/rsids/rs671",
+    "v1/genome/rsids/rs1229984",
+    "v1/genome/rsids/rs2066702",
+    "v1/genome/rsids/rs1799971",
+    "v1/genome/rsids/rs1800497",
+    "v1/genome/rsids/rs279858",
+    "v1/genome/rsids/rs10156191",
+    "v1/genome/rsids/rs1049742",
+    "v1/genome/rsids/rs1049793",
+    "v1/genome/rsids/rs2052129",
+    "v1/genome/rsids/rs11558538",
+    "v1/genome/reference",
 ]
-";
+
+[listing]
+language = "en"
+icon = "🍻"
+summary = "Eleven variants on the flush, the buzz and how fermented drinks treat you."
+category = "traits"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/05-drunk-o-type"
+keywords = ["alcohol", "flush", "histamine", "ALDH2", "variant panel"]
+description = '''
+Eleven variants across three axes. **Flush** asks whether alcohol makes you sick, through _ALDH2_ and _ADH1B_. **Like** asks whether your brain enjoys it, through _OPRM1_, _ANKK1_ and _GABRA2_. **Junk** asks whether the histamine in fermented drinks wrecks you, through _AOC1_ and _HNMT_. Each axis bins into five tiers and the three tiers combine into your drunk-o-type.
+
+Every variant is its own grant, so your phone lists all eleven sites by name before you approve. The app counts the allele each study tested, which is not always the ALT allele. A missing allele or an absent genotype makes its axis inconclusive rather than lowering the score.
+
+This is a demonstration of a variant panel, not medical advice, and the tier names are jokes.
+'''
+
+[listing.purposes]
+"v1/genome/rsids/rs671" = "ALDH2, the main driver of the alcohol flush"
+"v1/genome/rsids/rs1229984" = "ADH1B, how fast alcohol turns into acetaldehyde"
+"v1/genome/rsids/rs2066702" = "ADH1B, a second variant of the same enzyme"
+"v1/genome/rsids/rs1799971" = "OPRM1, tied to how rewarding alcohol feels"
+"v1/genome/rsids/rs1800497" = "ANKK1 beside DRD2, tied to dopamine reward"
+"v1/genome/rsids/rs279858" = "GABRA2, tied to alcohol's unwinding effect"
+"v1/genome/rsids/rs10156191" = "AOC1, the enzyme that breaks down histamine from food and drink"
+"v1/genome/rsids/rs1049742" = "AOC1, a second variant of the histamine enzyme"
+"v1/genome/rsids/rs1049793" = "AOC1, the most common variant of the histamine enzyme"
+"v1/genome/rsids/rs2052129" = "AOC1, a variant upstream of the gene that may lower how much is made"
+"v1/genome/rsids/rs11558538" = "HNMT, a second enzyme that clears histamine"
+"v1/genome/reference" = "The reference build, to name the variants' coordinates"
+"#;
 
 // ENOENT means no answer; every other read error fails the app.
 fn read_leaf(base: &Path, name: &str) -> Result<Option<String>, Box<dyn Error>> {

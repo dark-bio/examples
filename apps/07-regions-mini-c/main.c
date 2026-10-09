@@ -10,8 +10,23 @@
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    printf("manifest = 1\n\n[app]\nname = \"regions-mini\"\nversion = \"0.1.0\"\n\n"
-           "[reads]\npaths = [\"" LENS "\"]\n");
+    printf("manifest = 1\n\n[app]\nname = \"One Region\"\nversion = \"0.1.0\"\n\n"
+           "[reads]\npaths = [\"" LENS "\"]\n\n"
+           "[listing]\n"
+           "language = \"en\"\n"
+           "icon = \"📏\"\n"
+           "summary = \"Stream an interval's sequence without ever loading it whole.\"\n"
+           "category = \"developer\"\n"
+           "license = \"BSD-3-Clause\"\n"
+           "source = \"https://github.com/dark-bio/examples/tree/main/apps/07-regions-mini-c\"\n"
+           "keywords = [\"tutorial\", \"regions\", \"streaming\", \"mitochondria\"]\n"
+           "description = '''\n"
+           "Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `sequence` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.\n\n"
+           "Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.\n\n"
+           "An interval grant covers your variants inside it, which Powerhouse of the Cell lists.\n"
+           "'''\n\n"
+           "[listing.purposes]\n"
+           "\"v1/genome/regions/chrM/1-16569\" = \"The mitochondrial genome, to stream its sequence\"\n");
     return 0;
   }
   size_t size = strlen(argv[1]) + sizeof(LENS) + sizeof("/sequence") + 1;

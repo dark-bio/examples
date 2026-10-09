@@ -21,14 +21,39 @@ fn main() {
     // Print the manifest when no data root was passed
     let Some(dir) = std::env::args().nth(1) else {
         print!(
-            "manifest = 1\n\n\
-             [app]\n\
-             name = \"permissions\"\n\
-             version = \"0.2.0\"\n\
-             develop = true\n\n\
-             [reads]\n\
-             paths = [\"{GRANTED}\"]\n\
-             optional = [\"{OPTIONAL}\"]\n"
+            r#"manifest = 1
+
+[app]
+name = "Permissions"
+version = "0.2.0"
+develop = true
+
+[reads]
+paths = ["{GRANTED}"]
+optional = ["{OPTIONAL}"]
+
+[listing]
+language = "en"
+icon = "🔒"
+summary = "One grant, one optional grant, one blocked read, and the develop flag."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/02-permissions"
+keywords = ["tutorial", "grants", "optional grants", "develop flag", "sandbox"]
+description = '''
+A grant covers one directory and everything beneath it, and nothing else. This app grants one variant, reads its genotype, then tries to open the call file it never asked for. The read fails, and the report says so.
+
+It also asks for a second variant as an optional grant, which starts switched off when you approve. A declined grant reads exactly like missing data, so the app cannot tell whether you said no.
+
+The manifest also sets `develop = true`, so what the app prints to standard error goes to your review along with its report, even when it fails. Your phone shows a developer mode warning when approving such an app. Leave the flag out of apps you ship.
+
+Approving this app shares one variant, or two with the optional one switched on. The blocked read shows that the boundary is enforced by the Ark, not by the app's good manners.
+'''
+
+[listing.purposes]
+"v1/genome/rsids/rs72921001" = "The variant this demo reads, to show a granted read"
+"v1/genome/rsids/rs671" = "An optional second variant, to show what a declined grant looks like"
+"#
         );
         return;
     };
