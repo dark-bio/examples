@@ -125,8 +125,8 @@ missing grants there.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
   [10-fortune-cookie](../apps/10-fortune-cookie) explains.
-- **Output gating.** You always see standard output and standard error, as if
-  `develop` were set.
+- **The owner's review.** You always see standard output and standard error at
+  once, as if `develop` were set and the owner released every report.
 - **The generated tree.** Plain directories list everything, and no read fails
   with an I/O error or "file too large".
 - **Startup cost.** A laptop starts a module far faster than an Ark does, so a
@@ -155,7 +155,9 @@ ark app run build/04-cilantro-mini-rust.wasm > report.md
 ```
 
 `ark app run` uploads the module and waits while the owner approves it on their
-phone. It then writes the report to standard output. A refused app comes back
-with the reason. `ark help apps` covers manifests and grants, and
+phone, with any optional grants and answers. When the app ends, the owner
+reviews its report, and the command writes it to standard output once the owner
+releases it. A refused app comes back with the reason, and a report the owner
+keeps fails the command. `ark help apps` covers manifests and grants, and
 `ark help datasets` covers the data commands. AI agents read `ark help agents`
 first, and `ark-emulator help agents` for the emulator.

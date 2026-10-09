@@ -2,10 +2,10 @@
 
 A report is what an app prints in its report pass, and it is the only thing an
 app can send out of the sandbox. The owner reads it first, on their phone, and
-decides whether it goes any further. Whoever ran the app then gets its exact
-bytes, in a terminal from `ark app run`, or rendered as Markdown. So a report is
-read three ways, on a phone, as raw text and as a rendered page, and it has to
-work in all of them. This page is a guideline for that. The Ark itself checks
+decides whether it goes any further. Once the owner releases it, the session
+that started the task gets its exact bytes, in a terminal from `ark app run` or
+rendered as Markdown in Ark Hub. So a report is read three ways, on a phone, as
+raw text and as a rendered page, and it has to work in all of them. This page is a guideline for that. The Ark itself checks
 only that a report is text, as [Form](#form) says.
 
 ## What a report has to do
@@ -27,12 +27,11 @@ order isn't promised. And the output is capped at 1 MiB, and an app that prints
 more fails, so a report summarizes. It lists the evidence for its finding and
 counts the rest.
 
-An app that exits non-zero fails, and a failure returns nothing. Without
-`develop = true` the Ark withholds standard output on failure and never
-returns standard error, so the owner is left with a blank screen after
-approving the app. A failure exit is
-for data that couldn't be read. Everything an app can state, including that
-it has no answer, is a report.
+An app that exits non-zero fails, and the owner reviews a failure too. Without
+`develop = true` the review shows nothing but the fact that it failed, since the
+Ark withholds standard output on failure and never shows standard error. So a
+failure exit is for data that couldn't be read. Everything an app can state,
+including that it has no answer, is a report.
 
 ## The shape
 

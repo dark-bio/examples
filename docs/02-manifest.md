@@ -28,17 +28,23 @@ with a longer listing.
 
 ## Format
 
-A manifest is a TOML 1.1 document. It opens with `manifest = 1`, the version of
-this format, followed by the tables below. The Ark refuses a manifest with
-another `manifest` value, a top-level table or key it doesn't know, or a key it
-doesn't know in the tables below, and skips `[listing]` without reading it. The
-whole manifest has to fit in the manifest pass's 64 KiB of output.
+A manifest is a TOML 1.1.0 document. It opens with `manifest = 1`, the version
+of this format, followed by the tables below. The Ark reads `[app]`, `[reads]`,
+`[inputs]` and `[output]` strictly, and refuses a manifest with a key it doesn't
+know in any of them. It skips `[listing]` without reading it, and refuses any
+other table or top-level key, and any other `manifest` value. The whole manifest
+has to fit in the manifest pass's 64 KiB of output.
+
+Text that the owner or a listing shows, such as the name, a prompt or a choice,
+is display text. It holds at least one character, and no control characters,
+line or paragraph separators, or text direction controls. Emoji are fine,
+joined ones included. Long text reads best in TOML literal strings, `'...'` and
+`'''...'''`, since they need no escaping.
 
 ### `[app]`
 
 - **`name`** is the app's name as the owner sees it, on the phone, in the
-  journal and on a listing, from 1 to 64 characters. It can't hold control
-  characters, line or paragraph separators, or text direction controls.
+  journal and on a listing, as display text of 1 to 64 characters.
 - **`version`** is shown beside the name. It is a
   [Semantic Versioning 2.0.0](https://semver.org/) version of at most 32
   characters, such as `0.4.0` or `1.0.0-beta.1`, with no leading `v` and no
@@ -58,6 +64,12 @@ An app that reads nothing leaves the table out.
 
 Each table asks the owner one question, which
 [Asking the owner](#asking-the-owner) covers.
+
+### `[output]`
+
+- **`report`** is the report's media type, `text/markdown` by default. The
+  format also defines `application/json`, which the current Ark firmware
+  refuses, so every example leaves the table out and prints Markdown.
 
 ### `[listing]`
 
