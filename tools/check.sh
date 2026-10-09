@@ -47,7 +47,7 @@ run_app() {
   app=$1 root=$2 output=$work/output-$1-$(basename "$2")${3:+-optional-off}
 
   # Accept a successful report or the expected stop for a missing required grant
-  if OPTIONAL="${3:-${OPTIONAL:-}}" sh tools/run.sh "${BUILD:-build}/$app.wasm" "$root" > "$output" 2>&1; then
+  if OPTIONAL="${3:-${OPTIONAL:-}}" sh tools/run.sh "${BUILD:-build}/$app.wasm" "$root" "apps/$app/inputs" > "$output" 2>&1; then
     sed -n '/^== report pass ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")${3:+-optional-off}"
   elif ! grep -q "no declared dataset" "$output"; then
     fail "$app on $root${3:+ (OPTIONAL=$3)}"

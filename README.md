@@ -73,6 +73,7 @@ and a full app turns the same read into a report. Each row is a folder under
 | :-- | :-- | :-- |
 | `01-hello` | the manifest pass and the report pass | Rust, Go, C, Python |
 | `02-permissions` | requesting data, optional grants, least privilege and the `develop` flag | Rust |
+| `03-sundae-order` | asking the owner questions with inputs | Rust |
 | `04-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
 | `04-cilantro-soapiness` | the same variant as a report | Rust |
 | `05-drunk-o-type` | a panel of variants | Rust |
@@ -89,8 +90,8 @@ and a full app turns the same read into a report. Each row is a folder under
 
 - [01-app-model.md](docs/01-app-model.md) covers the two passes, the checks, the
   sandbox and its limits.
-- [02-manifest.md](docs/02-manifest.md) covers the manifest and how to grant
-  data.
+- [02-manifest.md](docs/02-manifest.md) covers the manifest, how to grant data
+  and how to ask the owner questions.
 - [03-data-paths.md](docs/03-data-paths.md) maps the data tree and the rules
   every path follows.
 - [04-reading-data.md](docs/04-reading-data.md) covers absence, errors,

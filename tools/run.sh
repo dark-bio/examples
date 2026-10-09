@@ -1,14 +1,16 @@
 #!/bin/sh
 # Run an Ark app with its required datasets and available optional datasets
 # mounted read-only. OPTIONAL=off leaves every optional dataset unmounted.
+# Declared inputs come from answer files, copied read-only without validation.
 # Start the report pass with the data directory as its first argument.
 # Invoked by `make run`. See docs/05-running.md.
 #
-# Usage: tools/run.sh <module.wasm> <fixtures-dir>
+# Usage: tools/run.sh <module.wasm> <fixtures-dir> [inputs-dir]
 set -eu
 
 wasm="$1"
 fixtures="$2"
+inputs="${3:-}"
 wasmtime="${WASMTIME:-wasmtime}"
 
 # Capture the TOML from the manifest pass, which runs with no arguments
@@ -16,8 +18,8 @@ manifest="$("$wasmtime" "$wasm")"
 echo "== manifest pass =="
 printf '%s\n' "$manifest"
 
-# wasmtime lets a guest write to every directory it mounts, so the grants are
-# mounted from copies in a scratch tree without write permission
+# wasmtime lets a guest write to every directory it mounts, so grants and
+# inputs are mounted from copies in a scratch tree without write permission
 stage="$(mktemp -d)"
 trap 'chmod -R u+w "$stage"; rm -rf "$stage"' EXIT
 
@@ -75,9 +77,36 @@ while read -r grant dataset; do
   cp -R "$fixtures/$dataset" "$stage/$dataset"
   set -- "$@" --dir "$stage/$dataset::/$dataset"
 done < "$stage/grants"
+
+# Read the input table headers in the form the examples print
+printf '%s\n' "$manifest" | awk '
+  /^[[:space:]]*\[inputs\.[a-z][a-z0-9_-]*\][[:space:]]*(#.*)?$/ {
+    name = $0
+    sub(/^[[:space:]]*\[inputs\./, "", name)
+    sub(/\].*$/, "", name)
+    print name
+  }
+' > "$stage/input-names"
+
+# Copy only declared answers and mount them together under the data root
+if [ -s "$stage/input-names" ]; then
+  if [ ! -d "$inputs" ]; then
+    printf 'declared inputs require an answers directory as the third argument: %s\n' "${inputs:-none provided}" >&2
+    exit 1
+  fi
+  mkdir -p "$stage/inputs"
+  while read -r name; do
+    if [ ! -f "$inputs/$name" ]; then
+      printf 'answers directory has no file for declared input: %s\n' "$name" >&2
+      exit 1
+    fi
+    cp "$inputs/$name" "$stage/inputs/$name"
+  done < "$stage/input-names"
+  set -- "$@" --dir "$stage/inputs::/inputs"
+fi
 chmod -R a-w "$stage"
 
-# Start the report pass with the accepted grants and the data root
+# Start the report pass with the accepted grants, inputs and the data root
 echo
 echo "== report pass =="
 "$wasmtime" run "$@" "$wasm" /

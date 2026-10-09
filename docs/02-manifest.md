@@ -1,8 +1,9 @@
 # The manifest
 
-The manifest is the TOML an app prints in its manifest pass. It names the app and
-lists the data the app reads. The Ark reads it to decide what to check, what to
-show the owner and what to mount.
+The manifest is the TOML an app prints in its manifest pass. It names the app,
+lists the data the app reads and asks the owner any questions the app needs
+answered. The Ark reads it to decide what to check, what to show the owner and
+what to mount.
 
 ```toml
 manifest = 1
@@ -42,6 +43,11 @@ pass's 64 KiB of output.
   [Optional grants](#optional-grants) covers.
 
 An app that reads nothing leaves the table out.
+
+### `[inputs.<name>]`
+
+Each table asks the owner one question, which
+[Asking the owner](#asking-the-owner) covers.
 
 ## Granting data
 
@@ -88,6 +94,47 @@ It suits data that adds to a report without being needed for its answer.
   shows.
 
 [02-permissions](../apps/02-permissions) asks for one optional variant.
+
+## Asking the owner
+
+An app can ask the owner questions, which they answer on the phone as part of
+the approval. Each `[inputs.<name>]` table declares one:
+
+```toml
+[inputs.flavor]
+type = "choice"
+prompt = "Which flavor should the scoop be?"
+choices = ["Vanilla", "Chocolate", "Strawberry", "Pistachio"]
+default = "Vanilla"
+```
+
+- **`type`** is `"choice"` or `"text"`.
+- **`prompt`** is the question, display text of at most 80 characters.
+- **`choices`**, for a choice, lists 1 to 32 distinct answers, each display
+  text of at most 64 characters.
+- **`multiple`**, for a choice, lets the owner pick any number of them. It is
+  `false` by default.
+- **`max`**, for a text, is the longest answer accepted, from 1 to 256
+  characters.
+- **`default`** is what the phone fills in first. It is one of the choices, a
+  list of them in the order of `choices` for a multiple choice, or a text that
+  fits `max`. Without one, a choice starts unpicked and a text starts empty.
+
+A name is 1 to 32 lowercase ASCII letters, digits, `-` and `_`, and starts with
+a letter. A manifest declares at most 16 inputs. The Ark refuses a declaration
+that breaks one of these rules, and checks every answer against its
+declaration.
+
+The answers reach the app as files under `inputs/` in the data directory, one
+per input and named after it, in UTF-8 with no trailing newline. A choice's file
+holds the picked choice. A multiple choice's file holds the picks one per line,
+in the order of `choices`, and is empty when nothing was picked. A text's file
+holds the text, which is never empty.
+[03-sundae-order](../apps/03-sundae-order) reads all three.
+
+Inputs never change what an app reads. An app whose reads depend on an answer
+grants everything the answer can select. The Ark's journal records which inputs
+the owner filled in, never the answers.
 
 ## Choosing grants
 

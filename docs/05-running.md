@@ -72,9 +72,19 @@ owner declined them all:
 OPTIONAL=off make run APP=02-permissions
 ```
 
+An app that declares inputs gets its answers from files in its folder's
+`inputs/` directory, one per input, which `make run` mounts at `/inputs`.
+`INPUTS` points it at another directory of answer files. The answers are taken
+as given, so a local run never checks them against their declarations.
+
+```sh
+INPUTS=my-answers make run APP=03-sundae-order
+```
+
 An app kept outside this repository runs against these fixtures the same way,
 since `tools/run.sh` takes any module, as in
-`sh tools/run.sh path/to/app.wasm fixtures`. Build it with the `wasm-opt`
+`sh tools/run.sh path/to/app.wasm fixtures`, with a directory of answers as a
+third argument when the app declares inputs. Build it with the `wasm-opt`
 feature flags in `tools/build.sh`, because an Ark's runtime accepts only those.
 
 ### Small modules
@@ -109,7 +119,8 @@ missing grants there.
 ### What a laptop doesn't reproduce
 
 - **The checks before approval.** Locally nothing refuses a start section, a bad
-  name, or a path that can't be granted or isn't on the Ark.
+  name, a path that can't be granted or isn't on the Ark, or an answer that
+  doesn't fit its input.
 - **The limits.** Memory, output and the manifest pass's time are unbounded.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
