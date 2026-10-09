@@ -53,8 +53,8 @@ imports go in `--include` when calling `tools/python_build.py` directly.
 ```sh
 make build                     # build every app into build/<app>.wasm
 make run                       # build and run every app
-make run APP=03-cilantro-mini-rust
-make run APP=03-cilantro-mini-rust FIXTURES=fixtures/no-call
+make run APP=04-cilantro-mini-rust
+make run APP=04-cilantro-mini-rust FIXTURES=fixtures/no-call
 ```
 
 `make run` does what an Ark does, through `tools/run.sh`. It runs the module
@@ -104,7 +104,7 @@ missing grants there.
 - **The limits.** Memory, output and the manifest pass's time are unbounded.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
-  [09-fortune-cookie](../apps/09-fortune-cookie) explains.
+  [10-fortune-cookie](../apps/10-fortune-cookie) explains.
 - **Output gating.** You always see standard output and standard error, as if
   `develop` were set.
 - **The generated tree.** Plain directories list everything, and no read fails
@@ -131,7 +131,7 @@ prints. Then check what the Ark holds and run the app:
 ```sh
 ark status                                    # trust, firmware, pairing and lock state
 ark data paths                                # the paths apps can read, and what is available
-ark app run build/03-cilantro-mini-rust.wasm > report.md
+ark app run build/04-cilantro-mini-rust.wasm > report.md
 ```
 
 `ark app run` uploads the module and waits while the owner approves it on their

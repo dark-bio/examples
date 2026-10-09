@@ -20,7 +20,7 @@ sh tools/check.sh             # what CI runs: links, builds, runs, ports
 `make run` mounts only the paths an app's manifest declares, read-only, and
 runs it with `/` as the data directory, the way an Ark does. The three fixture
 roots are described in `fixtures/README.md`. An app whose grants a root lacks
-stops before its run pass there, which is expected.
+stops before its report pass there, which is expected.
 
 ## Adding an app
 
@@ -62,7 +62,7 @@ Follow `docs/06-reports.md`. In short:
 - Pick one voice and keep it. Light or serious, never both in one report.
   Genomics words, never clinic words.
 - Plain Markdown only. No images, HTML, footnotes, encoded content, dates or
-  run ids. Tables with as few columns as carry the evidence, rows about 80
+  task ids. Tables with as few columns as carry the evidence, rows about 80
   characters.
 
 ## Never

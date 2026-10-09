@@ -39,12 +39,12 @@ fixture_roots() {
   done
 }
 
-# An app whose data a root lacks stops before its run pass, the way an Ark
+# An app whose data a root lacks stops before its report pass, the way an Ark
 # refuses a grant it cannot satisfy. Anything else is a failure.
 run_app() {
   app=$1 root=$2 output=$work/output-$1-$(basename "$2")
   if sh tools/run.sh "${BUILD:-build}/$app.wasm" "$root" > "$output" 2>&1; then
-    sed -n '/^== run pass ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")"
+    sed -n '/^== report pass ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")"
   elif ! grep -q "no declared dataset" "$output"; then
     fail "$app on $root"
     cat "$output"

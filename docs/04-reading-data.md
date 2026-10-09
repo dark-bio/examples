@@ -54,7 +54,7 @@ app meets most are `A/G` and `A|G`, a haploid `G`, a missing allele such as
 At a known SNP, splitting on `/` and `|` is enough. An app that walks `changes`
 can meet symbolic alleles such as `<DEL>` and breakends, which contain those
 characters themselves, so it has to split only outside them.
-[05-bitter-meter](../apps/05-bitter-meter) shows how.
+[06-bitter-meter](../apps/06-bitter-meter) shows how.
 
 ## From narrowest to broadest
 
@@ -71,14 +71,14 @@ Grant one `rsids/<rsid>` directory and read its `genotype`, `chromosome`,
 paths = ["v1/genome/rsids/rs72921001"]
 ```
 
-[03-cilantro-mini-rust](../apps/03-cilantro-mini-rust), with its Go, C and
+[04-cilantro-mini-rust](../apps/04-cilantro-mini-rust), with its Go, C and
 Python siblings, shows the bare read.
-[03-cilantro-soapiness](../apps/03-cilantro-soapiness) turns it into a report.
+[04-cilantro-soapiness](../apps/04-cilantro-soapiness) turns it into a report.
 
 ### A panel of variants
 
 Grant one `rsids/` directory per variant. The owner sees each site by name.
-[04-drunk-o-type](../apps/04-drunk-o-type) reads eleven.
+[05-drunk-o-type](../apps/05-drunk-o-type) reads eleven.
 
 ### One position
 
@@ -92,20 +92,20 @@ Grant `genes/<gene>` to read its `chromosome`, `start`, `end`, `strand`,
 `biotype` and `sequence`, and its `changes`, one directory per position where a
 record starting inside the gene holds an ALT allele. A gene can have no
 `changes` directory at all, and a very long or very variable one fails with
-"file too large". [05-genes-mini-rust](../apps/05-genes-mini-rust) shows the bare read,
-and [05-bitter-meter](../apps/05-bitter-meter) turns TAS2R38 into a report.
+"file too large". [06-genes-mini-rust](../apps/06-genes-mini-rust) shows the bare read,
+and [06-bitter-meter](../apps/06-bitter-meter) turns TAS2R38 into a report.
 
 ### An interval
 
 Grant `regions/<chr>/<start>-<end>` for any stretch of a chromosome, with the
 same `sequence` and `changes` as a gene. When `changes` fails with "file too
 large", split the interval and list each half.
-[06-regions-mini-rust](../apps/06-regions-mini-rust) shows the bare read, and
-[06-powerhouse-of-the-cell](../apps/06-powerhouse-of-the-cell) reads the whole
+[07-regions-mini-rust](../apps/07-regions-mini-rust) shows the bare read, and
+[07-powerhouse-of-the-cell](../apps/07-powerhouse-of-the-cell) reads the whole
 mitochondrial genome as one interval.
 
 A gene or interval grant includes its `changes`, even if the app never lists
-them. [08-motif-finder](../apps/08-motif-finder) reads only a gene's sequence,
+them. [09-motif-finder](../apps/09-motif-finder) reads only a gene's sequence,
 yet its grant still covers the gene's variants.
 
 ### The whole call file
@@ -114,8 +114,8 @@ Grant `snp-indel` to read the `vcf` itself, when no lens answers the question.
 It is the broadest request there is, and the file runs to gigabytes, so read it
 line by line, through a large buffer. Every refill leaves the sandbox, so a
 small default buffer can cost ten times the scan time.
-[07-vcf-mini-rust](../apps/07-vcf-mini-rust) counts records with a plain line
-scan, and [07-vcf-roll-call](../apps/07-vcf-roll-call) parses the whole file
+[08-vcf-mini-rust](../apps/08-vcf-mini-rust) counts records with a plain line
+scan, and [08-vcf-roll-call](../apps/08-vcf-roll-call) parses the whole file
 with `noodles-vcf`.
 
 ## Least privilege

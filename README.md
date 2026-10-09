@@ -7,11 +7,11 @@ Worked examples for writing apps that run on an Ark.
 An Ark holds a person's genome on a device only they control. Apps never receive
 a copy of that data. They are sent to it instead, and run in a deterministic
 sandbox on the Ark with no network and no writable storage. An app reads the
-data it was granted as plain files and prints a report. The owner approves every
-run on their phone and decides whether to release the result. Because the
-sandbox contains the code, anyone can write an app and anyone can run anyone
-else's. The [whitepaper](https://dark.bio/whitepaper.pdf) lays out the trust
-model.
+data it was granted as plain files and prints a report. The owner approves each
+app on their phone before it runs, and decides whether to release its report.
+Because the sandbox contains the code, anyone can write an app and anyone can
+run anyone else's. The [whitepaper](https://dark.bio/whitepaper.pdf) lays out
+the trust model.
 
 These examples teach that model one idea at a time, from printing a line to
 scanning a whole call file. Every app is a single source file.
@@ -47,7 +47,7 @@ make run                     # every app
 ```
 
 Run it on an Ark with the [`ark`](https://github.com/dark-bio/cli) tool. The
-owner approves the run on their phone, in Ark Companion for
+owner approves it on their phone, in Ark Companion for
 [iOS](https://apps.apple.com/app/id6751324700) or
 [Android](https://play.google.com/store/apps/details?id=bio.dark.companion).
 Without hardware, [Ark Emulator](https://github.com/dark-bio/emulator) boots
@@ -67,23 +67,23 @@ what a laptop can't reproduce, and running on an Ark or an emulator.
 Most data comes in two versions. A *mini* shows the bare read in a few lines,
 and a full app turns the same read into a report. Each row is a folder under
 `apps/`, with the language appended for the minis, such as
-`03-cilantro-mini-rust`, and that folder name is what `APP=` takes.
+`04-cilantro-mini-rust`, and that folder name is what `APP=` takes.
 
 | App | What it shows | Languages |
 | :-- | :-- | :-- |
-| `01-hello` | the manifest pass and the run pass | Rust, Go, C, Python |
+| `01-hello` | the manifest pass and the report pass | Rust, Go, C, Python |
 | `02-permissions` | requesting data, least privilege and the `develop` flag | Rust |
-| `03-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
-| `03-cilantro-soapiness` | the same variant as a report | Rust |
-| `04-drunk-o-type` | a panel of variants | Rust |
-| `05-genes-mini` | one gene through `genes/` | Rust, Go, C, Python |
-| `05-bitter-meter` | the gene and its changes as a report | Rust |
-| `06-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
-| `06-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
-| `07-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
-| `07-vcf-roll-call` | parsing the whole call file as a report | Rust |
-| `08-motif-finder` | computing over a gene's reference sequence | Rust |
-| `09-fortune-cookie` | why the sandbox is deterministic | Rust |
+| `04-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
+| `04-cilantro-soapiness` | the same variant as a report | Rust |
+| `05-drunk-o-type` | a panel of variants | Rust |
+| `06-genes-mini` | one gene through `genes/` | Rust, Go, C, Python |
+| `06-bitter-meter` | the gene and its changes as a report | Rust |
+| `07-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
+| `07-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
+| `08-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
+| `08-vcf-roll-call` | parsing the whole call file as a report | Rust |
+| `09-motif-finder` | computing over a gene's reference sequence | Rust |
+| `10-fortune-cookie` | why the sandbox is deterministic | Rust |
 
 ## Documentation
 

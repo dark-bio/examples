@@ -1,7 +1,7 @@
 # Reports
 
-A report is what an app prints in its run pass, and it is the only thing an app
-can send out of the sandbox. The owner reads it first, on their phone, and
+A report is what an app prints in its report pass, and it is the only thing an
+app can send out of the sandbox. The owner reads it first, on their phone, and
 decides whether it goes any further. Whoever ran the app then gets its exact
 bytes, in a terminal from `ark app run`, or rendered as Markdown. So a report is
 read three ways, on a phone, as raw text and as a rendered page, and it has to
@@ -19,17 +19,18 @@ granted beside the report, so the report carries none of them. And the report
 is readable to the last byte. A report is only as trustworthy as it is
 readable.
 
-Two things follow from the sandbox. The run is deterministic, so a report
-carries no date and no run id. The same app over the same data prints the same
+Two things follow from the sandbox. It is deterministic, so a report carries
+no date and no task id. The same app over the same data prints the same
 report, which is what lets last year's be diffed against this year's, and an
 app that lists a directory sorts the listing before printing it, since listing
-order isn't promised. And the output is capped at 1 MiB, and a run that prints
+order isn't promised. And the output is capped at 1 MiB, and an app that prints
 more fails, so a report summarizes. It lists the evidence for its finding and
 counts the rest.
 
-A run that fails returns nothing, and an app that exits non-zero fails. Without `develop = true` the Ark
-withholds standard output on failure and never returns standard error, so the
-owner is left with a blank screen after approving the run. A failure exit is
+An app that exits non-zero fails, and a failure returns nothing. Without
+`develop = true` the Ark withholds standard output on failure and never
+returns standard error, so the owner is left with a blank screen after
+approving the app. A failure exit is
 for data that couldn't be read. Everything an app can state, including that
 it has no answer, is a report.
 
@@ -61,7 +62,7 @@ report, so an app called `drunk-o-type` prints a report titled "How Your Body
 Handles a Drink". The same shape holds one variant, a panel, a gene, a whole
 call file, and the summary a study asked for.
 
-[03-cilantro-soapiness](../apps/03-cilantro-soapiness) is a light app, and
+[04-cilantro-soapiness](../apps/04-cilantro-soapiness) is a light app, and
 its report in this shape:
 
 ```markdown
@@ -192,8 +193,8 @@ reference population. Title Case for the title, sentence case for headings.
 A report is text. It has to be valid UTF-8, without control characters other
 than line feed and tab, line or paragraph separators, or text direction
 controls. Emoji are fine, joined ones included. The Ark drops a report that
-breaks this, and the run fails. A develop build's standard error is held to
-the same rule.
+breaks this, and the app counts as failed. A develop build's standard error is
+held to the same rule.
 
 Plain Markdown, and a small subset of it, because the subset is what keeps a
 report readable everywhere. One `#`, the `##` sections above, and `###` to
@@ -204,7 +205,7 @@ is narrower still. A paragraph is one line of output, since every renderer
 wraps it. A text figure in a code fence when it earns its place. Nothing else.
 
 No images, no HTML, no footnotes and no encoded content, since the owner can't
-read them. No dates and no run ids, which the sandbox can't give and the
+read them. No dates and no task ids, which the sandbox can't give and the
 journal already has. Standard error is for the developer and never part of the
 report.
 

@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  // The run pass: a data directory was given. A real app would read it here.
+  // The report pass receives a data directory. This app reads nothing.
   printf("Hello from an Ark app written in C.\n");
   return 0;
 }

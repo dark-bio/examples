@@ -22,6 +22,6 @@ func main() {
 		return
 	}
 
-	// The run pass: a data directory was given. A real app would read it here.
+	// The report pass receives a data directory. This app reads nothing.
 	fmt.Println("Hello from an Ark app written in Go.")
 }

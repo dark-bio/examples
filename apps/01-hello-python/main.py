@@ -8,7 +8,7 @@ def main():
         print('manifest = 1\n\n[app]\nname = "hello-python"\nversion = "0.1.0"')
         return
 
-    # The run pass receives a data directory, even when no data is requested.
+    # The report pass receives a data directory, even when no data is requested
     print("Hello from an Ark app written in Python.")
 
 

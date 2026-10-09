@@ -1,7 +1,7 @@
 #!/bin/sh
-# Run an Ark app the way the device does: read its manifest, mount only the
-# datasets it declares (read-only), then run it with the data directory as its
-# first argument. Invoked by `make run`. See docs/05-running.md.
+# Run an Ark app by reading its manifest and mounting its declared datasets
+# read-only. Start the report pass with the data directory as its first
+# argument. Invoked by `make run`. See docs/05-running.md.
 #
 # Usage: tools/run.sh <module.wasm> <fixtures-dir>
 set -eu
@@ -34,5 +34,5 @@ done
 chmod -R a-w "$stage"
 
 echo
-echo "== run pass =="
+echo "== report pass =="
 "$wasmtime" run "$@" "$wasm" /
