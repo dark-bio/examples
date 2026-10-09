@@ -26,7 +26,7 @@ func main() {
 			"keywords = [\"tutorial\", \"VCF\", \"call file\", \"streaming\"]\n"+
 			"description = '''\n"+
 			"Grant `v1/genome/snp-indel` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.\n\n"+
-			"Two details matter at that scale. Every buffer refill leaves the sandbox, so the app reads through a 64 KiB buffer, and it reuses one line instead of allocating one per record.\n\n"+
+			"Every buffer refill leaves the sandbox, which adds up at that scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones also reuse one line instead of allocating one per record.\n\n"+
 			"This is the broadest grant there is. VCF Roll Call parses the same file with a library.\n"+
 			"'''\n\n"+
 			"[listing.purposes]\n"+

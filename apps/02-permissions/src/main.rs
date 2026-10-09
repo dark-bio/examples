@@ -41,9 +41,9 @@ license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/02-permissions"
 keywords = ["tutorial", "grants", "optional grants", "develop flag", "sandbox"]
 description = '''
-A grant covers one directory and everything beneath it, and nothing else. This app grants one variant, reads its genotype, then tries to open the call file it never asked for. The read fails, and the report says so.
+A grant covers only one directory and everything beneath it. This app grants one variant, reads its genotype, then tries to open the call file it never asked for. The read fails, and the report says so.
 
-It also asks for a second variant as an optional grant, which starts switched off when you approve. A declined grant reads exactly like missing data, so the app cannot tell whether you said no.
+It also asks for a second variant as an optional grant, which starts switched off when you approve. A declined grant reads exactly like missing data, so the app cannot know whether you said no.
 
 The manifest also sets `develop = true`, so what the app prints to standard error goes to your review along with its report, even when it fails. Your phone shows a developer mode warning when approving such an app. Leave the flag out of apps you ship.
 

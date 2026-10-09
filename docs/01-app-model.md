@@ -9,8 +9,8 @@ everything below follows from that.
 
 ## Two passes
 
-The Ark runs every app twice, and tells the two passes apart by the first
-command-line argument.
+The Ark runs every app twice, and the first command-line argument distinguishes
+the two passes.
 
 - **The manifest pass** runs the module with no arguments. The app prints a
   short TOML manifest naming itself and the data it wants, then exits. Nothing
@@ -49,7 +49,9 @@ names the rule that broke.
 3. **The manifest.** A manifest that breaks a rule of
    [02-manifest.md](02-manifest.md) is refused.
 4. **The paths.** A path that is misspelled or can't be granted is refused, and
-   so is one whose data isn't on the Ark. The refusal names the missing data.
+   so is a required one whose data isn't on the Ark. The refusal names the
+   missing data. An optional path whose data is missing goes to the owner as
+   unavailable instead.
 
 ## The sandbox
 

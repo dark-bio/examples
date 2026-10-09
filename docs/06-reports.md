@@ -121,7 +121,7 @@ never read as two reference alleles:
 **No answer.** No genotype is available at rs72921001, so this app has no
 result. An absent genotype is not a reference call. A call file that records
 only variants has no record at a reference site, and none at a site it didn't
-cover, and the two can't be told apart here.
+cover, and the two can't be distinguished here.
 ```
 
 **Evidence** holds the values the finding rests on, one row per variant, gene
@@ -145,8 +145,8 @@ established in. An app may carry allele frequencies or effect sizes from the
 literature, and cites where they came from like any other claim.
 
 **Limitations** says what the app didn't read and what the finding doesn't
-establish, as facts rather than reassurance. One variant rarely tells a whole
-story, and this section says how much this one tells.
+establish, as facts rather than reassurance. One variant is rarely the whole
+story, and this section says how far this one goes.
 
 **Sources** lists the studies Method named, in that order, in full, author,
 year, title and journal, with a URL where the work has a stable one. Links

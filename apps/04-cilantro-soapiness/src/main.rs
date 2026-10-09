@@ -108,7 +108,7 @@ The app reads that one variant and the reference base beside it. The report says
                 "**No answer.** No genotype is available at {RSID}, so this app has no \
                  result. An absent genotype is not a reference call. A call file that \
                  records only variants has no record at a reference site, and none at a \
-                 site it didn't cover, and the two can't be told apart here."
+                 site it didn't cover, and the two can't be distinguished here."
             );
         }
     }
@@ -120,7 +120,7 @@ The app reads that one variant and the reference base beside it. The report says
     print_sources();
 }
 
-/// What the lens can tell us about the user at this site.
+/// What the lens reveals about the user at this site.
 enum Call {
     Called(String),
     Uncertain(String),

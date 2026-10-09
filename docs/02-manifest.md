@@ -116,7 +116,7 @@ It suits data that adds to a report without being needed for its answer.
 - An optional path whose data isn't on the Ark doesn't refuse the app. The
   phone shows it as unavailable instead.
 - A declined path and one whose data the Ark lacks are both left unmounted, so
-  the app can't tell which it was. It reads the missing directory like any
+  the app can't know which it was. It reads the missing directory like any
   absent answer, as [04-reading-data.md](04-reading-data.md#least-privilege)
   shows.
 

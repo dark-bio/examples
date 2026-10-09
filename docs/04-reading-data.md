@@ -1,9 +1,9 @@
 # Reading data
 
 An app reads its grants as ordinary files. This page covers the three things
-every app has to get right, which are telling absence from failure, reading
-sequences, and parsing genotypes. Then it walks the grants from narrowest to
-broadest, each with an example to run.
+every app has to get right, which are distinguishing absence from failure,
+reading sequences, and parsing genotypes. Then it walks the grants from
+narrowest to broadest, each with an example to run.
 
 ## Absence and failure
 
@@ -124,10 +124,10 @@ The Ark mounts only what a manifest grants. Granting one rsID gives that
 directory, not the call file behind it or its neighbours.
 
 An optional grant the owner declined, or whose data the Ark lacks, isn't
-mounted at all. Its directory is missing, which an app reads like any absent
-answer, and the app can't tell a decline from missing data. So an app checks
-for the directory before reading an optional grant, and reports its absence as
-a finding, never as an error.
+mounted, so its directory is missing. An app reads that like any absent answer,
+and it can't distinguish a decline from missing data. So an app checks for the
+directory before reading an optional grant, and reports its absence as a
+finding, never as an error.
 
 [02-permissions](../apps/02-permissions) reads a granted path and an optional
 one, then shows that an undeclared path can't be opened.

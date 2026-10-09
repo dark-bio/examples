@@ -104,7 +104,7 @@ and a full app turns the same read into a report. Each row is a folder under
 ## A note on scope
 
 These apps show how to read data and present a result. Their trait readouts are
-illustrations, not medical advice, and one variant rarely tells a whole story.
+illustrations, not medical advice, and one variant is rarely the whole story.
 
 ## License
 

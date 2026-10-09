@@ -28,11 +28,7 @@ An Ark app is one WebAssembly file built for WASI Preview 1. The Ark runs it twi
 
 This app asks for no data, so approving it grants nothing. It proves the round trip, from upload through approval to a rendered report, in the fewest lines possible. Pick a language, read the source, then run it on your Ark.
 
-Build it yourself from the examples repository:
-
-```sh
-make run APP=01-hello-rust
-```
+Each language's folder in the examples repository builds and runs it with one `make run` command.
 
 The docs cover the two passes, the manifest and the sandbox limits in detail.
 '''""")

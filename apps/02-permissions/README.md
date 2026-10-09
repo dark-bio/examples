@@ -1,7 +1,7 @@
 # 02 - permissions
 
-A grant covers one directory and everything beneath it, and nothing else. This
-app grants `v1/genome/rsids/rs72921001` and reads its genotype. It also asks for
+A grant covers only one directory and everything beneath it. This app grants
+`v1/genome/rsids/rs72921001` and reads its genotype. It also asks for
 `v1/genome/rsids/rs671` as an optional grant, which the owner may switch off,
 and reports whether it was mounted. Then it tries to open the call file it never
 asked for, and shows that the read is blocked.
