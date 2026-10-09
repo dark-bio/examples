@@ -5,6 +5,8 @@
 #   make build APP=01-hello-rust    build one app
 #   make run                        build and run every app
 #   make run   APP=01-hello-rust    build and run one app
+#   make run   APP=02-permissions OPTIONAL=off   decline optional datasets
+#   make run   APP=03-sundae-order INPUTS=answers   override apps/<app>/inputs
 #   make clean                      remove build outputs
 #
 # Every app builds to a single module at build/<app>.wasm, whatever its
@@ -13,12 +15,13 @@
 # the data an Ark would mount. See docs/05-running.md.
 
 FIXTURES ?= fixtures
+INPUTS ?= apps/$*/inputs
 BUILD ?= build
 APPS := $(sort $(notdir $(wildcard apps/*)))
 SELECTED := $(or $(strip $(APP)),$(APPS))
 
 # The scripts read these, and any toolchain override, from the environment.
-export BUILD WASMTIME WASI_SDK PYTHON TINYGO WASM_OPT
+export BUILD WASMTIME WASI_SDK PYTHON TINYGO WASM_OPT OPTIONAL INPUTS
 
 .PHONY: all build run clean list FORCE
 
@@ -39,7 +42,7 @@ build-%: FORCE
 run-%: FORCE
 	@if [ -z "$(strip $(APP))" ]; then echo; echo "===== $* ====="; fi
 	@sh tools/build.sh "$*"
-	@sh tools/run.sh "$(BUILD)/$*.wasm" "$(FIXTURES)"
+	@sh tools/run.sh "$(BUILD)/$*.wasm" "$(FIXTURES)" "$(INPUTS)"
 
 clean:
 	@rm -rf $(BUILD) apps/*/target apps/*/*.wasm

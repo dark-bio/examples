@@ -14,22 +14,32 @@ make build APP=<app>          # one module into build/<app>.wasm
 make run APP=<app>            # build, then both passes against fixtures/
 make run APP=<app> FIXTURES=fixtures/no-call
 make run APP=<app> FIXTURES=fixtures/unanswered
+OPTIONAL=off make run APP=<app>   # as if the owner declined every optional grant
+INPUTS=<dir> make run APP=<app>   # answers from <dir>, not apps/<app>/inputs
 sh tools/check.sh             # what CI runs: links, builds, runs, ports
 ```
 
 `make run` mounts only the paths an app's manifest declares, read-only, and
-runs it with `/` as the data directory, the way an Ark does. The three fixture
-roots are described in `fixtures/README.md`. An app whose grants a root lacks
-stops before its run pass there, which is expected.
+runs it with `/` as the data directory, the way an Ark does. An optional path
+is mounted when the fixture root holds it, and an app's answers at `/inputs`
+when it declares inputs. The three fixture roots are described in
+`fixtures/README.md`. An app whose required grants a root lacks stops before
+its report pass there, which is expected.
 
 ## Adding an app
 
 - Copy the nearest example. One source file, in `apps/<nn>-<name>-<lang>/` for
   a mini and `apps/<nn>-<name>/` for a full app, with a short `README.md` that
   says what it shows and how to run it.
-- The manifest names the app, its version and the narrowest grants that answer
-  the question. Spell every path exactly as `ark data paths` shows it, with
-  `v1/` kept and no trailing `/`. `docs/02-manifest.md` has the rules.
+- The manifest gives the app's name as the owner should see it, its version and
+  the narrowest grants that answer the question. Spell every path exactly as
+  `ark data paths` shows it, with `v1/` kept and no trailing `/`. A full
+  `[listing]` ends it, with a purpose for every grant, and every language port
+  of an app prints the same one apart from `source`. `docs/02-manifest.md` has
+  the rules.
+- An app that asks the owner something declares `[inputs.<name>]` tables and
+  keeps sample answers in its `inputs/` folder, one file per input with no
+  trailing newline, which `make run` mounts.
 - Read grants as plain files. Absent means "not found" and is a result. Any
   other error goes to standard error with a non-zero exit. The shapes a
   genotype can take are in `docs/04-reading-data.md`.
@@ -62,7 +72,7 @@ Follow `docs/06-reports.md`. In short:
 - Pick one voice and keep it. Light or serious, never both in one report.
   Genomics words, never clinic words.
 - Plain Markdown only. No images, HTML, footnotes, encoded content, dates or
-  run ids. Tables with as few columns as carry the evidence, rows about 80
+  task ids. Tables with as few columns as carry the evidence, rows about 80
   characters.
 
 ## Never

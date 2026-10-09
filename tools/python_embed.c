@@ -24,6 +24,12 @@ static PyStatus configure(PyConfig *config, int argc, char **argv) {
   if (PyStatus_Exception(status)) {
     return status;
   }
+
+  // Manifests and reports use UTF-8 even when WASI supplies an ASCII locale
+  status = PyConfig_SetString(config, &config->stdio_encoding, L"utf-8");
+  if (PyStatus_Exception(status)) {
+    return status;
+  }
   return PyConfig_SetString(config, &config->program_name, L"ark-python");
 }
 

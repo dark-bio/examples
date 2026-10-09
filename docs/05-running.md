@@ -53,8 +53,8 @@ imports go in `--include` when calling `tools/python_build.py` directly.
 ```sh
 make build                     # build every app into build/<app>.wasm
 make run                       # build and run every app
-make run APP=03-cilantro-mini-rust
-make run APP=03-cilantro-mini-rust FIXTURES=fixtures/no-call
+make run APP=04-cilantro-mini-rust
+make run APP=04-cilantro-mini-rust FIXTURES=fixtures/no-call
 ```
 
 `make run` does what an Ark does, through `tools/run.sh`. It runs the module
@@ -63,9 +63,28 @@ from the fixture root, read-only, and runs the module again with `/` as its
 first argument. An undeclared path is never mounted, which is how
 [02-permissions](../apps/02-permissions) can show a blocked read on a laptop.
 
+An optional path is mounted when the fixture root holds it, as if the owner
+switched it on, and left out when the root lacks it, the way an Ark leaves out
+data it doesn't have. `OPTIONAL=off` leaves every optional path out, as if the
+owner declined them all:
+
+```sh
+OPTIONAL=off make run APP=02-permissions
+```
+
+An app that declares inputs gets its answers from files in its folder's
+`inputs/` directory, one per input, which `make run` mounts at `/inputs`.
+`INPUTS` points it at another directory of answer files. The answers are taken
+as given, so a local run never checks them against their declarations.
+
+```sh
+INPUTS=my-answers make run APP=03-sundae-order
+```
+
 An app kept outside this repository runs against these fixtures the same way,
 since `tools/run.sh` takes any module, as in
-`sh tools/run.sh path/to/app.wasm fixtures`. Build it with the `wasm-opt`
+`sh tools/run.sh path/to/app.wasm fixtures`, with a directory of answers as a
+third argument when the app declares inputs. Build it with the `wasm-opt`
 feature flags in `tools/build.sh`, because an Ark's runtime accepts only those.
 
 ### Small modules
@@ -100,13 +119,14 @@ missing grants there.
 ### What a laptop doesn't reproduce
 
 - **The checks before approval.** Locally nothing refuses a start section, a bad
-  name, or a path that can't be granted or isn't on the Ark.
+  name, a path that can't be granted or isn't on the Ark, or an answer that
+  doesn't fit its input.
 - **The limits.** Memory, output and the manifest pass's time are unbounded.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
-  [09-fortune-cookie](../apps/09-fortune-cookie) explains.
-- **Output gating.** You always see standard output and standard error, as if
-  `develop` were set.
+  [10-fortune-cookie](../apps/10-fortune-cookie) explains.
+- **The owner's review.** You always see standard output and standard error at
+  once, as if `develop` were set and the owner released every report.
 - **The generated tree.** Plain directories list everything, and no read fails
   with an I/O error or "file too large".
 - **Startup cost.** A laptop starts a module far faster than an Ark does, so a
@@ -131,11 +151,13 @@ prints. Then check what the Ark holds and run the app:
 ```sh
 ark status                                    # trust, firmware, pairing and lock state
 ark data paths                                # the paths apps can read, and what is available
-ark app run build/03-cilantro-mini-rust.wasm > report.md
+ark app run build/04-cilantro-mini-rust.wasm > report.md
 ```
 
 `ark app run` uploads the module and waits while the owner approves it on their
-phone. It then writes the report to standard output. A refused app comes back
-with the reason. `ark help apps` covers manifests and grants, and
+phone, with any optional grants and answers. When the app ends, the owner
+reviews its report, and the command writes it to standard output once the owner
+releases it. A refused app comes back with the reason, and a report the owner
+keeps fails the command. `ark help apps` covers manifests and grants, and
 `ark help datasets` covers the data commands. AI agents read `ark help agents`
 first, and `ark-emulator help agents` for the emulator.

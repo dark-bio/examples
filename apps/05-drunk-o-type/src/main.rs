@@ -1,0 +1,904 @@
+use std::error::Error;
+use std::fs;
+use std::io;
+use std::path::Path;
+
+// ── SNP panel ──────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Axis {
+    Flush,
+    Reward,
+    Histamine,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct SnpTarget {
+    rsid: &'static str,
+    gene: &'static str,
+    // risk_allele is the LITERAL nucleotide letter (A/C/G/T on forward strand)
+    // associated with the phenotype this SNP contributes to. NOT a synonym for
+    // ALT - for rs1229984 the GRCh38 reference happens to encode the rare/risk
+    // allele. Always derive from the biology, never assume "ALT = risk". It is
+    // compared against the alleles the `rsids/{rsid}/genotype` lens reports.
+    risk_allele: &'static str,
+    axis: Axis,
+    short: &'static str,
+    blurb: &'static str,
+}
+
+// Positions + bases per dbSNP / Ensembl GRCh38 forward-strand convention.
+// risk_allele is the LITERAL nucleotide associated with the phenotype - derived
+// from the biology (which amino acid / functional change is the "risk" one),
+// not from REF/ALT status.
+const TARGETS: &[SnpTarget] = &[
+    // ── Flush panel: how much acetaldehyde piles up when you drink? ──
+    SnpTarget {
+        rsid: "rs671",
+        gene: "ALDH2",
+        risk_allele: "A", // ALDH2*2 (Lys487, broken enzyme) = ALT
+        axis: Axis::Flush,
+        short: "broken acetaldehyde clearance",
+        blurb: "Glu487Lys in ALDH2. Dominant-negative - one broken subunit poisons the whole tetramer (~6% activity). The classic alcohol-flush variant.",
+    },
+    SnpTarget {
+        rsid: "rs1229984",
+        gene: "ADH1B",
+        // ⚠️ Risk = REF here. GRCh38 happens to encode the rare/derived His48
+        // (fast, ADH1B*2) allele at this position. The major worldwide allele
+        // (Arg48 / slow / ADH1B*1) is the ALT (C). Most populations are C/C
+        // homozygous variant = wild-type slow.
+        risk_allele: "T",
+        axis: Axis::Flush,
+        short: "fast alcohol→acetaldehyde (ADH1B*2)",
+        blurb: "Arg48His in ADH1B. The His48 variant (ADH1B*2) oxidizes ethanol 70-100× faster, piling up acetaldehyde. Common in East Asia (~25-70% allele freq), Ashkenazi Jews, parts of the Middle East. Note: GRCh38 encodes His48 (T) at this position despite it being the global minor allele - for most populations the reference genome is the variant, so the 'risk' allele here is REF, not ALT.",
+    },
+    SnpTarget {
+        rsid: "rs2066702",
+        gene: "ADH1B",
+        risk_allele: "A", // ADH1B*3 (Cys370, fast) = ALT
+        axis: Axis::Flush,
+        short: "fast alcohol→acetaldehyde (ADH1B*3)",
+        blurb: "Arg370Cys in ADH1B. Same fast-metabolizer phenotype as *2, different mutation, common in West/Central African ancestry.",
+    },
+    // ── Reward panel: does your reward circuitry enjoy alcohol? ──
+    SnpTarget {
+        rsid: "rs1799971",
+        gene: "OPRM1",
+        risk_allele: "G", // Asp40 (stronger reward) = ALT
+        axis: Axis::Reward,
+        short: "stronger alcohol reward",
+        blurb: "A118G (Asn40Asp) in OPRM1. The G allele binds β-endorphin tighter - alcohol's reward signal lands harder. Predicts naltrexone response in dependence treatment.",
+    },
+    SnpTarget {
+        rsid: "rs1800497",
+        gene: "ANKK1/DRD2",
+        risk_allele: "A", // A1 (Lys713, reduced D2 density) = ALT
+        axis: Axis::Reward,
+        short: "more reward-seeking (Taq1A)",
+        blurb: "Glu713Lys in ANKK1, near DRD2. The A (A1) allele tracks with reduced striatal D2 density and stronger reward chasing.",
+    },
+    SnpTarget {
+        rsid: "rs279858",
+        gene: "GABRA2",
+        // C is the most commonly cited dependence-risk allele per Edenberg
+        // 2004 + follow-ups, but direction is genuinely contested in the
+        // literature. Treat as "may indicate" rather than confirmed risk.
+        risk_allele: "C",
+        axis: Axis::Reward,
+        short: "alcohol's chill effect (effect direction debated)",
+        blurb: "GABA-A α2 subunit. Tracks with alcohol's anxiolytic 'unwind' effect and dependence risk. The risk-allele direction is replicated unevenly across studies - treat the contribution to the score as suggestive, not definitive.",
+    },
+    // ── Junk panel (Histamine sub-panel): does fermented-drink load wreck you? ──
+    // Histamine pathway only: 4× DAO (gut/blood histamine clearance) +
+    // 1× HNMT (alternative CNS/airway pathway). Sulfite sensitivity and
+    // tyramine tolerance don't have well-replicated common SNPs at the
+    // genotype-array level - SUOX has only severe-disease pathogenic variants,
+    // and the canonical MAOA tyramine signal is the uVNTR, not a SNP.
+    SnpTarget {
+        rsid: "rs10156191",
+        gene: "AOC1",
+        risk_allele: "T", // Met16 (reduced DAO activity) = ALT
+        axis: Axis::Histamine,
+        short: "DAO Thr16Met (may slow histamine clearance)",
+        blurb: "Thr16Met in AOC1/DAO. Associated with reduced histamine-degrading enzyme activity. ~22% MAF in Europeans - one of the most-studied DAO variants.",
+    },
+    SnpTarget {
+        rsid: "rs1049742",
+        gene: "AOC1",
+        risk_allele: "T", // Phe332 (reduced DAO activity) = ALT
+        axis: Axis::Histamine,
+        short: "DAO Ser332Phe (may slow histamine clearance)",
+        blurb: "Ser332Phe in AOC1/DAO. Associated with altered enzyme kinetics. Less common (~4% MAF) but functionally meaningful in carriers.",
+    },
+    SnpTarget {
+        rsid: "rs1049793",
+        gene: "AOC1",
+        risk_allele: "G", // Asp645 (reduced DAO activity per most reports) = ALT
+        axis: Axis::Histamine,
+        short: "DAO His645Asp (may slow histamine clearance)",
+        blurb: "His645Asp in AOC1/DAO. The most common DAO variant in Caucasians (~38% MAF). Some studies link reduced enzyme activity to histamine-intolerance symptoms; the effect size is modest and replication is mixed.",
+    },
+    SnpTarget {
+        rsid: "rs2052129",
+        gene: "AOC1",
+        risk_allele: "T", // Reduced transcription = ALT
+        axis: Axis::Histamine,
+        short: "DAO promoter (may reduce DAO transcription)",
+        blurb: "Promoter variant 2kb upstream of AOC1. Reportedly reduces transcription - fewer DAO enzymes made. ~21% MAF.",
+    },
+    SnpTarget {
+        rsid: "rs11558538",
+        gene: "HNMT",
+        risk_allele: "T", // Ile105 (reduced HNMT activity) = ALT
+        axis: Axis::Histamine,
+        short: "HNMT Thr105Ile (may slow CNS/airway histamine clearance)",
+        blurb: "Thr105Ile in HNMT. The alternative histamine-clearance pathway (mainly CNS/airways). The Ile105 variant has reduced activity. Linked to asthma, allergic rhinitis, atopic eczema in epidemiology.",
+    },
+];
+
+// ── Resolved call ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+struct GenotypeCall {
+    alleles: Vec<String>,
+    // A missing allele makes the count inconclusive, never zero.
+    risk_copies: Option<u32>,
+    // Coordinate and reference base from the rsids lens, for the details table.
+    chromosome: String,
+    position: String,
+    reference: String,
+}
+
+// ── Tier classification ────────────────────────────────────────────────────
+//
+// Flush axis is *not* a simple linear sum - ALDH2 is dominant-negative
+// (the enzyme works as a tetramer, one bad subunit kills it). So we tier on
+// (ALDH2 risk-allele count, total ADH1B risk-allele count) instead.
+//
+// Like axis is straight-up additive across the three reward-pathway SNPs.
+
+// Returns (tier_idx, label, emoji). Incomplete calls leave the tier inconclusive.
+fn flush_tier(s: &FlushScore) -> (Option<usize>, &'static str, &'static str) {
+    if !s.fully_called() {
+        return (None, "Inconclusive", "❓");
+    }
+    if s.aldh2_risk >= 2 {
+        return (Some(4), "Tomato Mode", "🍅");
+    }
+    if s.aldh2_risk == 1 {
+        return (Some(3), "Glow Stick", "🥵");
+    }
+    match s.adh1b_risk {
+        0 => (Some(0), "Iron Liver", "🍺"),
+        1..=2 => (Some(1), "Tank", "🍻"),
+        _ => (Some(2), "Lightweight", "🥴"),
+    }
+}
+
+fn flush_blurb(s: &FlushScore) -> &'static str {
+    if !s.fully_called() {
+        return "A Flush marker has no genotype answer or has a missing allele. \
+                The Flush score is inconclusive. ALDH2 is the dominant variant, \
+                and ADH1B contributes how fast acetaldehyde is produced.";
+    }
+    if s.aldh2_risk >= 2 {
+        return "Two or more broken ALDH2 copies. Functional enzyme: dead. Acetaldehyde - \
+                the poison your body makes from alcohol - has nowhere to go. Sip → \
+                flush → headache → 'wait why am I sweating?'. Not a lightweight. \
+                Pharmacology.";
+    }
+    if s.aldh2_risk == 1 {
+        return "One broken ALDH2 copy poisons the whole tetramer \
+                (~6% activity). One drink in, you're glowing. Two drinks in, \
+                headache. Real flush, real fast.";
+    }
+    match s.adh1b_risk {
+        0 => {
+            "The called ALDH2 copies clear acetaldehyde clean. ADH1B running at \
+              standard speed. Hangovers are a choice, not a consequence."
+        }
+        1..=2 => {
+            "Standard human metabolism. You can keep up with the table \
+                  without lighting up. Your liver does not need your help."
+        }
+        _ => {
+            "ADH1B in turbo mode - your body produces acetaldehyde faster than \
+              baseline. Pink cheeks by drink two, mild glow afterwards."
+        }
+    }
+}
+
+fn like_tier(score: u32) -> (usize, &'static str, &'static str) {
+    match score {
+        0 => (0, "Stone Cold", "🪨"),
+        1 => (1, "Take It Or Leave It", "😐"),
+        2..=3 => (2, "Sociable Sipper", "🍷"),
+        4..=5 => (3, "Hedonist", "😎"),
+        _ => (4, "Wired For It", "🎰"),
+    }
+}
+
+fn like_blurb(score: u32) -> &'static str {
+    match score {
+        0 => {
+            "Reward circuitry shrugs at alcohol. The buzz doesn't land, the \
+              chill doesn't chill. Booze is just bitter water with vibes."
+        }
+        1 => {
+            "Alcohol's fine. Sometimes nice. Not a thing your brain would \
+              chase out of a quiet evening."
+        }
+        2..=3 => {
+            "Buzz lands. Evening's nicer with a glass. Standard \
+                  relationship with booze - neither indifferent nor wired."
+        }
+        4..=5 => {
+            "Your brain LIKES alcohol. Mu-opioid + dopamine systems both \
+                  saying yes. Two glasses is genuinely fun."
+        }
+        _ => {
+            "Every reward gene voting yes. The buzz is good, the reward chase \
+              is strong, the chill is real. Worth knowing about yourself."
+        }
+    }
+}
+
+fn junk_tier(score: u32) -> (&'static str, &'static str) {
+    match score {
+        0 => ("Cast Iron", "🛡️"),
+        1..=2 => ("Mostly Fine", "🌤️"),
+        3..=4 => ("Sniffly Glass", "🤧"),
+        5..=7 => ("Wine Headache", "🤕"),
+        _ => ("DAO Disaster", "🚒"),
+    }
+}
+
+fn junk_blurb(score: u32) -> &'static str {
+    match score {
+        0 => {
+            "No flagged DAO or HNMT variants. This panel doesn't suggest \
+              histamine-clearance issues - but the panel only tests histamine \
+              pathways. Sulfites, tannins, sugar, dehydration, and sleep are \
+              not captured here."
+        }
+        1..=2 => {
+            "One or two flagged variants. May lean toward slower histamine \
+                  clearance from fermented drinks; effects are typically mild \
+                  and the most common European baseline."
+        }
+        3..=4 => {
+            "Several DAO variants flagged. The panel leans toward slower \
+                  histamine clearance - fermented drinks (red wine especially, \
+                  aged beers, kombucha) and aged foods (cheese, cured meats) \
+                  are *more likely* to cause symptoms. Worth tracking your own \
+                  reactions."
+        }
+        5..=7 => {
+            "Multiple DAO/HNMT variants flagged. The panel suggests reduced \
+                  histamine-clearance capacity. People with this load often \
+                  report flushing, headache, congestion, racing heart, or \
+                  sneezing after fermented drinks - but symptoms vary widely \
+                  and the SNPs are not deterministic."
+        }
+        _ => {
+            "All or nearly all panel variants flagged. The genotype suggests a \
+              substantial histamine-clearance burden, but real-world symptoms \
+              depend on diet, gut health, hormones, and many factors not in \
+              this panel. If fermented-drink reactions are bothering you, talk \
+              to a doctor - DAO supplements help some people, but this is not \
+              a diagnosis."
+        }
+    }
+}
+
+// Indexed by [flush_tier_idx][like_tier_idx]. Tiers in order:
+//   Flush: 0=Iron Liver, 1=Tank, 2=Lightweight, 3=Glow Stick, 4=Tomato Mode
+//   Like:  0=Stone Cold, 1=Take It Or Leave It, 2=Sociable Sipper, 3=Hedonist, 4=Wired For It
+const COMBO_CALLOUTS: [[&str; 5]; 5] = [
+    // ── Iron Liver row ──
+    [
+        "**The Waste.** You could drink anything and you don't even want to. \
+         Liver wasted on you (literally never).",
+        "**The Designated Driver.** Iron liver, indifferent brain. Always reliable, \
+         never the problem. Your friends owe you sushi.",
+        "**The Social Lubricator.** Drinks for the room, not the buzz. Built to drink, \
+         mildly enjoys it. The platonic ideal of a wedding guest.",
+        "**The Connoisseur.** No flush, no fade, real reward. You taste wine instead \
+         of inhaling it. Built for slow Tuesdays.",
+        "**The High-Functioning Enthusiast.** Built to drink, brain says drink, no \
+         flush no slowdown. Probably knows every wine bar in town.",
+    ],
+    // ── Tank row ──
+    [
+        "**The Polite Pretender.** Sips politely, never really cares. The drink is a \
+         prop, the room is the point.",
+        "**The Median Human.** Standard metabolism, take-or-leave reward. The genetic \
+         baseline of 'one's enough'.",
+        "**The Casual Drinker.** Drinks land, evenings improve, hangovers fair. Nothing \
+         alarming, nothing impressive. Functional booze.",
+        "**The Happy Drunk.** Brain says yes, body keeps up. Best mood at the bar. \
+         Three drinks deep, philosophical. Four drinks, calling exes - careful.",
+        "**The Pro.** Reward maxed, metabolism standard. You drink for the buzz and \
+         your liver does not file complaints. Watch the cab fare.",
+    ],
+    // ── Lightweight row ──
+    [
+        "**The Practical Drinker.** Drinks because it's there, never because they're \
+         chasing it. Two beers and you're done - physically and motivationally.",
+        "**The Mild Glow.** Pink cheeks by drink two, no chase from the brain. One is \
+         enough and you'll know it.",
+        "**The Quick Tipsy.** Pink cheeks by drink two, evening's pleasant by drink \
+         three. You peak early and gracefully.",
+        "**The Lit-Up Hedonist.** Brain loves it, body announces it. Glowing within an \
+         hour, content all night. Hide the candid photos.",
+        "**The Cheap Date With A Hobby.** Three drinks in, philosophical. Four drinks \
+         in, horizontal. Five drinks in, calling someone you shouldn't.",
+    ],
+    // ── Glow Stick row ──
+    [
+        "**The Easy Decline.** Body says ouch, brain says meh. The version of broken \
+         ALDH2 most likely to skip drinking and not feel deprived.",
+        "**The Cautious Glower.** One drink, glowing. Two drinks, pink everywhere. \
+         Brain mildly enjoys it, body files complaints. Easy to convince to stop.",
+        "**The Reluctant Glower.** Likes the social, hates the flush. Probably drinks \
+         anyway and pretends not to notice the sunburn.",
+        "**The Internal Conflict.** Reward circuit votes yes, metabolism votes hell no. \
+         You'll enjoy the first sip and regret the second.",
+        "**The Compulsive Glower.** Body screams stop, brain screams more. The \
+         dependence-vulnerable combo for non-Tomato genotypes - worth knowing.",
+    ],
+    // ── Tomato Mode row ──
+    [
+        "**The Genetic Teetotaler.** Body says no, brain says meh. The universe is \
+         sparing you.",
+        "**The Easy Quitter.** One sip and you're a stop sign, and your brain doesn't \
+         even care. The luckiest version of the broken-enzyme genotype.",
+        "**The Reluctant Tomato.** Pleasant buzz, terrible price. Most Tomatoes here \
+         learn to politely decline.",
+        "**The Tragic Combination.** Your brain wants what your liver can't process. \
+         Real talk: ALDH2-deficient people who drink heavily have *significantly* \
+         elevated esophageal cancer risk - well-replicated public health finding, \
+         not internet doomscroll. Worth knowing.",
+        "**The Tragic Combination, Maxed.** Brain demands what liver can't process. \
+         ALDH2-deficient people who drink heavily have *significantly* elevated \
+         esophageal cancer risk. Drinking through the flush is the dangerous pathway. \
+         Worth knowing.",
+    ],
+];
+
+fn combo_callout(flush_idx: usize, like_idx: usize) -> &'static str {
+    COMBO_CALLOUTS[flush_idx][like_idx]
+}
+
+// ── Output sections ────────────────────────────────────────────────────────
+
+fn print_app_header() {
+    println!("# 🍻 How Your Body Handles a Drink");
+    println!();
+}
+
+fn print_sample_report(results: &[(&'static SnpTarget, Option<GenotypeCall>)]) {
+    let (flush_score, reward_score, histamine_score) = score_sample(results);
+    let (flush_idx_opt, flush_label, flush_emoji) = flush_tier(&flush_score);
+    let (like_idx, like_label, like_emoji) = if reward_score.fully_called() {
+        like_tier(reward_score.risk)
+    } else {
+        (0, "Inconclusive", "❓")
+    };
+    let (junk_label, junk_emoji) = if histamine_score.fully_called() {
+        junk_tier(histamine_score.risk)
+    } else {
+        ("Inconclusive", "❓")
+    };
+
+    // The labels are the fun part; the counts beside them are the finding.
+    println!(
+        "**Your drunk-o-type:** {flush_emoji} {flush_label} + {like_emoji} {like_label} + \
+         {junk_emoji} {junk_label}. Flush from {} ALDH2 risk alleles and {} fast ADH1B \
+         alleles, Like from {} reward alleles, Junk from {} histamine alleles. Eleven \
+         variants across three axes: **Flush** (does alcohol make you sick?), **Like** \
+         (does your brain enjoy it?), and **Junk** (does the fermented-stuff load wreck \
+         you?), each binned into five tiers.",
+        copy_count(
+            flush_score.aldh2_risk,
+            flush_score.aldh2_copies,
+            flush_score.aldh2_observed
+        ),
+        copy_count(
+            flush_score.adh1b_risk,
+            flush_score.adh1b_copies,
+            flush_score.adh1b_observed == flush_score.adh1b_expected
+        ),
+        copy_count(
+            reward_score.risk,
+            reward_score.copies,
+            reward_score.fully_called()
+        ),
+        copy_count(
+            histamine_score.risk,
+            histamine_score.copies,
+            histamine_score.fully_called()
+        ),
+    );
+    println!();
+
+    // Missing answers or alleles must not produce a low-risk classification.
+    if let Some(flush_idx) =
+        flush_idx_opt.filter(|_| reward_score.fully_called() && histamine_score.fully_called())
+    {
+        println!("> {}", combo_callout(flush_idx, like_idx));
+        println!();
+    } else {
+        println!(
+            "> ⚠️ At least one axis is inconclusive because a genotype has no \
+             answer or contains a missing allele. The combo readout is omitted."
+        );
+        println!();
+    }
+
+    // Flush axis breakdown
+    println!("## 🍻 Flush: {flush_label} {flush_emoji}");
+    println!();
+    let aldh2_marker = if flush_score.aldh2_observed {
+        "✓ found"
+    } else {
+        "⚠️ inconclusive"
+    };
+    println!(
+        "ALDH2 risk alleles: **{}** ({}) · ADH1B fast alleles: **{}** ({}/{} markers)",
+        copy_count(
+            flush_score.aldh2_risk,
+            flush_score.aldh2_copies,
+            flush_score.aldh2_observed
+        ),
+        aldh2_marker,
+        copy_count(
+            flush_score.adh1b_risk,
+            flush_score.adh1b_copies,
+            flush_score.adh1b_observed == flush_score.adh1b_expected
+        ),
+        flush_score.adh1b_observed,
+        flush_score.adh1b_expected,
+    );
+    println!();
+    println!("{}", flush_blurb(&flush_score));
+    println!();
+
+    // Like axis breakdown
+    println!(
+        "## 🧠 Like: {like_label} {like_emoji} ({} risk · {}/{} markers{})",
+        copy_count(
+            reward_score.risk,
+            reward_score.copies,
+            reward_score.fully_called()
+        ),
+        reward_score.observed,
+        reward_score.expected,
+        if reward_score.fully_called() {
+            ""
+        } else {
+            " ⚠️"
+        },
+    );
+    println!();
+    if reward_score.fully_called() {
+        println!("{}", like_blurb(reward_score.risk));
+    } else {
+        println!(
+            "*Incomplete calls: {} of {} reward markers have every allele \
+             called. The Like score is inconclusive.*",
+            reward_score.observed, reward_score.expected
+        );
+    }
+    println!();
+
+    // Junk axis breakdown
+    println!(
+        "## 🤧 Junk: {junk_label} {junk_emoji} ({} risk · {}/{} markers{})",
+        copy_count(
+            histamine_score.risk,
+            histamine_score.copies,
+            histamine_score.fully_called()
+        ),
+        histamine_score.observed,
+        histamine_score.expected,
+        if histamine_score.fully_called() {
+            ""
+        } else {
+            " ⚠️"
+        },
+    );
+    println!();
+    if histamine_score.fully_called() {
+        println!("{}", junk_blurb(histamine_score.risk));
+    } else {
+        println!(
+            "*Incomplete calls: {} of {} histamine markers have every allele \
+             called. The Junk score is inconclusive.*",
+            histamine_score.observed, histamine_score.expected
+        );
+    }
+    println!();
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct FlushScore {
+    aldh2_risk: u32,
+    aldh2_observed: bool, // false → Flush tier should be Inconclusive
+    aldh2_copies: u32,
+    adh1b_risk: u32,
+    adh1b_observed: u32,
+    adh1b_expected: u32,
+    adh1b_copies: u32,
+}
+
+impl FlushScore {
+    fn fully_called(&self) -> bool {
+        self.aldh2_observed && self.adh1b_observed == self.adh1b_expected
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct AxisScore {
+    risk: u32,
+    copies: u32,
+    observed: u32,
+    expected: u32,
+}
+
+impl AxisScore {
+    fn fully_called(&self) -> bool {
+        self.observed == self.expected
+    }
+}
+
+fn copy_count(risk: u32, total: u32, complete: bool) -> String {
+    if complete {
+        format!("{risk}/{total}")
+    } else {
+        "inconclusive".to_string()
+    }
+}
+
+fn score_sample(
+    results: &[(&'static SnpTarget, Option<GenotypeCall>)],
+) -> (FlushScore, AxisScore, AxisScore) {
+    let mut flush = FlushScore::default();
+    let mut reward = AxisScore::default();
+    let mut histamine = AxisScore::default();
+
+    for (target, call) in results {
+        let called = call
+            .as_ref()
+            .and_then(|c| c.risk_copies.map(|risk| (risk, c.alleles.len() as u32)));
+
+        match target.axis {
+            Axis::Flush if target.rsid == "rs671" => {
+                if let Some((risk, total)) = called {
+                    flush.aldh2_observed = true;
+                    flush.aldh2_risk = risk;
+                    flush.aldh2_copies = total;
+                }
+            }
+            Axis::Flush => {
+                flush.adh1b_expected += 1;
+                if let Some((risk, total)) = called {
+                    flush.adh1b_observed += 1;
+                    flush.adh1b_risk += risk;
+                    flush.adh1b_copies += total;
+                }
+            }
+            Axis::Reward => {
+                reward.expected += 1;
+                if let Some((risk, total)) = called {
+                    reward.observed += 1;
+                    reward.risk += risk;
+                    reward.copies += total;
+                }
+            }
+            Axis::Histamine => {
+                histamine.expected += 1;
+                if let Some((risk, total)) = called {
+                    histamine.observed += 1;
+                    histamine.risk += risk;
+                    histamine.copies += total;
+                }
+            }
+        }
+    }
+
+    (flush, reward, histamine)
+}
+
+// One table per axis. Alleles get a column each, so a phased call prints
+// exactly as the file holds it without a pipe fighting the table.
+fn print_evidence(results: &[(&'static SnpTarget, Option<GenotypeCall>)], build: Option<&str>) {
+    println!("## Evidence");
+    println!();
+    println!(
+        "Resolved through the `rsids/` lens{}, without the app reading the call \
+         file. A missing genotype means there is no answer; it does not imply \
+         homozygous reference.",
+        match build {
+            Some(build) => format!(", with positions on {build}"),
+            None => String::new(),
+        }
+    );
+    println!();
+    for (heading, axis) in [
+        ("Flush", Axis::Flush),
+        ("Like", Axis::Reward),
+        ("Junk", Axis::Histamine),
+    ] {
+        println!("### {heading}");
+        println!();
+        println!("| Variant | Gene | Position | Reference | Allele 1 | Allele 2 | Risk copies |");
+        println!("| :-- | :-- | :-- | :-- | :-- | :-- | --: |");
+        for (target, call) in results.iter().filter(|(t, _)| t.axis == axis) {
+            let (position, reference, first, second, copies) = match call {
+                Some(c) => (
+                    if c.chromosome.is_empty() || c.position.is_empty() {
+                        "no answer".to_string()
+                    } else {
+                        format!("{}:{}", c.chromosome, c.position)
+                    },
+                    if c.reference.is_empty() {
+                        "no answer".to_string()
+                    } else {
+                        c.reference.clone()
+                    },
+                    c.alleles.first().cloned().unwrap_or_default(),
+                    c.alleles.get(1).cloned().unwrap_or_default(),
+                    c.risk_copies
+                        .map_or_else(|| "inconclusive".to_string(), |n| n.to_string()),
+                ),
+                None => (
+                    "no answer".to_string(),
+                    "no answer".to_string(),
+                    "no answer".to_string(),
+                    String::new(),
+                    "inconclusive".to_string(),
+                ),
+            };
+            println!(
+                "| {} | *{}* | {} | {} | {} | {} | {} |",
+                target.rsid, target.gene, position, reference, first, second, copies
+            );
+        }
+        println!();
+    }
+}
+
+fn print_science_section() {
+    println!("## Method");
+    println!();
+    println!(
+        "Alcohol metabolism is a two-step pipeline. **ADH** (alcohol dehydrogenase) \
+         turns ethanol into **acetaldehyde** - a toxic intermediate responsible for \
+         flushing, headaches, nausea, and rapid heart rate. **ALDH2** then converts \
+         acetaldehyde into harmless acetate. The flush axis measures how much \
+         acetaldehyde you accumulate (faster ADH1B in, slower ALDH2 out → more flush). \
+         ALDH2 is dominant-negative, one broken subunit poisons the whole tetramer, so \
+         the Flush tier is set by the ALDH2 count first and the ADH1B count after."
+    );
+    println!();
+    println!(
+        "Whether you *like* drinking is a different question. The **mu-opioid \
+         receptor** (OPRM1) and **dopamine system** (DRD2/ANKK1) determine how \
+         rewarding alcohol feels. **GABA-A** receptors govern its anxiolytic \
+         effect - the chill. The like axis adds up the risk alleles across these \
+         three reward pathways."
+    );
+    println!();
+    println!(
+        "Drinks aren't pure ethanol. Wine, beer, and fermented anything carry \
+         **histamine** (from bacterial decarboxylation during fermentation) - \
+         and your body clears it via two enzymes: **DAO** (gut/blood, encoded \
+         by AOC1) and **HNMT** (CNS/airways). Variants in either pathway slow \
+         clearance, and histamine then drives the wine headache, the stuffy \
+         nose, the racing heart, the post-drink itch. The junk axis adds up DAO \
+         and HNMT loss-of-function alleles. *Sulfites and tyramine don't have \
+         clean common SNPs* - those phenotypes exist but the panel-level \
+         genetics isn't there yet."
+    );
+    println!();
+    println!(
+        "Each variant counts the allele the studies tied to the effect, which is not \
+         always the ALT allele. What each one does:"
+    );
+    println!();
+    for target in TARGETS {
+        println!(
+            "- **{}** ({}, *{}*), {}. {}",
+            target.rsid,
+            match target.axis {
+                Axis::Flush => "Flush",
+                Axis::Reward => "Like",
+                Axis::Histamine => "Junk",
+            },
+            target.gene,
+            target.short,
+            target.blurb
+        );
+    }
+    println!();
+}
+
+fn print_fine_print() {
+    println!("## Limitations");
+    println!();
+    println!(
+        "Eleven SNPs is a long way from the whole story. Body weight, gut \
+         microbiome, sleep, food in your stomach, history of drinking, sulfite \
+         and tyramine and tannin loads, hormones, and dozens of other genes \
+         all shape your response. The GABRA2 direction is debated in the \
+         literature, and the DAO effects are modest with mixed replication. \
+         Don't drink your way around your genotype."
+    );
+    println!();
+}
+
+fn print_further_reading() {
+    println!("## Sources");
+    println!();
+    println!(
+        "1. Brooks PJ, et al. The alcohol flushing response: an unrecognized risk factor \
+         for esophageal cancer from alcohol consumption. PLoS Medicine. 2009;6(3):e1000050. \
+         https://doi.org/10.1371/journal.pmed.1000050"
+    );
+    println!(
+        "2. Edenberg HJ. The genetics of alcohol metabolism: role of alcohol \
+         dehydrogenase and aldehyde dehydrogenase variants. Alcohol Research & Health. \
+         2007;30(1):5-13. https://pubmed.ncbi.nlm.nih.gov/17718394/"
+    );
+    println!(
+        "3. Ray LA, et al. The role of the OPRM1 gene in alcohol use disorder and \
+         treatment response. Addiction Biology. 2012;17(3):525-540."
+    );
+    println!(
+        "4. Edenberg HJ, et al. Variations in GABRA2, encoding the α2 subunit of the \
+         GABA-A receptor, are associated with alcohol dependence and with brain \
+         oscillations. American Journal of Human Genetics. 2004;74(4):705-714. \
+         https://doi.org/10.1086/383283"
+    );
+    println!(
+        "5. Maintz L, et al. Association of single nucleotide polymorphisms in the \
+         diamine oxidase gene with diamine oxidase serum activities. Allergy. \
+         2011;66(7):893-902."
+    );
+    println!(
+        "6. Hrubisko M, et al. Histamine intolerance, the more we know the less we know. \
+         A review. Nutrients. 2021;13(7):2228. https://doi.org/10.3390/nu13072228"
+    );
+    println!();
+}
+
+// ── Entry point ────────────────────────────────────────────────────────────
+
+/// App identity, grants and listing printed by the manifest pass.
+const MANIFEST: &str = r#"manifest = 1
+
+[app]
+name = "Drunk-o-type"
+version = "0.3.0"
+
+[reads]
+paths = [
+    "v1/genome/rsids/rs671",
+    "v1/genome/rsids/rs1229984",
+    "v1/genome/rsids/rs2066702",
+    "v1/genome/rsids/rs1799971",
+    "v1/genome/rsids/rs1800497",
+    "v1/genome/rsids/rs279858",
+    "v1/genome/rsids/rs10156191",
+    "v1/genome/rsids/rs1049742",
+    "v1/genome/rsids/rs1049793",
+    "v1/genome/rsids/rs2052129",
+    "v1/genome/rsids/rs11558538",
+    "v1/genome/reference",
+]
+
+[listing]
+language = "en"
+icon = "🍻"
+summary = "Eleven variants on the flush, the buzz and how fermented drinks treat you."
+category = "traits"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/05-drunk-o-type"
+keywords = ["alcohol", "flush", "histamine", "ALDH2", "variant panel"]
+description = '''
+Eleven variants across three axes. **Flush** asks whether alcohol makes you sick, through _ALDH2_ and _ADH1B_. **Like** asks whether your brain enjoys it, through _OPRM1_, _ANKK1_ and _GABRA2_. **Junk** asks whether the histamine in fermented drinks wrecks you, through _AOC1_ and _HNMT_. Each axis bins into five tiers and the three tiers combine into your drunk-o-type.
+
+Every variant is its own grant, so your phone lists all eleven sites by name before you approve. The app counts the allele each study tested, which is not always the ALT allele. A missing allele or an absent genotype makes its axis inconclusive rather than lowering the score.
+
+This is a demonstration of a variant panel, not medical advice, and the tier names are jokes.
+'''
+
+[listing.purposes]
+"v1/genome/rsids/rs671" = "ALDH2, the main driver of the alcohol flush"
+"v1/genome/rsids/rs1229984" = "ADH1B, how fast alcohol turns into acetaldehyde"
+"v1/genome/rsids/rs2066702" = "ADH1B, a second variant of the same enzyme"
+"v1/genome/rsids/rs1799971" = "OPRM1, tied to how rewarding alcohol feels"
+"v1/genome/rsids/rs1800497" = "ANKK1 beside DRD2, tied to dopamine reward"
+"v1/genome/rsids/rs279858" = "GABRA2, tied to alcohol's unwinding effect"
+"v1/genome/rsids/rs10156191" = "AOC1, the enzyme that breaks down histamine from food and drink"
+"v1/genome/rsids/rs1049742" = "AOC1, a second variant of the histamine enzyme"
+"v1/genome/rsids/rs1049793" = "AOC1, the most common variant of the histamine enzyme"
+"v1/genome/rsids/rs2052129" = "AOC1, a variant upstream of the gene that may lower how much is made"
+"v1/genome/rsids/rs11558538" = "HNMT, a second enzyme that clears histamine"
+"v1/genome/reference" = "The reference build, to name the variants' coordinates"
+"#;
+
+// ENOENT means no answer; every other read error fails the app.
+fn read_leaf(base: &Path, name: &str) -> Result<Option<String>, Box<dyn Error>> {
+    match fs::read_to_string(base.join(name)) {
+        Ok(value) => Ok(Some(value)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("Could not read {name}: {error}").into()),
+    }
+}
+
+// Resolve a target from its granted `rsids/{rsid}` directory.
+fn resolve_target(base: &Path, target: &SnpTarget) -> Result<Option<GenotypeCall>, Box<dyn Error>> {
+    let Some(genotype) = read_leaf(base, "genotype")? else {
+        return Ok(None);
+    };
+
+    // These known SNPs have no symbolic or breakend alleles, so a simple split works.
+    // Keep the original spelling, including any leading phase marker, for display.
+    let alleles: Vec<String> = genotype
+        .strip_prefix(['/', '|'])
+        .unwrap_or(&genotype)
+        .split(['/', '|'])
+        .map(String::from)
+        .collect();
+    let risk_copies = (!alleles.iter().any(|a| a == "." || a.is_empty())).then(|| {
+        alleles
+            .iter()
+            .filter(|a| a.as_str() == target.risk_allele)
+            .count() as u32
+    });
+
+    // Scalar leaves hold exactly their value, without a trailing newline.
+    Ok(Some(GenotypeCall {
+        alleles,
+        risk_copies,
+        chromosome: read_leaf(base, "chromosome")?.unwrap_or_default(),
+        position: read_leaf(base, "position")?.unwrap_or_default(),
+        reference: read_leaf(base, "reference")?.unwrap_or_default(),
+    }))
+}
+
+fn run() -> Result<(), Box<dyn Error>> {
+    if std::env::args().len() < 2 {
+        print!("{}", MANIFEST);
+        return Ok(());
+    }
+
+    let dir = std::env::args().nth(1).unwrap();
+    let rsids = Path::new(&dir).join("v1/genome/rsids");
+    // The reference grant is read for one file, the assembly the positions are on.
+    let build = read_leaf(&Path::new(&dir).join("v1/genome/reference"), "build")?;
+
+    let results: Vec<(&'static SnpTarget, Option<GenotypeCall>)> = TARGETS
+        .iter()
+        .map(|t| resolve_target(&rsids.join(t.rsid), t).map(|call| (t, call)))
+        .collect::<Result<_, _>>()?;
+
+    print_app_header();
+    print_sample_report(&results);
+    print_evidence(&results, build.as_deref());
+    print_science_section();
+    print_fine_print();
+    print_further_reading();
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(error) = run() {
+        eprintln!("{error}");
+        std::process::exit(1);
+    }
+}

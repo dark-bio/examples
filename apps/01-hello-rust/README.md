@@ -16,5 +16,5 @@ To see each pass by hand, build the module and run it twice:
 ```sh
 make build APP=01-hello-rust
 wasmtime build/01-hello-rust.wasm     # manifest pass
-wasmtime build/01-hello-rust.wasm /   # run pass
+wasmtime build/01-hello-rust.wasm /   # report pass
 ```

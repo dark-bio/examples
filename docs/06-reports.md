@@ -1,12 +1,12 @@
 # Reports
 
-A report is what an app prints in its run pass, and it is the only thing an app
-can send out of the sandbox. The owner reads it first, on their phone, and
-decides whether it goes any further. Whoever ran the app then gets its exact
-bytes, in a terminal from `ark app run`, or rendered as Markdown. So a report is
-read three ways, on a phone, as raw text and as a rendered page, and it has to
-work in all of them. This page is a guideline for that, not a format the Ark
-checks. The Ark returns whatever the app printed, up to 1 MiB.
+A report is what an app prints in its report pass, and it is the only thing an
+app can send out of the sandbox. The owner reads it first, on their phone, and
+decides whether it goes any further. Once the owner releases it, the session
+that started the task gets its exact bytes, in a terminal from `ark app run` or
+rendered as Markdown in Ark Hub. So a report is read three ways, on a phone, as
+raw text and as a rendered page, and it has to work in all of them. This page is a guideline for that. The Ark itself checks
+only that a report is text, as [Form](#form) says.
 
 ## What a report has to do
 
@@ -19,19 +19,19 @@ granted beside the report, so the report carries none of them. And the report
 is readable to the last byte. A report is only as trustworthy as it is
 readable.
 
-Two things follow from the sandbox. The run is deterministic, so a report
-carries no date and no run id. The same app over the same data prints the same
+Two things follow from the sandbox. It is deterministic, so a report carries
+no date and no task id. The same app over the same data prints the same
 report, which is what lets last year's be diffed against this year's, and an
 app that lists a directory sorts the listing before printing it, since listing
-order isn't promised. And the output is capped, so a report summarises. It
-lists the evidence for its finding and counts the rest, since output past the
-cap is dropped without a mark.
+order isn't promised. And the output is capped at 1 MiB, and an app that prints
+more fails, so a report summarizes. It lists the evidence for its finding and
+counts the rest.
 
-An app that exits non-zero returns nothing. Without `develop = true` the Ark
-withholds standard output on failure and never returns standard error, so the
-owner is left with a blank screen after approving the run. A failure exit is
-for data that couldn't be read. Everything an app can state, including that
-it has no answer, is a report.
+An app that exits non-zero fails, and the owner reviews a failure too. Without
+`develop = true` the review shows nothing but the fact that it failed, since the
+Ark withholds standard output on failure and never shows standard error. So a
+failure exit is for data that couldn't be read. Everything an app can state,
+including that it has no answer, is a report.
 
 ## The shape
 
@@ -61,7 +61,7 @@ report, so an app called `drunk-o-type` prints a report titled "How Your Body
 Handles a Drink". The same shape holds one variant, a panel, a gene, a whole
 call file, and the summary a study asked for.
 
-[03-cilantro-soapiness](../apps/03-cilantro-soapiness) is a light app, and
+[04-cilantro-soapiness](../apps/04-cilantro-soapiness) is a light app, and
 its report in this shape:
 
 ```markdown
@@ -121,7 +121,7 @@ never read as two reference alleles:
 **No answer.** No genotype is available at rs72921001, so this app has no
 result. An absent genotype is not a reference call. A call file that records
 only variants has no record at a reference site, and none at a site it didn't
-cover, and the two can't be told apart here.
+cover, and the two can't be distinguished here.
 ```
 
 **Evidence** holds the values the finding rests on, one row per variant, gene
@@ -145,8 +145,8 @@ established in. An app may carry allele frequencies or effect sizes from the
 literature, and cites where they came from like any other claim.
 
 **Limitations** says what the app didn't read and what the finding doesn't
-establish, as facts rather than reassurance. One variant rarely tells a whole
-story, and this section says how much this one tells.
+establish, as facts rather than reassurance. One variant is rarely the whole
+story, and this section says how far this one goes.
 
 **Sources** lists the studies Method named, in that order, in full, author,
 year, title and journal, with a URL where the work has a stable one. Links
@@ -189,6 +189,12 @@ reference population. Title Case for the title, sentence case for headings.
 
 ## Form
 
+A report is text. It has to be valid UTF-8, without control characters other
+than line feed and tab, line or paragraph separators, or text direction
+controls. Emoji are fine, joined ones included. The Ark drops a report that
+breaks this, and the app counts as failed. A develop build's standard error is
+held to the same rule.
+
 Plain Markdown, and a small subset of it, because the subset is what keeps a
 report readable everywhere. One `#`, the `##` sections above, and `###` to
 group the rows of an Evidence section. Paragraphs, lists and
@@ -198,7 +204,7 @@ is narrower still. A paragraph is one line of output, since every renderer
 wraps it. A text figure in a code fence when it earns its place. Nothing else.
 
 No images, no HTML, no footnotes and no encoded content, since the owner can't
-read them. No dates and no run ids, which the sandbox can't give and the
+read them. No dates and no task ids, which the sandbox can't give and the
 journal already has. Standard error is for the developer and never part of the
 report.
 

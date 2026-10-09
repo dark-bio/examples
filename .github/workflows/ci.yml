@@ -61,7 +61,7 @@ jobs:
       - name: Build, run and compare
         run: sh tools/check.sh $(ls apps | grep -E -- '-(python|rust)$')
 
-  # The documentation tells readers that newer toolchains usually work. This
+  # The documentation says that newer toolchains usually work. This
   # tests that claim nightly, against whatever those projects have released,
   # with no cached interpreter so CPython is built from source as a reader
   # would. Only wasi-sdk stays fixed, since a new one moves the sysroot the

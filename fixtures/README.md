@@ -13,11 +13,11 @@ made up, while the coordinates, reference alleles and sequences are public data.
 | `fixtures/no-call` | the rsID apps | a no-call, `./.`, at every panel variant |
 | `fixtures/unanswered` | the rsID apps | coordinates and reference alleles but no genotypes, as at reference sites in a variants-only call file |
 
-The rsID apps are `02-permissions`, the cilantro apps, `04-drunk-o-type` and
-`09-fortune-cookie`. Pick a root with `FIXTURES`:
+The rsID apps are `02-permissions`, the cilantro apps, `05-drunk-o-type` and
+`10-fortune-cookie`. Pick a root with `FIXTURES`:
 
 ```sh
-make run APP=03-cilantro-mini-rust FIXTURES=fixtures/no-call
+make run APP=04-cilantro-mini-rust FIXTURES=fixtures/no-call
 ```
 
 The two smaller roots hold only the variant data those apps need, plus the

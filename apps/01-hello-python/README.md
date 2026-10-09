@@ -18,5 +18,5 @@ To see each pass by hand, build the module and run it twice:
 ```sh
 make build APP=01-hello-python
 wasmtime build/01-hello-python.wasm     # manifest pass
-wasmtime build/01-hello-python.wasm /   # run pass
+wasmtime build/01-hello-python.wasm /   # report pass
 ```

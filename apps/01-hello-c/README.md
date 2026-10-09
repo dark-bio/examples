@@ -23,5 +23,5 @@ To see each pass by hand, build the module and run it twice:
 ```sh
 make build APP=01-hello-c
 wasmtime build/01-hello-c.wasm     # manifest pass
-wasmtime build/01-hello-c.wasm /   # run pass
+wasmtime build/01-hello-c.wasm /   # report pass
 ```
