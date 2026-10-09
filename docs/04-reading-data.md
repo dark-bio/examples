@@ -122,5 +122,12 @@ with `noodles-vcf`.
 
 The Ark mounts only what a manifest grants. Granting one rsID gives that
 directory, not the call file behind it or its neighbours.
-[02-permissions](../apps/02-permissions) reads a granted path, then shows that an
-undeclared one can't be opened.
+
+An optional grant the owner declined, or whose data the Ark lacks, isn't
+mounted at all. Its directory is missing, which an app reads like any absent
+answer, and the app can't tell a decline from missing data. So an app checks
+for the directory before reading an optional grant, and reports its absence as
+a finding, never as an error.
+
+[02-permissions](../apps/02-permissions) reads a granted path and an optional
+one, then shows that an undeclared path can't be opened.

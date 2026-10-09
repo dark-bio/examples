@@ -14,12 +14,14 @@ make build APP=<app>          # one module into build/<app>.wasm
 make run APP=<app>            # build, then both passes against fixtures/
 make run APP=<app> FIXTURES=fixtures/no-call
 make run APP=<app> FIXTURES=fixtures/unanswered
+OPTIONAL=off make run APP=<app>   # as if the owner declined every optional grant
 sh tools/check.sh             # what CI runs: links, builds, runs, ports
 ```
 
 `make run` mounts only the paths an app's manifest declares, read-only, and
-runs it with `/` as the data directory, the way an Ark does. The three fixture
-roots are described in `fixtures/README.md`. An app whose grants a root lacks
+runs it with `/` as the data directory, the way an Ark does. An optional path
+is mounted when the fixture root holds it. The three fixture roots are
+described in `fixtures/README.md`. An app whose required grants a root lacks
 stops before its report pass there, which is expected.
 
 ## Adding an app

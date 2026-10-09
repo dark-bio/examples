@@ -1,7 +1,8 @@
 #!/bin/sh
 # Check the examples the way CI does. Every documentation link resolves, every
-# app builds, every app runs against each fixture root that holds its data, and
-# the language versions of one demo all print the same report.
+# app builds, and every app runs against each fixture root that holds its data.
+# Apps with optional grants also run with those grants declined. The language
+# versions of one demo all print the same report.
 #
 # Usage: tools/check.sh [app ...]
 set -eu
@@ -39,27 +40,44 @@ fixture_roots() {
   done
 }
 
-# An app whose data a root lacks stops before its report pass, the way an Ark
-# refuses a grant it cannot satisfy. Anything else is a failure.
+# Run an app, accepting a stop when its required data is missing.
+# An optional third argument of off declines optional grants in a separate run.
 run_app() {
-  app=$1 root=$2 output=$work/output-$1-$(basename "$2")
-  if sh tools/run.sh "${BUILD:-build}/$app.wasm" "$root" > "$output" 2>&1; then
-    sed -n '/^== report pass ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")"
+  # Store declined-grant runs separately so language comparisons keep defaults
+  app=$1 root=$2 output=$work/output-$1-$(basename "$2")${3:+-optional-off}
+
+  # Accept a successful report or the expected stop for a missing required grant
+  if OPTIONAL="${3:-${OPTIONAL:-}}" sh tools/run.sh "${BUILD:-build}/$app.wasm" "$root" > "$output" 2>&1; then
+    sed -n '/^== report pass ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")${3:+-optional-off}"
   elif ! grep -q "no declared dataset" "$output"; then
-    fail "$app on $root"
+    fail "$app on $root${3:+ (OPTIONAL=$3)}"
     cat "$output"
   fi
 }
 
+# Build every selected app and run its grants on each fixture root.
 build_and_run() {
   for app in $apps; do
+    # Build once for all fixture roots and grant choices
     if ! sh tools/build.sh "$app" > "$work/build-$app" 2>&1; then
       fail "$app does not build"
       cat "$work/build-$app"
       continue
     fi
+
+    # Keep the default report for language comparisons and check declined grants
     for root in $(fixture_roots); do
       run_app "$app" "$root"
+      if awk '
+        /^== report pass ==$/ { exit }
+        /^[[:space:]]*\[/ {
+          reads = $0 ~ /^[[:space:]]*\[[[:space:]]*reads[[:space:]]*\][[:space:]]*(#.*)?$/
+        }
+        reads && /^[[:space:]]*optional[[:space:]]*=/ { found = 1 }
+        END { exit !found }
+      ' "$output"; then
+        run_app "$app" "$root" off
+      fi
     done
   done
   echo "built and ran $(echo "$apps" | wc -w | tr -d ' ') apps"

@@ -63,6 +63,15 @@ from the fixture root, read-only, and runs the module again with `/` as its
 first argument. An undeclared path is never mounted, which is how
 [02-permissions](../apps/02-permissions) can show a blocked read on a laptop.
 
+An optional path is mounted when the fixture root holds it, as if the owner
+switched it on, and left out when the root lacks it, the way an Ark leaves out
+data it doesn't have. `OPTIONAL=off` leaves every optional path out, as if the
+owner declined them all:
+
+```sh
+OPTIONAL=off make run APP=02-permissions
+```
+
 An app kept outside this repository runs against these fixtures the same way,
 since `tools/run.sh` takes any module, as in
 `sh tools/run.sh path/to/app.wasm fixtures`. Build it with the `wasm-opt`

@@ -72,7 +72,7 @@ and a full app turns the same read into a report. Each row is a folder under
 | App | What it shows | Languages |
 | :-- | :-- | :-- |
 | `01-hello` | the manifest pass and the report pass | Rust, Go, C, Python |
-| `02-permissions` | requesting data, least privilege and the `develop` flag | Rust |
+| `02-permissions` | requesting data, optional grants, least privilege and the `develop` flag | Rust |
 | `04-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
 | `04-cilantro-soapiness` | the same variant as a report | Rust |
 | `05-drunk-o-type` | a panel of variants | Rust |

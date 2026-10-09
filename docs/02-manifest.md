@@ -37,8 +37,11 @@ pass's 64 KiB of output.
 
 ### `[reads]`
 
-- **`paths`** lists the directories the app reads. An app that reads nothing
-  leaves the table out.
+- **`paths`** lists the directories the app needs.
+- **`optional`** lists directories the owner may decline, which
+  [Optional grants](#optional-grants) covers.
+
+An app that reads nothing leaves the table out.
 
 ## Granting data
 
@@ -60,21 +63,39 @@ fails.
   paths, empty, `.` or `..` segments, a trailing `/`, other spellings such as
   `chr01` or `rs0334`, files, `changes` directories, the data root and `v1/`
   itself are all refused.
-- **A path is listed once.** A path listed twice is refused, and so is one
-  inside another listed path's directory, which already grants it. A manifest
-  lists at most 1,024 paths.
-- **Its data must be on the Ark.** A well-formed path is refused when it points
-  into an empty slot, names a gene the annotations don't carry or an rsID dbSNP
-  doesn't carry, or names a position past the end of its chromosome.
+- **A path is listed once.** A path listed twice, in one list or across both, is
+  refused, and so is one inside another listed path's directory, which already
+  grants it. A manifest lists at most 1,024 paths across both lists.
+- **Its data must be on the Ark.** A well-formed path in `paths` is refused when
+  it points into an empty slot, names a gene the annotations don't carry or an
+  rsID dbSNP doesn't carry, or names a position past the end of its chromosome.
 
 A `changes` directory can't be granted. Grant its gene or interval instead.
+
+## Optional grants
+
+A path in `optional` is one the owner may decline. The phone lists it with a
+switch that starts off, so the owner turns on only what they choose to share.
+It suits data that adds to a report without being needed for its answer.
+
+- Public data can't be optional, since there is nothing to decline, and the Ark
+  refuses it there.
+- An optional path whose data isn't on the Ark doesn't refuse the app. The
+  phone shows it as unavailable instead.
+- A declined path and one whose data the Ark lacks are both left unmounted, so
+  the app can't tell which it was. It reads the missing directory like any
+  absent answer, as [04-reading-data.md](04-reading-data.md#least-privilege)
+  shows.
+
+[02-permissions](../apps/02-permissions) asks for one optional variant.
 
 ## Choosing grants
 
 The owner reads the list of paths before approving, so ask for the narrowest
 ones that do the job. One variant reads very differently from the whole call
 file. [04-reading-data.md](04-reading-data.md) walks through the options, from
-narrowest to broadest.
+narrowest to broadest. Data that only enriches a report belongs in `optional`,
+so an owner who would rather not share it can still run the app.
 
 Some grants reach further than they look. A gene or interval grant includes its
 `changes`, which hold the owner's variants, even when the app only reads the
