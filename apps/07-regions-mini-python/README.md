@@ -1,8 +1,9 @@
 # 07 - regions-mini (Python)
 
-[07-regions-mini-rust](../07-regions-mini-rust) written in Python. It reads the
-sequence in 8 KiB chunks of bytes, so the interval never has to fit in memory.
-[01-hello-python](../01-hello-python) covers what a Python module costs.
+[07-regions-mini-rust](../07-regions-mini-rust/README.md) written in Python. It
+reads the sequence in 8 KiB chunks of bytes, so the interval never has to fit in
+memory. [01-hello-python](../01-hello-python/README.md) covers what a Python
+module costs.
 
 ## Build and run
 

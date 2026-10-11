@@ -176,7 +176,7 @@ check_links() {
       case $target in
         http://*|https://*|'#'*) continue ;;
       esac
-      [ -e "$(dirname "$page")/${target%%#*}" ] || fail "$page links to missing $target"
+      [ -f "$(dirname "$page")/${target%%#*}" ] || fail "$page links to missing $target"
     done
   done
   echo "checked documentation links"

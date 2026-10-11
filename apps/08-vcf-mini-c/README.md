@@ -1,10 +1,10 @@
 # 08 - vcf-mini (C)
 
-[08-vcf-mini-rust](../08-vcf-mini-rust) written in C. It reads the call file
-with `getline`, which accepts long records while keeping only one line in
-memory, over a 64 KiB `setvbuf` buffer. The default buffer is small enough to
+[08-vcf-mini-rust](../08-vcf-mini-rust/README.md) written in C. It reads the
+call file with `getline`, which accepts long records while keeping only one line
+in memory, over a 64 KiB `setvbuf` buffer. The default buffer is small enough to
 make a whole-genome scan an order of magnitude slower.
-[01-hello-c](../01-hello-c) covers the toolchain.
+[01-hello-c](../01-hello-c/README.md) covers the toolchain.
 
 ## Build and run
 

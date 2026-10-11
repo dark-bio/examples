@@ -61,8 +61,8 @@ report, so an app called `drunk-o-type` prints a report titled "How Your Body
 Handles a Drink". The same shape holds one variant, a panel, a gene, a whole
 call file, and the summary a study asked for.
 
-[04-cilantro-soapiness](../apps/04-cilantro-soapiness) is a light app, and
-its report in this shape:
+[04-cilantro-soapiness](../apps/04-cilantro-soapiness/README.md) is a light app,
+and its report in this shape:
 
 ```markdown
 # 🌿 Cilantro Taste Test

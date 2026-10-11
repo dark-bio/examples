@@ -61,7 +61,8 @@ make run APP=04-cilantro-mini-rust FIXTURES=fixtures/no-call
 with no arguments to collect its manifest, mounts only the declared datasets
 from the fixture root, read-only, and runs the module again with `/` as its
 first argument. An undeclared path is never mounted, which is how
-[02-permissions](../apps/02-permissions) can show a blocked read on a laptop.
+[02-permissions](../apps/02-permissions/README.md) can show a blocked read on a
+laptop.
 
 An optional path is mounted when the fixture root holds it, as if the owner
 switched it on, and left out when the root lacks it, the way an Ark leaves out
@@ -124,7 +125,7 @@ missing grants there.
 - **The limits.** Memory, output and the manifest pass's time are unbounded.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
-  [10-fortune-cookie](../apps/10-fortune-cookie) explains.
+  [10-fortune-cookie](../apps/10-fortune-cookie/README.md) explains.
 - **The owner's review.** You always see standard output and standard error at
   once, as if `develop` were set and the owner released every report.
 - **The generated tree.** Plain directories list everything, and no read fails

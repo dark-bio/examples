@@ -2,8 +2,8 @@
 
 A panel of eleven variants, scored on three axes of how a body handles alcohol:
 flushing, reward and histamine. Each variant is its own `rsids/` grant, so the
-access pattern is [04-cilantro-mini-rust](../04-cilantro-mini-rust) repeated,
-and the owner sees every site by name before approving.
+access pattern is [04-cilantro-mini-rust](../04-cilantro-mini-rust/README.md)
+repeated, and the owner sees every site by name before approving.
 
 The app counts the allele each study tested, which isn't always the ALT allele.
 A missing allele or an absent genotype makes its axis inconclusive rather than

@@ -7,10 +7,11 @@ to fit in memory. An absent value prints as no answer, while a missing sequence
 is an error.
 
 The gene grant also covers the owner's `changes` in it, even though this mini
-doesn't read them. [06-bitter-meter](../06-bitter-meter) does.
+doesn't read them. [06-bitter-meter](../06-bitter-meter/README.md) does.
 
-The same mini exists in [Go](../06-genes-mini-go), [C](../06-genes-mini-c) and
-[Python](../06-genes-mini-python).
+The same mini exists in [Go](../06-genes-mini-go/README.md),
+[C](../06-genes-mini-c/README.md) and
+[Python](../06-genes-mini-python/README.md).
 
 ## Build and run
 

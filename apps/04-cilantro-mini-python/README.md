@@ -1,9 +1,10 @@
 # 04 - cilantro-mini (Python)
 
-[04-cilantro-mini-rust](../04-cilantro-mini-rust) written in Python. An absent
-genotype arrives as `FileNotFoundError` and reads as no answer, while every
-other `OSError` stops the app. [01-hello-python](../01-hello-python) covers what
-a Python module costs.
+[04-cilantro-mini-rust](../04-cilantro-mini-rust/README.md) written in Python.
+An absent genotype arrives as `FileNotFoundError` and reads as no answer, while
+every other `OSError` stops the app.
+[01-hello-python](../01-hello-python/README.md) covers what a Python module
+costs.
 
 ## Build and run
 

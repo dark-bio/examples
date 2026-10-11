@@ -1,8 +1,8 @@
 # 07 - regions-mini (Go)
 
-[07-regions-mini-rust](../07-regions-mini-rust) written in Go. It reads the
-sequence in 8 KiB chunks with `os.File.Read`, so the interval never has to fit
-in memory.
+[07-regions-mini-rust](../07-regions-mini-rust/README.md) written in Go. It
+reads the sequence in 8 KiB chunks with `os.File.Read`, so the interval never
+has to fit in memory.
 
 ## Build and run
 

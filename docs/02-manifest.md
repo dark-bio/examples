@@ -23,8 +23,8 @@ category = "traits"
 license = "BSD-3-Clause"
 ```
 
-[04-cilantro-soapiness](../apps/04-cilantro-soapiness) prints this manifest,
-with a longer listing.
+[04-cilantro-soapiness](../apps/04-cilantro-soapiness/README.md) prints this
+manifest, with a longer listing.
 
 ## Format
 
@@ -120,7 +120,8 @@ It suits data that adds to a report without being needed for its answer.
   absent answer, as [04-reading-data.md](04-reading-data.md#least-privilege)
   shows.
 
-[02-permissions](../apps/02-permissions) asks for one optional variant.
+[02-permissions](../apps/02-permissions/README.md) asks for one optional
+variant.
 
 ## Choosing grants
 
@@ -170,7 +171,7 @@ per input and named after it, in UTF-8 with no trailing newline. A choice's file
 holds the picked choice. A multiple choice's file holds the picks one per line,
 in the order of `choices`, and is empty when nothing was picked. A text's file
 holds the text, which is never empty.
-[03-sundae-order](../apps/03-sundae-order) reads all three.
+[03-sundae-order](../apps/03-sundae-order/README.md) reads all three.
 
 Inputs never change what an app reads. An app whose reads depend on an answer
 grants everything the answer can select. The Ark's journal records which inputs

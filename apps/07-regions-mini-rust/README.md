@@ -6,10 +6,11 @@ its length and GC content, so memory use doesn't grow with the interval. A
 missing sequence or a failed read stops the app.
 
 The interval grant also covers the owner's `changes`, which
-[07-powerhouse-of-the-cell](../07-powerhouse-of-the-cell) lists.
+[07-powerhouse-of-the-cell](../07-powerhouse-of-the-cell/README.md) lists.
 
-The same mini exists in [Go](../07-regions-mini-go),
-[C](../07-regions-mini-c) and [Python](../07-regions-mini-python).
+The same mini exists in [Go](../07-regions-mini-go/README.md),
+[C](../07-regions-mini-c/README.md) and
+[Python](../07-regions-mini-python/README.md).
 
 ## Build and run
 

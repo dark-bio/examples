@@ -2,8 +2,8 @@
 
 The smallest Ark app. It prints its manifest when run with no arguments and a
 greeting when given a data directory, and it reads no data. Start here, then
-compare the [Go](../01-hello-go), [C](../01-hello-c) and
-[Python](../01-hello-python) versions.
+compare the [Go](../01-hello-go/README.md), [C](../01-hello-c/README.md) and
+[Python](../01-hello-python/README.md) versions.
 
 ## Build and run
 

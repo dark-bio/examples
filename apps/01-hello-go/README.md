@@ -1,7 +1,7 @@
 # 01 - hello, Go
 
-[01-hello-rust](../01-hello-rust) written in Go. The Makefile builds Go apps
-with TinyGo, which produces a module a fraction of the size the standard
+[01-hello-rust](../01-hello-rust/README.md) written in Go. The Makefile builds
+Go apps with TinyGo, which produces a module a fraction of the size the standard
 toolchain emits.
 
 ## Build and run

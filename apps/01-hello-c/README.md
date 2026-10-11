@@ -1,8 +1,8 @@
 # 01 - hello, C
 
-[01-hello-rust](../01-hello-rust) written in C. C apps build with a WASI clang
-toolchain rather than Emscripten, because Emscripten's standalone modules can't
-open the files an Ark mounts.
+[01-hello-rust](../01-hello-rust/README.md) written in C. C apps build with a
+WASI clang toolchain rather than Emscripten, because Emscripten's standalone
+modules can't open the files an Ark mounts.
 
 The Makefile finds a wasi-sdk install at `/opt/wasi-sdk`, or falls back to
 Homebrew's WASI toolchain. `WASI_SDK` points it at any other clang that carries
