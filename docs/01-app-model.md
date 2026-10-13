@@ -77,7 +77,7 @@ An app that needs a random-looking choice derives it from its input.
 | Table | 65,536 elements | 65,536 elements |
 | Standard output | 64 KiB | 1 MiB |
 | Standard error | 1 KiB, never returned | 1 MiB |
-| Time | 250 ms | none, but cancellable |
+| Time | 250ms | none, but cancellable |
 | Data | none | granted paths, read-only |
 
 A manifest pass that prints more than 64 KiB is refused, and a report pass that
@@ -98,7 +98,7 @@ of apps you ship.
 ## Running on an Ark
 
 1. A developer sends the module to the Ark, for example with
-   `ark app run app.wasm`.
+   `ark run app.wasm`.
 2. The Ark checks the module, runs the manifest pass, then checks the manifest
    and every path it grants.
 3. The owner sees the app's name, version and requested paths on their phone.

@@ -151,10 +151,10 @@ prints. Then check what the Ark holds and run the app:
 ```sh
 ark status                                    # trust, firmware, pairing and lock state
 ark data paths                                # the paths apps can read, and what is available
-ark app run build/04-cilantro-mini-rust.wasm > report.md
+ark run build/04-cilantro-mini-rust.wasm > report.md
 ```
 
-`ark app run` uploads the module and waits while the owner approves it on their
+`ark run` uploads the module and waits while the owner approves it on their
 phone, with any optional grants and answers. When the app ends, the owner
 reviews its report, and the command writes it to standard output once the owner
 releases it. A refused app comes back with the reason, and a report the owner

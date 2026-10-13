@@ -3,10 +3,11 @@
 A report is what an app prints in its report pass, and it is the only thing an
 app can send out of the sandbox. The owner reads it first, on their phone, and
 decides whether it goes any further. Once the owner releases it, the session
-that started the task gets its exact bytes, in a terminal from `ark app run` or
+that started the task gets its exact bytes, in a terminal from `ark run` or
 rendered as Markdown in Ark Hub. So a report is read three ways, on a phone, as
-raw text and as a rendered page, and it has to work in all of them. This page is a guideline for that. The Ark itself checks
-only that a report is text, as [Form](#form) says.
+raw text and as a rendered page, and it has to work in all of them. This page
+is a guideline for that. The Ark itself checks only that a report is text, as
+[Form](#form) says.
 
 ## What a report has to do
 
