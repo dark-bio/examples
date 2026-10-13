@@ -55,7 +55,7 @@ the real Ark firmware on your computer, and `ark` runs apps on it the same way.
 
 ```sh
 ark data paths                                 # what apps can read on this Ark
-ark app run build/01-hello-rust.wasm > report.md
+ark run build/01-hello-rust.wasm > report.md
 ```
 
 AI agents driving an Ark read `ark help agents` first.
