@@ -135,10 +135,9 @@ absent. A long list is cut, with a count of what was left out.
 
 Coordinates name their assembly when the app can read it. It sits in
 `v1/genome/reference/build`, and reading it means granting
-`v1/genome/reference`, which puts the stored reference genome on the approval
-screen. The demos take that trade. An app that doesn't leaves the coordinate
-unlabelled rather than labelling it wrongly, since an Ark may hold a GRCh37
-genome.
+`v1/genome/reference`, as the demos do. An app without that grant leaves the
+coordinate unlabeled rather than labeling it wrongly, since an Ark may hold a
+GRCh37 genome.
 
 **Method** explains how the finding follows from the evidence, in plain words,
 and names each study inline, as author and year, with the population it was
