@@ -13,7 +13,7 @@ made up, while the coordinates, reference alleles and sequences are public data.
 | `fixtures/no-call` | the rsID apps | a no-call, `./.`, at every panel variant |
 | `fixtures/unanswered` | the rsID apps | coordinates and reference alleles but no genotypes, as at reference sites in a variants-only call file |
 
-The rsID apps are `02-permissions`, the cilantro apps and `10-fortune-cookie`.
+The rsID apps are `02-permissions`, the cilantro apps and `11-fortune-cookie`.
 Pick a root with `FIXTURES`:
 
 ```sh

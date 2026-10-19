@@ -57,7 +57,7 @@ At a known SNP, splitting on `/` and `|` is enough. A genotype can still hold
 symbolic alleles such as `<DEL>` and breakends, which contain those characters
 themselves, so split only outside them. An app that walks `changes` reads each
 entry's `type`, `bases` and `carried` instead.
-[06-bitter-meter](../apps/06-bitter-meter) shows how.
+[05-bitter-meter](../apps/05-bitter-meter) shows how.
 
 ## From narrowest to broadest
 
@@ -81,7 +81,7 @@ Python siblings, shows the bare read.
 ### A panel of variants
 
 Grant one `rsids/` directory per variant. The owner sees each site by name.
-[10-fortune-cookie](../apps/10-fortune-cookie) reads three.
+[11-fortune-cookie](../apps/11-fortune-cookie) reads three.
 
 ### One position
 
@@ -95,20 +95,20 @@ where a record covers it.
 Grant `genes/<gene>` to read its `chromosome`, `start`, `end`, `strand`,
 `biotype` and `reference`, and its `changes`, one directory per alternate
 allele the owner carries that reaches the gene. A very long or very variable
-gene fails with "file too large". [06-genes-mini-rust](../apps/06-genes-mini-rust) shows the bare read,
-and [06-bitter-meter](../apps/06-bitter-meter) turns TAS2R38 into a report.
+gene fails with "file too large". [05-genes-mini-rust](../apps/05-genes-mini-rust) shows the bare read,
+and [05-bitter-meter](../apps/05-bitter-meter) turns TAS2R38 into a report.
 
 ### An interval
 
 Grant `regions/<chr>/<start>-<end>` for any stretch of a chromosome, with the
 same `reference` and `changes` as a gene. When `changes` fails with "file too
 large", split the interval and list each half.
-[07-regions-mini-rust](../apps/07-regions-mini-rust) shows the bare read, and
-[07-powerhouse-of-the-cell](../apps/07-powerhouse-of-the-cell) reads the whole
+[06-regions-mini-rust](../apps/06-regions-mini-rust) shows the bare read, and
+[06-powerhouse-of-the-cell](../apps/06-powerhouse-of-the-cell) reads the whole
 mitochondrial genome as one interval.
 
 A gene or interval grant includes its `changes`, `copies` and positions, even
-if the app never reads them. [09-motif-finder](../apps/09-motif-finder) reads
+if the app never reads them. [10-motif-finder](../apps/10-motif-finder) reads
 only a gene's reference, yet its grant still covers the gene's variants.
 
 ### The whole call file
@@ -118,8 +118,8 @@ the question.
 It is the broadest request there is, and the file runs to gigabytes, so read it
 line by line, through a large buffer. Every refill leaves the sandbox, so a
 small default buffer can cost ten times the scan time.
-[08-vcf-mini-rust](../apps/08-vcf-mini-rust) counts records with a plain line
-scan, and [08-vcf-roll-call](../apps/08-vcf-roll-call) parses the whole file
+[09-vcf-mini-rust](../apps/09-vcf-mini-rust) counts records with a plain line
+scan, and [09-vcf-roll-call](../apps/09-vcf-roll-call) parses the whole file
 with `noodles-vcf`.
 
 ## Least privilege

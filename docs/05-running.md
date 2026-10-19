@@ -124,7 +124,7 @@ missing grants there.
 - **The limits.** Memory, output and the manifest pass's time are unbounded.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
-  [10-fortune-cookie](../apps/10-fortune-cookie) explains.
+  [11-fortune-cookie](../apps/11-fortune-cookie) explains.
 - **The owner's review.** You always see standard output and standard error at
   once, as if `develop` were set and the owner released every report.
 - **The generated tree.** Plain directories list everything, and no read fails

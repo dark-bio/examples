@@ -76,14 +76,14 @@ and a full app turns the same read into a report. Each row is a folder under
 | `03-sundae-order` | asking the owner questions with inputs | Rust |
 | `04-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
 | `04-cilantro-soapiness` | the same variant as a report | Rust |
-| `06-genes-mini` | one gene through `genes/` | Rust, Go, C, Python |
-| `06-bitter-meter` | the gene and its changes as a report | Rust |
-| `07-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
-| `07-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
-| `08-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
-| `08-vcf-roll-call` | parsing the whole call file as a report | Rust |
-| `09-motif-finder` | computing over a gene's reference sequence | Rust |
-| `10-fortune-cookie` | why the sandbox is deterministic | Rust |
+| `05-genes-mini` | one gene through `genes/` | Rust, Go, C, Python |
+| `05-bitter-meter` | the gene and its changes as a report | Rust |
+| `06-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
+| `06-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
+| `09-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
+| `09-vcf-roll-call` | parsing the whole call file as a report | Rust |
+| `10-motif-finder` | computing over a gene's reference sequence | Rust |
+| `11-fortune-cookie` | why the sandbox is deterministic | Rust |
 
 ## Documentation
 
