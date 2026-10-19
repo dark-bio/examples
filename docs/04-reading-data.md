@@ -35,6 +35,8 @@ Absence can also mean the data was never uploaded. `v1/genome/datasets` lists
 one empty file per dataset the Ark holds, and it's a public grant the owner
 never has to approve. [07-doping-test](../apps/07-doping-test) reads it to tell
 a genome without a copy number file from one whose caller left the gene out.
+[08-sprint-or-marathon](../apps/08-sprint-or-marathon) reads it to tell a D/D
+genome from one without a structural variant file.
 
 ## Reading references
 
@@ -116,6 +118,12 @@ large", split the interval and list each half.
 [06-regions-mini-rust](../apps/06-regions-mini-rust) shows the bare read, and
 [06-powerhouse-of-the-cell](../apps/06-powerhouse-of-the-cell) reads the whole
 mitochondrial genome as one interval.
+
+A structural variant sits in `changes` like any other change, with `dataset`
+naming its file, so a short interval is enough to find one.
+[08-structural-mini-rust](../apps/08-structural-mini-rust) lists the ACE
+insertion from a 101-base window, and
+[08-sprint-or-marathon](../apps/08-sprint-or-marathon) turns it into a report.
 
 A gene or interval grant includes its `changes`, `copies` and positions, even
 if the app never reads them. [10-motif-finder](../apps/10-motif-finder) reads

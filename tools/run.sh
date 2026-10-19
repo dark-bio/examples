@@ -37,17 +37,7 @@ while read -r grant dataset; do
       printf 'optional dataset left unmounted, OPTIONAL=off: %s\n' "$dataset" >&2
       continue
     fi
-    if [ ! -d "$fixtures/$dataset" ]; then
-      printf 'optional dataset left unmounted, not in this fixture root: %s\n' "$dataset" >&2
-      continue
-    fi
   fi
-  if [ ! -d "$fixtures/$dataset" ]; then
-    printf 'fixture root has no declared dataset: %s\n' "$dataset" >&2
-    exit 3
-  fi
-  mkdir -p "$stage/$(dirname "$dataset")"
-  cp -R "$fixtures/$dataset" "$stage/$dataset"
   # Git can't store an empty directory, so the root lists the ones to create
   if [ -f "$fixtures/directories" ]; then
     while IFS= read -r directory; do
@@ -55,6 +45,18 @@ while read -r grant dataset; do
         "$dataset"|"$dataset"/*) mkdir -p "$stage/$directory" ;;
       esac
     done < "$fixtures/directories"
+  fi
+  if [ ! -d "$fixtures/$dataset" ] && [ ! -d "$stage/$dataset" ]; then
+    if [ "$grant" = optional ]; then
+      printf 'optional dataset left unmounted, not in this fixture root: %s\n' "$dataset" >&2
+      continue
+    fi
+    printf 'fixture root has no declared dataset: %s\n' "$dataset" >&2
+    exit 3
+  fi
+  mkdir -p "$stage/$dataset"
+  if [ -d "$fixtures/$dataset" ]; then
+    cp -R "$fixtures/$dataset/." "$stage/$dataset"
   fi
   set -- "$@" --dir "$stage/$dataset::/$dataset"
 done < "$stage/grants"
