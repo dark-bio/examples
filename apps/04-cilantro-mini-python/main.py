@@ -1,4 +1,4 @@
-"""Cilantro taste, from one variant through the rsids/ lens."""
+"""Cilantro taste, from one variant through rsids/."""
 import sys
 
 RSID = "rs72921001"
@@ -31,13 +31,13 @@ paths = ["{LENS}"]
 [listing]
 language = "en"
 icon = "🌱"
-summary = "The smallest real data access, through the rsids lens, in four languages."
+summary = "The smallest real data access, one variant through rsids, in four languages."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-python"
 keywords = ["tutorial", "rsids", "genotype", "four languages"]
 description = '''
-The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
+The `rsids/` folder hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
 
 Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.
 

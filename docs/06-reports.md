@@ -58,8 +58,8 @@ map, a scan or a quality check, keeps the order and names its sections for what
 they hold.
 
 The title is the subject, not the app's name, which the Ark reports beside the
-report, so an app called `drunk-o-type` prints a report titled "How Your Body
-Handles a Drink". The same shape holds one variant, a panel, a gene, a whole
+report, so an app called `cilantro-soapiness` prints a report titled "Cilantro
+Taste Test". The same shape holds one variant, a panel, a gene, a whole
 call file, and the summary a study asked for.
 
 [04-cilantro-soapiness](../apps/04-cilantro-soapiness) is a light app, and
@@ -134,8 +134,9 @@ pipe, that is a different genotype. Absent values stay in the table, marked
 absent. A long list is cut, with a count of what was left out.
 
 Coordinates name their assembly when the app can read it. It sits in
-`v1/genome/reference/build`, and reading it means granting
-`v1/genome/reference`, as the demos do. An app without that grant leaves the
+`v1/genome/files/reference-genome/build`, and reading it means granting
+`v1/genome/files/reference-genome`, a public grant the owner never has to
+approve, as the demos do. An app without that grant leaves the
 coordinate unlabeled rather than labeling it wrongly, since an Ark may hold a
 GRCh37 genome.
 

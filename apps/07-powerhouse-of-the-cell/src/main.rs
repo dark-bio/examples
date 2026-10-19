@@ -1,15 +1,14 @@
-//! Powerhouse of the Cell: a report from one genome `regions/` lens.
+//! Powerhouse of the Cell: a report from one interval under `regions/`.
 //!
-//! The mitochondrial chromosome is small enough to read as one range, which makes
-//! it a useful demo of the region lens: one granted interval exposes a streamed
-//! reference sequence plus all non-reference changes inside that span, printed in
-//! the report shape docs/06-reports.md describes.
+//! The mitochondrial chromosome is small enough to read as one interval, which
+//! makes it a useful demo of `regions/`. One granted interval exposes a streamed
+//! reference plus every change carried inside it, printed in the report shape
+//! docs/06-reports.md describes.
 //!
-//! Tutorial note for app authors: the app asks Ark for the interval's path
-//! (`v1/genome/regions/chrM/1-16569`) and for `v1/genome/reference`, which it
-//! reads only for the assembly build its coordinates are reported on.
+//! The app asks the Ark for the interval, `v1/genome/regions/chrM/1-16569`, and
+//! for `v1/genome/files/reference-genome`, a public grant it reads only for the
+//! assembly build its coordinates are reported on.
 
-use std::collections::BTreeSet;
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::Path;
@@ -31,7 +30,7 @@ name = "Powerhouse of the Cell"
 version = "0.2.0"
 
 [reads]
-paths = ["v1/genome/regions/chrM/1-16569", "v1/genome/reference"]
+paths = ["v1/genome/regions/chrM/1-16569", "v1/genome/files/reference-genome"]
 
 [listing]
 language = "en"
@@ -42,7 +41,7 @@ license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/07-powerhouse-of-the-cell"
 keywords = ["mitochondria", "chrM", "GC content", "variants"]
 description = '''
-The mitochondrial chromosome is 16,569 bases long, small enough to read as a single interval. This app grants `chrM:1-16569` through the regions lens, streams the reference sequence for GC content and density windows, and lists your non reference changes with a text map of where they fall along the sequence.
+The mitochondrial chromosome is 16,569 bases long, small enough to read as a single interval. This app grants `chrM:1-16569` under `regions/`, streams its reference for GC content and density windows, and lists the changes you carry with a text map of where they fall along the chromosome.
 
 It counts transitions and transversions, flags indels and mixed allele calls, and reports positions without an answer. It is not a haplogroup caller, an ancestry test or a medical report.
 
@@ -50,15 +49,18 @@ An interval grant covers your variants inside it, so approving this app shares e
 '''
 
 [listing.purposes]
-"v1/genome/regions/chrM/1-16569" = "Your whole mitochondrial genome, its sequence and your changes in it"
-"v1/genome/reference" = "The reference build, to name positions"
+"v1/genome/regions/chrM/1-16569" = "Your whole mitochondrial genome, its reference and your changes in it"
+"v1/genome/files/reference-genome" = "The reference build, to name positions"
 "#
         );
         return;
     };
 
     let base = Path::new(&dir).join(LENS_PATH);
-    let build = match read_leaf(&Path::new(&dir).join("v1/genome/reference"), "build") {
+    let build = match read_leaf(
+        &Path::new(&dir).join("v1/genome/files/reference-genome"),
+        "build",
+    ) {
         Ok(build) => build,
         Err(err) => {
             eprintln!("{err}");
@@ -85,6 +87,10 @@ struct RegionReport {
 #[derive(Debug)]
 struct Change {
     pos: u64,
+    /// Place among the entries sharing this span, counting from 1.
+    ordinal: u64,
+    /// Last changed base, which is the anchor base for an insertion.
+    end: u64,
     reference: Option<String>,
     genotype: Option<String>,
     call: String,
@@ -94,11 +100,11 @@ struct Change {
 
 impl RegionReport {
     fn load(base: &Path) -> Result<Self, String> {
-        let sequence = read_sequence(&base.join("sequence"))?;
+        let sequence = read_sequence(&base.join("reference"))?;
         if sequence.len != END - START + 1 {
             return Err("Region sequence length does not match its span".into());
         }
-        let changes = read_changes(&base.join("changes"))?;
+        let changes = read_changes(base)?;
         Ok(Self { sequence, changes })
     }
 
@@ -269,10 +275,10 @@ fn read_leaf(base: &Path, name: &str) -> Result<Option<String>, String> {
     }
 }
 
-/// changes cannot be granted directly. Past 4000000 bases or 16384 positions,
-/// listing or lookup fails with EFBIG. This small-span example does not split.
-fn read_changes(path: &Path) -> Result<Option<Vec<Change>>, String> {
-    let entries = match fs::read_dir(path) {
+/// Reads every entry under the place's changes. Past 4000000 bases or 16384
+/// entries the listing fails with EFBIG, which this small place never reaches.
+fn read_changes(base: &Path) -> Result<Option<Vec<Change>>, String> {
+    let entries = match fs::read_dir(base.join("changes")) {
         Ok(entries) => entries,
         Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(None),
         Err(err) => return Err(format!("Could not list changes: {err}")),
@@ -281,24 +287,36 @@ fn read_changes(path: &Path) -> Result<Option<Vec<Change>>, String> {
     for entry in entries {
         let entry = entry.map_err(|err| format!("Could not read changes entry: {err}"))?;
         let name = entry.file_name();
-        let pos = name
-            .to_str()
-            .ok_or("Invalid change position")?
-            .parse::<u64>()
-            .map_err(|err| format!("Invalid change position: {err}"))?;
-        let reference = read_leaf(&entry.path(), "reference")?;
-        let genotype = read_leaf(&entry.path(), "genotype")?;
-        // Several records can start at one listed position, leaving both leaves absent.
-        let (call, kind, substitution) = match (&reference, &genotype) {
-            (Some(reference), Some(genotype)) => (
-                classify_call(reference, genotype),
-                classify_kind(reference, genotype),
-                classify_substitution(reference, genotype),
-            ),
-            _ => ("no answer", "no answer", "no answer"),
+        let (pos, end, ordinal) = change_span(name.to_str().ok_or("Invalid change name")?)?;
+        let change_type = read_leaf(&entry.path(), "type")?;
+        let bases = read_leaf(&entry.path(), "bases")?;
+        let carried = read_leaf(&entry.path(), "carried")?
+            .map(|value| {
+                value
+                    .parse::<usize>()
+                    .map_err(|err| format!("Invalid carried count: {err}"))
+            })
+            .transpose()?;
+        let dataset = read_leaf(&entry.path(), "dataset")?;
+        let uncalled = read_leaf(&entry.path(), "uncalled")?;
+        let site = base.join("positions").join(pos.to_string());
+        let reference = read_leaf(&site, "reference")?;
+        let genotype = read_leaf(&site, "genotype")?;
+
+        // The site's genotype holds only small variant copies, so other entries get no call
+        let call = match (dataset.as_deref(), genotype.as_deref(), carried) {
+            _ if uncalled.is_some() => "uncertain",
+            (Some("small-variants"), Some(genotype), Some(carried)) => {
+                classify_call(genotype, carried)
+            }
+            _ => "no answer",
         };
+        let kind = classify_kind(change_type.as_deref(), bases.as_deref());
+        let substitution = classify_substitution(kind, reference.as_deref(), bases.as_deref());
         changes.push(Change {
             pos,
+            end,
+            ordinal,
             reference,
             genotype,
             call: call.into(),
@@ -306,75 +324,77 @@ fn read_changes(path: &Path) -> Result<Option<Vec<Change>>, String> {
             substitution: substitution.into(),
         });
     }
-    changes.sort_by_key(|c| c.pos);
+    changes.sort_by_key(|c| (c.pos, c.end, c.ordinal));
     Ok(Some(changes))
 }
 
-fn classify_call(reference: &str, genotype: &str) -> &'static str {
+/// Splits an entry name such as 100-100 or 100-100-2 into its start, end and
+/// place among the entries sharing that span.
+fn change_span(name: &str) -> Result<(u64, u64, u64), String> {
+    let parts = name.split('-').collect::<Vec<_>>();
+    if !(2..=3).contains(&parts.len()) {
+        return Err(format!("Invalid change name: {name}"));
+    }
+    let numbers = parts
+        .iter()
+        .map(|part| {
+            if part.starts_with('0') || !part.bytes().all(|byte| byte.is_ascii_digit()) {
+                return Err(format!("Invalid change name: {name}"));
+            }
+            part.parse::<u64>()
+                .map_err(|_| format!("Invalid change name: {name}"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let (start, end) = (numbers[0], numbers[1]);
+    let ordinal = numbers.get(2).copied().unwrap_or(1);
+    if end < start || (numbers.len() == 3 && ordinal < 2) {
+        return Err(format!("Invalid change name: {name}"));
+    }
+    Ok((start, end, ordinal))
+}
+
+/// Calls an allele from how many of the site's copies carry it.
+fn classify_call(genotype: &str, carried: usize) -> &'static str {
     let alleles = alleles(genotype);
-    if alleles.is_empty() || alleles.iter().any(|a| *a == ".") {
+    if carried == 0 || carried > alleles.len() || alleles.contains(&".") {
         return "uncertain";
     }
     if alleles.len() == 1 {
-        return if alleles[0] == reference {
-            "single reference"
-        } else {
-            "single change"
-        };
+        return "single change";
     }
-    let unique: BTreeSet<&str> = alleles.iter().copied().collect();
-    if unique.len() == 1 {
-        if unique.contains(reference) {
-            "all copies reference"
-        } else {
-            "all copies changed"
-        }
+    if carried == alleles.len() {
+        "all copies changed"
     } else {
         "mixed alleles"
     }
 }
 
-fn classify_kind(reference: &str, genotype: &str) -> &'static str {
-    let alleles = alleles(genotype);
-    if !is_base(reference) || alleles.iter().any(|a| *a != "." && !is_base(a)) {
-        "indel"
-    } else {
-        "snp"
+/// Sorts a change into the report's substitution or indel kind.
+fn classify_kind(change_type: Option<&str>, bases: Option<&str>) -> &'static str {
+    match (change_type, bases) {
+        (Some("SNV"), Some(bases)) if is_base(bases) => "snp",
+        (Some("SNV") | None, _) => "no answer",
+        _ => "indel",
     }
 }
 
-fn classify_substitution(reference: &str, genotype: &str) -> &'static str {
-    if !is_base(reference) {
+/// Names a substitution a transition or a transversion.
+fn classify_substitution(kind: &str, reference: Option<&str>, bases: Option<&str>) -> &'static str {
+    if kind == "indel" {
         return "not a snp";
     }
-    let Some(reference) = reference.chars().next().map(|c| c.to_ascii_uppercase()) else {
-        return "not a snp";
+    let (Some(reference), Some(bases)) = (reference, bases) else {
+        return "no answer";
     };
-
-    let mut saw_transition = false;
-    let mut saw_transversion = false;
-    for allele in alleles(genotype) {
-        if allele == "." || allele.eq_ignore_ascii_case(&reference.to_string()) {
-            continue;
-        }
-        if !is_base(allele) {
-            return "not a snp";
-        }
-        let Some(alt) = allele.chars().next().map(|c| c.to_ascii_uppercase()) else {
-            continue;
-        };
-        if is_transition(reference, alt) {
-            saw_transition = true;
-        } else {
-            saw_transversion = true;
-        }
+    if kind != "snp" || !is_base(reference) || !is_base(bases) {
+        return "no answer";
     }
-
-    match (saw_transition, saw_transversion) {
-        (true, false) => "transition",
-        (false, true) => "transversion",
-        (true, true) => "mixed substitution",
-        (false, false) => "reference only",
+    let reference = reference.as_bytes()[0].to_ascii_uppercase() as char;
+    let alt = bases.as_bytes()[0].to_ascii_uppercase() as char;
+    if is_transition(reference, alt) {
+        "transition"
+    } else {
+        "transversion"
     }
 }
 
@@ -537,14 +557,12 @@ fn print_method() {
     println!();
     println!(
         "Your mitochondrial chromosome is compact enough to fit on a single report page, so \
-         the app reads it as one interval. It streams the reference sequence for length and \
-         GC content, and lists every position under its changes where a record starting \
-         inside the \
-         interval holds an ALT allele. Each genotype is classified against the reference \
-         base by how many copies carry the change, as a substitution or an indel, and as \
-         a transition or a transversion. A position listed without leaves, where several \
-         records start, counts as no answer. The reference is the revised Cambridge \
-         sequence of Andrews et al. (1999), which GRCh38 carries as chrM."
+         the app reads it as one interval. It streams the reference for length and GC \
+         content, and lists every change you carry that reaches the interval. Each small \
+         variant is classified by how many copies carry it, as a substitution or an indel, \
+         and as a transition or a transversion. A structural change, or one without a \
+         genotype where it starts, counts as no answer. The reference is the revised \
+         Cambridge sequence of Andrews et al. (1999), which GRCh38 carries as chrM."
     );
     println!();
 }
@@ -554,10 +572,10 @@ fn print_limitations() {
     println!();
     println!(
         "A map, not a haplogroup call. Haplogroups need curated marker trees and care with \
-         build and strand conventions, none of which this app has. The change list holds \
-         records starting inside the interval, and a position not listed isn't a result on \
-         its own. Mitochondria can also carry several versions at once, heteroplasmy, which \
-         a single genotype string doesn't capture."
+         build and strand conventions, none of which this app has. A position without a \
+         listed change isn't a result on its own, since a call file can leave reference \
+         sites out. Mitochondria can also carry several versions at once, heteroplasmy, \
+         which a single genotype string doesn't capture."
     );
     println!();
 }

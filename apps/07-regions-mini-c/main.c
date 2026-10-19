@@ -1,4 +1,4 @@
-// One interval's reference length and GC content through the regions/ lens.
+// One interval's reference length and GC content through regions/.
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -15,27 +15,27 @@ int main(int argc, char *argv[]) {
            "[listing]\n"
            "language = \"en\"\n"
            "icon = \"📏\"\n"
-           "summary = \"Stream an interval's sequence without ever loading it whole.\"\n"
+           "summary = \"Stream an interval's reference without ever loading it whole.\"\n"
            "category = \"developer\"\n"
            "license = \"BSD-3-Clause\"\n"
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/07-regions-mini-c\"\n"
            "keywords = [\"tutorial\", \"regions\", \"streaming\", \"mitochondria\"]\n"
            "description = '''\n"
-           "Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `sequence` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.\n\n"
+           "Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.\n\n"
            "Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.\n\n"
            "An interval grant covers your variants inside it, which Powerhouse of the Cell lists.\n"
            "'''\n\n"
            "[listing.purposes]\n"
-           "\"v1/genome/regions/chrM/1-16569\" = \"The mitochondrial genome, to stream its sequence\"\n");
+           "\"v1/genome/regions/chrM/1-16569\" = \"The mitochondrial genome, to stream its reference bases\"\n");
     return 0;
   }
-  size_t size = strlen(argv[1]) + sizeof(LENS) + sizeof("/sequence") + 1;
+  size_t size = strlen(argv[1]) + sizeof(LENS) + sizeof("/reference") + 1;
   char *path = malloc(size);
   if (!path) {
     fprintf(stderr, "Could not allocate a region path\n");
     return 1;
   }
-  snprintf(path, size, "%s/" LENS "/sequence", argv[1]);
+  snprintf(path, size, "%s/" LENS "/reference", argv[1]);
   FILE *sequence = fopen(path, "rb");
   int error = errno;
   free(path);

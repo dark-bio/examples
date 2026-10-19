@@ -1,4 +1,4 @@
-//! One gene through the genes/ lens (the mini version).
+//! One gene through genes/ (the mini version).
 //!
 //! Reads a gene's scalar metadata leaves and the length of its reference
 //! sequence, in a handful of lines. The full report is ../06-bitter-meter.
@@ -25,21 +25,21 @@ paths = ["v1/genome/genes/TAS2R38"]
 [listing]
 language = "en"
 icon = "🧬"
-summary = "A gene's coordinates and sequence length, through the genes lens."
+summary = "A gene's coordinates and reference length, read as plain files."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/06-genes-mini-rust"
-keywords = ["tutorial", "genes", "sequence", "TAS2R38"]
+keywords = ["tutorial", "genes", "reference", "TAS2R38"]
 description = '''
-Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `sequence` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.
+Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `reference` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.
 
-An absent value prints as no answer. A missing sequence is an error.
+An absent value prints as no answer. A missing reference is an error.
 
 A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.
 '''
 
 [listing.purposes]
-"v1/genome/genes/TAS2R38" = "A gene to read coordinates and sequence length from"
+"v1/genome/genes/TAS2R38" = "A gene to read coordinates and reference length from"
 "#
         );
         return;
@@ -53,7 +53,7 @@ A gene grant also covers your variants inside the gene, even though this app doe
 fn run(root: &Path) -> Result<(), String> {
     let base = root.join(LENS);
     // Sequence size is end - start + 1; no need to load a long gene into memory.
-    let length = fs::metadata(base.join("sequence"))
+    let length = fs::metadata(base.join("reference"))
         .map_err(|err| format!("Could not read {GENE} sequence: {err}"))?
         .len();
     if length == 0 {

@@ -58,7 +58,7 @@ The app reads only public reference sequence. Its grant is still the gene, and a
 }
 
 fn run(root: &Path) -> Result<(), String> {
-    let file = File::open(root.join(LENS).join("sequence"))
+    let file = File::open(root.join(LENS).join("reference"))
         .map_err(|err| format!("Could not open {GENE} sequence: {err}"))?;
     let mut cuts = [0u64; ENZYMES.len()];
     let mut length = 0u64;

@@ -1,10 +1,11 @@
 # 08 - vcf-mini (Rust)
 
-The app grants the whole call file, `v1/genome/snp-indel`, and streams `vcf` one
-line at a time to count its header lines and records. A whole-genome call file
-runs to gigabytes, far past an app's 128 MiB of memory, so it's never loaded
-whole. A failed read stops the app instead of reporting zero records.
-[08-vcf-roll-call](../08-vcf-roll-call) parses the same file with a library.
+The app grants the whole small variant file, `v1/genome/files/small-variants`,
+and streams `vcf` one line at a time to count its header lines and records. A
+whole-genome call file runs to gigabytes, far past an app's 128 MiB of memory,
+so it's never loaded whole. A failed read stops the app instead of reporting
+zero records. [08-vcf-roll-call](../08-vcf-roll-call) parses the same file with
+a library.
 
 It reads through a 64 KiB buffer into one reused line. Both matter over
 millions of records, since every refill leaves the sandbox and a fresh line per

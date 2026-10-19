@@ -5,7 +5,7 @@
 //! carry, the more soapy cilantro tends to taste (Eriksson et al., 2012).
 //!
 //! This is the simplest real data access there is. The app asks for one
-//! directory and the `rsids/` lens hands back the genotype and coordinate as
+//! directory and the `rsids/` folder hands back the genotype and coordinate as
 //! plain files. It never opens a variant file. See ../../docs/04-reading-data.md.
 
 use std::path::Path;
@@ -33,13 +33,13 @@ paths = ["{LENS}"]
 [listing]
 language = "en"
 icon = "🌱"
-summary = "The smallest real data access, through the rsids lens, in four languages."
+summary = "The smallest real data access, one variant through rsids, in four languages."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-rust"
 keywords = ["tutorial", "rsids", "genotype", "four languages"]
 description = '''
-The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
+The `rsids/` folder hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
 
 Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.
 
@@ -53,7 +53,7 @@ The same program is written in Rust, Go, C and Python. Compare them, then see th
         return;
     };
 
-    // The report pass reads everything from the one lens directory
+    // The report pass reads everything from the one variant directory
     let base = Path::new(&dir).join(LENS);
 
     // ENOENT means no answer, including reference sites in variants-only calls.

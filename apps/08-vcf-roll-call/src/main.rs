@@ -2,9 +2,9 @@
 //! describes.
 //!
 //! Tutorial note for app authors: this is deliberately a broad-permission demo.
-//! It asks Ark for `v1/genome/snp-indel` and streams `vcf` with `noodles-vcf`.
-//! That is appropriate for QA-style checks, but it is not a privacy-minimal lens
-//! pattern like the `rsids/`, `genes/`, or `regions/` examples.
+//! It asks the Ark for `v1/genome/files/small-variants` and streams `vcf` with
+//! `noodles-vcf`. That suits QA-style checks, but it is not a privacy-minimal
+//! grant like the `rsids/`, `genes/` or `regions/` examples.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
@@ -20,7 +20,7 @@ use noodles_vcf::variant::record::samples::Sample as _;
 use noodles_vcf::variant::record::samples::keys::key as sample_key;
 use noodles_vcf::variant::record::samples::series::Value as SampleValue;
 
-const DATASET_PATH: &str = "v1/genome/snp-indel";
+const DATASET_PATH: &str = "v1/genome/files/small-variants";
 const MAX_CONTIG_ROWS: usize = 12;
 const METRIC_MAX: usize = 512;
 
@@ -34,26 +34,26 @@ name = "VCF Roll Call"
 version = "0.2.0"
 
 [reads]
-paths = ["v1/genome/snp-indel"]
+paths = ["v1/genome/files/small-variants"]
 
 [listing]
 language = "en"
 icon = "📋"
-summary = "An inventory of your call file, from record counts to depth and quality."
+summary = "An inventory of your small variant file, from record counts to depth and quality."
 category = "tools"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-vcf-roll-call"
 keywords = ["VCF", "call file", "statistics", "data quality", "noodles"]
 description = '''
-Most apps ask for a variant, a gene or a region. This one asks for the call file itself and streams it end to end with the noodles VCF parser. The report describes the file rather than you. It counts records per chromosome, classifies genotype calls, checks whether depth and quality fields are present, measures missingness and totals the span covered by reference blocks.
+Most apps ask for a variant, a gene or a region. This one asks for the small variant file itself and streams it end to end with the noodles VCF parser. The report describes the file rather than you. It counts records per chromosome, classifies genotype calls, checks whether depth and quality fields are present, measures missingness and totals the span covered by reference blocks.
 
 A malformed record is counted and skipped. A failed read stops the app, so a damaged file cannot pass as a partial success.
 
-This is the broadest grant an app can ask for. Your phone shows it as the whole call file, and that is exactly what the app can read.
+This is the broadest grant an app can ask for. Your phone shows it as your whole small variant file, and that is exactly what the app can read.
 '''
 
 [listing.purposes]
-"v1/genome/snp-indel" = "Your whole call file, to describe its contents"
+"v1/genome/files/small-variants" = "Your whole small variant file, to describe its contents"
 "#
         );
         return Ok(());

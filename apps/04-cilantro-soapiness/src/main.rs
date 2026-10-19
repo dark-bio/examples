@@ -1,7 +1,7 @@
 //! Cilantro Soapiness: the cilantro taste test as a full Ark report.
 //!
 //! This is the full version of the cilantro example. The mini version
-//! (../04-cilantro-mini-rust) shows the bare lens read in a handful of lines;
+//! (../04-cilantro-mini-rust) shows the bare read in a handful of lines;
 //! this one wraps the same single genotype in a complete report in the shape
 //! docs/06-reports.md describes: a finding, the evidence behind it, the method,
 //! its limitations and sources. The data access is identical.
@@ -33,7 +33,7 @@ name = "Cilantro Taste Test"
 version = "0.4.0"
 
 [reads]
-paths = ["v1/genome/rsids/rs72921001", "v1/genome/reference"]
+paths = ["v1/genome/rsids/rs72921001", "v1/genome/files/reference-genome"]
 
 [listing]
 language = "en"
@@ -55,17 +55,17 @@ The app reads that one variant and the reference base beside it. The report says
 
 [listing.purposes]
 "v1/genome/rsids/rs72921001" = "The variant near OR6A2 tied to tasting cilantro as soap"
-"v1/genome/reference" = "The reference build, to name the variant's coordinates"
+"v1/genome/files/reference-genome" = "The reference build, to name the variant's coordinates"
 "#
         );
         return;
     };
 
-    // Everything comes from one lens directory: the user's genotype and the
+    // Everything comes from one variant directory: the user's genotype and the
     // variant's coordinate. The app reads plain files, never a genomic format.
     let genome = Path::new(&dir).join("v1/genome");
     let base = genome.join("rsids").join(RSID);
-    let build = leaf(&genome.join("reference"), "build");
+    let build = leaf(&genome.join("files/reference-genome"), "build");
 
     println!("# 🌿 Cilantro Taste Test");
     println!();
@@ -120,7 +120,7 @@ The app reads that one variant and the reference base beside it. The report says
     print_sources();
 }
 
-/// What the lens reveals about the user at this site.
+/// What the variant directory reveals about the user at this site.
 enum Call {
     Called(String),
     Uncertain(String),
@@ -176,7 +176,7 @@ fn finding(copies: usize) -> &'static str {
 
 /// The values the finding rests on: the variant, its coordinate on the assembly
 /// this Ark holds, and the genotype exactly as the call file records it. The
-/// lens exposes chromosome and position separately; the app composes the
+/// directory exposes chromosome and position separately; the app composes the
 /// `chr:pos` form itself, and labels it only when the build could be read.
 fn print_evidence(base: &Path, call: &Call, reference: Option<&str>, build: Option<&str>) {
     println!("## Evidence");

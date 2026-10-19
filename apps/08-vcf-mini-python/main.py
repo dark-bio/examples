@@ -1,7 +1,7 @@
 """Count headers and records in the decompressed VCF view."""
 import sys
 
-LENS = "v1/genome/snp-indel"
+LENS = "v1/genome/files/small-variants"
 
 
 def main():
@@ -24,7 +24,7 @@ license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-vcf-mini-python"
 keywords = ["tutorial", "VCF", "call file", "streaming"]
 description = '''
-Grant `v1/genome/snp-indel` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.
+Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.
 
 Every buffer refill leaves the sandbox, which adds up at that scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones also reuse one line instead of allocating one per record.
 
@@ -32,7 +32,7 @@ This is the broadest grant there is. VCF Roll Call parses the same file with a l
 '''
 
 [listing.purposes]
-"v1/genome/snp-indel" = "Your whole call file, to count its records"
+"v1/genome/files/small-variants" = "Your whole small variant file, to count its records"
 """, end="")
         return
 

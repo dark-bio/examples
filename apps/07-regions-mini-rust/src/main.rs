@@ -1,4 +1,4 @@
-//! One interval through the regions/ lens (the mini version).
+//! One interval through regions/ (the mini version).
 //!
 //! Reads a region's reference sequence and reports its length and GC content.
 //! The full report is ../07-powerhouse-of-the-cell.
@@ -25,13 +25,13 @@ paths = ["v1/genome/regions/chrM/1-16569"]
 [listing]
 language = "en"
 icon = "📏"
-summary = "Stream an interval's sequence without ever loading it whole."
+summary = "Stream an interval's reference without ever loading it whole."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/07-regions-mini-rust"
 keywords = ["tutorial", "regions", "streaming", "mitochondria"]
 description = '''
-Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `sequence` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.
+Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.
 
 Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.
 
@@ -39,7 +39,7 @@ An interval grant covers your variants inside it, which Powerhouse of the Cell l
 '''
 
 [listing.purposes]
-"v1/genome/regions/chrM/1-16569" = "The mitochondrial genome, to stream its sequence"
+"v1/genome/regions/chrM/1-16569" = "The mitochondrial genome, to stream its reference bases"
 "#
         );
         return;
@@ -51,7 +51,7 @@ An interval grant covers your variants inside it, which Powerhouse of the Cell l
 }
 
 fn run(root: &Path) -> Result<(), String> {
-    let mut sequence = File::open(root.join(LENS).join("sequence"))
+    let mut sequence = File::open(root.join(LENS).join("reference"))
         .map_err(|err| format!("Could not open region sequence: {err}"))?;
     let (mut length, mut gc) = (0u64, 0u64);
     let mut buffer = [0; 8192];

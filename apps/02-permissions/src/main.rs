@@ -14,7 +14,7 @@ const GRANTED: &str = "v1/genome/rsids/rs72921001";
 /// Optional grant that the Ark mounts when available and approved.
 const OPTIONAL: &str = "v1/genome/rsids/rs671";
 /// Undeclared call file that stays unmounted, so reading it fails.
-const DENIED: &str = "v1/genome/snp-indel/vcf";
+const DENIED: &str = "v1/genome/files/small-variants/vcf";
 
 /// Prints the manifest or reports which grants can be read.
 fn main() {

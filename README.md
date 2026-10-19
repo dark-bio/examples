@@ -76,7 +76,6 @@ and a full app turns the same read into a report. Each row is a folder under
 | `03-sundae-order` | asking the owner questions with inputs | Rust |
 | `04-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
 | `04-cilantro-soapiness` | the same variant as a report | Rust |
-| `05-drunk-o-type` | a panel of variants | Rust |
 | `06-genes-mini` | one gene through `genes/` | Rust, Go, C, Python |
 | `06-bitter-meter` | the gene and its changes as a report | Rust |
 | `07-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
@@ -95,7 +94,7 @@ and a full app turns the same read into a report. Each row is a folder under
 - [03-data-paths.md](docs/03-data-paths.md) maps the data tree and the rules
   every path follows.
 - [04-reading-data.md](docs/04-reading-data.md) covers absence, errors,
-  sequences and genotypes, with a grant for every need.
+  references and genotypes, with a grant for every need.
 - [05-running.md](docs/05-running.md) covers running apps locally, on an
   emulator and on an Ark.
 - [06-reports.md](docs/06-reports.md) covers the report, its shape and its

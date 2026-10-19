@@ -65,8 +65,8 @@ Follow `docs/06-reports.md`. In short:
   read as reference.
 - Every value beside its coordinate. Genotypes exactly as the file holds
   them, in prose or code when they contain a pipe. Coordinates labelled with
-  the assembly only when the app granted `v1/genome/reference` and read
-  `build`.
+  the assembly only when the app granted `v1/genome/files/reference-genome`
+  and read `build`.
 - Studies named inline as author and year, listed in Sources with a stable
   URL. Links nowhere else.
 - Pick one voice and keep it. Light or serious, never both in one report.

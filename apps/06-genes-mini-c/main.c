@@ -1,4 +1,4 @@
-// One gene's metadata and reference length through the genes/ lens.
+// One gene's metadata and reference length through genes/.
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -69,23 +69,23 @@ int main(int argc, char *argv[]) {
            "[listing]\n"
            "language = \"en\"\n"
            "icon = \"🧬\"\n"
-           "summary = \"A gene's coordinates and sequence length, through the genes lens.\"\n"
+           "summary = \"A gene's coordinates and reference length, read as plain files.\"\n"
            "category = \"developer\"\n"
            "license = \"BSD-3-Clause\"\n"
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/06-genes-mini-c\"\n"
-           "keywords = [\"tutorial\", \"genes\", \"sequence\", \"TAS2R38\"]\n"
+           "keywords = [\"tutorial\", \"genes\", \"reference\", \"TAS2R38\"]\n"
            "description = '''\n"
-           "Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `sequence` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.\n\n"
-           "An absent value prints as no answer. A missing sequence is an error.\n\n"
+           "Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `reference` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.\n\n"
+           "An absent value prints as no answer. A missing reference is an error.\n\n"
            "A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.\n"
            "'''\n\n"
            "[listing.purposes]\n"
-           "\"v1/genome/genes/TAS2R38\" = \"A gene to read coordinates and sequence length from\"\n");
+           "\"v1/genome/genes/TAS2R38\" = \"A gene to read coordinates and reference length from\"\n");
     return 0;
   }
 
   // File size gives the sequence length in bp without loading the gene.
-  char *filename = path(argv[1], "sequence");
+  char *filename = path(argv[1], "reference");
   struct stat info;
   if (stat(filename, &info) != 0) {
     fprintf(stderr, "Could not read " GENE " sequence: %s\n", strerror(errno));

@@ -48,6 +48,14 @@ while read -r grant dataset; do
   fi
   mkdir -p "$stage/$(dirname "$dataset")"
   cp -R "$fixtures/$dataset" "$stage/$dataset"
+  # Git can't store an empty directory, so the root lists the ones to create
+  if [ -f "$fixtures/directories" ]; then
+    while IFS= read -r directory; do
+      case "$directory" in
+        "$dataset"|"$dataset"/*) mkdir -p "$stage/$directory" ;;
+      esac
+    done < "$fixtures/directories"
+  fi
   set -- "$@" --dir "$stage/$dataset::/$dataset"
 done < "$stage/grants"
 

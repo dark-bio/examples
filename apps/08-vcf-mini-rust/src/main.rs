@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
-const LENS: &str = "v1/genome/snp-indel";
+const LENS: &str = "v1/genome/files/small-variants";
 
 fn main() {
     let Some(dir) = std::env::args().nth(1) else {
@@ -20,7 +20,7 @@ name = "The Call File"
 version = "0.1.0"
 
 [reads]
-paths = ["v1/genome/snp-indel"]
+paths = ["v1/genome/files/small-variants"]
 
 [listing]
 language = "en"
@@ -31,7 +31,7 @@ license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-vcf-mini-rust"
 keywords = ["tutorial", "VCF", "call file", "streaming"]
 description = '''
-Grant `v1/genome/snp-indel` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.
+Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.
 
 Every buffer refill leaves the sandbox, which adds up at that scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones also reuse one line instead of allocating one per record.
 
@@ -39,7 +39,7 @@ This is the broadest grant there is. VCF Roll Call parses the same file with a l
 '''
 
 [listing.purposes]
-"v1/genome/snp-indel" = "Your whole call file, to count its records"
+"v1/genome/files/small-variants" = "Your whole small variant file, to count its records"
 "#
         );
         return;

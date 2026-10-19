@@ -2,7 +2,7 @@
 
 An app reads its grants as ordinary files. This page covers the three things
 every app has to get right, which are distinguishing absence from failure,
-reading sequences, and parsing genotypes. Then it walks the grants from
+reading references, and parsing genotypes. Then it walks the grants from
 narrowest to broadest, each with an example to run.
 
 ## Absence and failure
@@ -31,12 +31,12 @@ Keep in mind what absence means. A genotype can be absent for someone carrying
 two reference alleles, since a variants-only call file has no records at
 reference sites. An app must never read absence as a result.
 
-## Reading sequences
+## Reading references
 
-A gene's or an interval's `sequence` holds exactly end - start + 1 bases, so
+A gene's or an interval's `reference` holds exactly end - start + 1 bases, so
 the file's size is the span's length and byte offset i is position start + i.
 Repeats are soft-masked in lowercase, so uppercase bases before matching them.
-A long sequence can outgrow an app's 128 MiB of memory, so read it in chunks
+A long reference can outgrow an app's 128 MiB of memory, so read it in chunks
 through a buffered reader rather than whole.
 
 ## Parsing genotypes
@@ -50,10 +50,13 @@ app meets most are `A/G` and `A|G`, a haploid `G`, a missing allele such as
 - **Treat a `.` allele as missing.** It makes a copy count inconclusive, never
   zero.
 - **Count the alleles you get**, since not every call has two.
+- **Read a `*` as a copy a deletion removed.** It carries neither the reference
+  letter nor the alternate one.
 
-At a known SNP, splitting on `/` and `|` is enough. An app that walks `changes`
-can meet symbolic alleles such as `<DEL>` and breakends, which contain those
-characters themselves, so it has to split only outside them.
+At a known SNP, splitting on `/` and `|` is enough. A genotype can still hold
+symbolic alleles such as `<DEL>` and breakends, which contain those characters
+themselves, so split only outside them. An app that walks `changes` reads each
+entry's `type`, `bases` and `carried` instead.
 [06-bitter-meter](../apps/06-bitter-meter) shows how.
 
 ## From narrowest to broadest
@@ -64,7 +67,7 @@ does the job.
 ### One variant
 
 Grant one `rsids/<rsid>` directory and read its `genotype`, `chromosome`,
-`position` and `reference`.
+`position`, `end` and `reference`.
 
 ```toml
 [reads]
@@ -78,39 +81,40 @@ Python siblings, shows the bare read.
 ### A panel of variants
 
 Grant one `rsids/` directory per variant. The owner sees each site by name.
-[05-drunk-o-type](../apps/05-drunk-o-type) reads eleven.
+[10-fortune-cookie](../apps/10-fortune-cookie) reads three.
 
 ### One position
 
 Grant `positions/<chr>/<pos>` to read the `reference` base and the `genotype` at
-a coordinate, without going through dbSNP. Every position on a chromosome
-exists, while its `genotype` answers only where a record covers it.
+a coordinate, and the `changes` and `copies` reaching it, without going through
+dbSNP. Every position on a chromosome exists, while its `genotype` answers only
+where a record covers it.
 
 ### A gene
 
 Grant `genes/<gene>` to read its `chromosome`, `start`, `end`, `strand`,
-`biotype` and `sequence`, and its `changes`, one directory per position where a
-record starting inside the gene holds an ALT allele. A gene can have no
-`changes` directory at all, and a very long or very variable one fails with
-"file too large". [06-genes-mini-rust](../apps/06-genes-mini-rust) shows the bare read,
+`biotype` and `reference`, and its `changes`, one directory per alternate
+allele the owner carries that reaches the gene. A very long or very variable
+gene fails with "file too large". [06-genes-mini-rust](../apps/06-genes-mini-rust) shows the bare read,
 and [06-bitter-meter](../apps/06-bitter-meter) turns TAS2R38 into a report.
 
 ### An interval
 
 Grant `regions/<chr>/<start>-<end>` for any stretch of a chromosome, with the
-same `sequence` and `changes` as a gene. When `changes` fails with "file too
+same `reference` and `changes` as a gene. When `changes` fails with "file too
 large", split the interval and list each half.
 [07-regions-mini-rust](../apps/07-regions-mini-rust) shows the bare read, and
 [07-powerhouse-of-the-cell](../apps/07-powerhouse-of-the-cell) reads the whole
 mitochondrial genome as one interval.
 
-A gene or interval grant includes its `changes`, even if the app never lists
-them. [09-motif-finder](../apps/09-motif-finder) reads only a gene's sequence,
-yet its grant still covers the gene's variants.
+A gene or interval grant includes its `changes`, `copies` and positions, even
+if the app never reads them. [09-motif-finder](../apps/09-motif-finder) reads
+only a gene's reference, yet its grant still covers the gene's variants.
 
 ### The whole call file
 
-Grant `snp-indel` to read the `vcf` itself, when no lens answers the question.
+Grant `files/small-variants` to read the `vcf` itself, when no place answers
+the question.
 It is the broadest request there is, and the file runs to gigabytes, so read it
 line by line, through a large buffer. Every refill leaves the sandbox, so a
 small default buffer can cost ten times the scan time.

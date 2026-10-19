@@ -13,8 +13,8 @@ made up, while the coordinates, reference alleles and sequences are public data.
 | `fixtures/no-call` | the rsID apps | a no-call, `./.`, at every panel variant |
 | `fixtures/unanswered` | the rsID apps | coordinates and reference alleles but no genotypes, as at reference sites in a variants-only call file |
 
-The rsID apps are `02-permissions`, the cilantro apps, `05-drunk-o-type` and
-`10-fortune-cookie`. Pick a root with `FIXTURES`:
+The rsID apps are `02-permissions`, the cilantro apps and `10-fortune-cookie`.
+Pick a root with `FIXTURES`:
 
 ```sh
 make run APP=04-cilantro-mini-rust FIXTURES=fixtures/no-call
@@ -29,14 +29,18 @@ grants there.
 Keep every file exactly as an Ark would serve it.
 
 - A file holds only its value, with no trailing newline. Leave a file out to
-  model an absent answer, and never leave one empty.
-- `reference/build` names the assembly.
-- A `sequence` holds exactly end - start + 1 forward-strand bases, with repeats
+  model an absent answer, and never leave one empty, except under `datasets`,
+  where every file is empty.
+- `files/reference-genome/build` names the assembly.
+- A `reference` holds exactly end - start + 1 forward-strand bases, with repeats
   in lowercase.
-- `changes` lists only the positions where a record starting there holds an ALT
-  allele. That's why the mitochondrial no-call at position 16519 has no entry.
-- `snp-indel/vcf` is ordinary VCF text and keeps its newlines. Keep it in
-  agreement with the files beside it.
+- `changes` holds one directory per alternate allele the genome carries, named
+  after the span it changes. That's why the mitochondrial no-call at position
+  16519 has none.
+- Git can't store an empty directory, so each root lists its empty `changes` and
+  `copies` in its `directories` file, and `make run` creates them.
+- `files/small-variants/vcf` is ordinary VCF text and keeps its newlines. Keep
+  it in agreement with the files beside it.
 
 ## Sources
 
