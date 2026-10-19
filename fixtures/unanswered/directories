@@ -1,3 +1,7 @@
+v1/genome/datasets/gene-annotations
+v1/genome/datasets/reference-genome
+v1/genome/datasets/small-variants
+v1/genome/datasets/variant-catalog
 v1/genome/genes/UGT2B17/changes
 v1/genome/genes/UGT2B17/copies
 v1/genome/regions/chr17/63488479-63488579/changes

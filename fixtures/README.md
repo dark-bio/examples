@@ -12,7 +12,7 @@ coordinates, reference alleles and sequences are public data.
 | :-- | :-- | :-- |
 | `fixtures` | every app | typical calls, including phased, haploid and reference calls, no copies of UGT2B17, and the ACE insertion on both copies |
 | `fixtures/no-call` | the rsID, copy number and structural apps | a no-call, `./.`, at every panel variant, a copy number segment without a count, and the ACE insertion with a copy uncalled |
-| `fixtures/unanswered` | the rsID, copy number and structural apps | no genotypes at the panel variants, as at reference sites in a variants-only call file, and no copy number or structural variant upload |
+| `fixtures/unanswered` | the rsID apps | no genotypes at the panel variants, as at reference sites in a variants-only call file, and no copy number or structural variant upload, so the `07` and `08` apps never start |
 
 The rsID apps are `02-permissions`, the cilantro apps and `11-fortune-cookie`,
 the copy number apps are the `07` ones, and the structural apps the `08` ones.
@@ -31,16 +31,16 @@ there.
 Keep every file exactly as an Ark would serve it.
 
 - A file holds only its value, with no trailing newline. Leave a file out to
-  model an absent answer, and never leave one empty, except under `datasets`,
-  where every file is empty.
+  model an absent answer, and never leave one empty.
 - `files/reference-genome/build` names the assembly.
 - A `reference` holds exactly end - start + 1 forward-strand bases, with repeats
   in lowercase.
 - `changes` holds one directory per alternate allele the genome carries, named
   after the span it changes. That's why the mitochondrial no-call at position
   16519 has none.
-- Git can't store an empty directory, so each root lists its empty `changes` and
-  `copies` in its `directories` file, and `make run` creates them.
+- Git can't store an empty directory, so each root lists its empty `changes`,
+  `copies` and `datasets` folders in its `directories` file, and `make run`
+  creates them.
 - A place holds only the leaves an app reads, so UGT2B17 and the ACE window
   have no `reference`.
 - `files/small-variants/vcf` is ordinary VCF text and keeps its newlines. Keep

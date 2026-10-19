@@ -31,12 +31,12 @@ Keep in mind what absence means. A genotype can be absent for someone carrying
 two reference alleles, since a variants-only call file has no records at
 reference sites. An app must never read absence as a result.
 
-Absence can also mean the data was never uploaded. `v1/genome/datasets` lists
-one empty file per dataset the Ark holds, and it's a public grant the owner
-never has to approve. [07-doping-test](../apps/07-doping-test) reads it to tell
-a genome without a copy number file from one whose caller left the gene out.
-[08-sprint-or-marathon](../apps/08-sprint-or-marathon) reads it to tell a D/D
-genome from one without a structural variant file.
+Absence can also mean the data was never uploaded. An app that can't answer
+without a dataset grants its folder under `v1/genome/datasets`, a public grant
+the owner never has to approve, and the Ark won't run it until the dataset is
+there. [07-doping-test](../apps/07-doping-test) requires the copy number file
+this way, and [08-sprint-or-marathon](../apps/08-sprint-or-marathon) the
+structural variant file, so neither mistakes a missing upload for an answer.
 
 ## Reading references
 

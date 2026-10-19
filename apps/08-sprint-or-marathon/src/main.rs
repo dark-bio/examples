@@ -7,9 +7,8 @@
 //!
 //! The app asks the Ark for the window,
 //! `v1/genome/regions/chr17/63488479-63488579`, and for two public grants.
-//! `v1/genome/datasets` tells a D/D genome from one without a structural
-//! variant file, and `v1/genome/files/reference-genome` names the assembly
-//! build.
+//! `v1/genome/datasets/structural-variants` requires the structural variant
+//! file, and `v1/genome/files/reference-genome` names the assembly build.
 
 use std::fs;
 use std::io;
@@ -44,8 +43,6 @@ struct Change {
 struct Report {
     /// Changes in the window, sorted by span.
     changes: Vec<Change>,
-    /// Whether the Ark holds a structural variant file.
-    uploaded: bool,
     /// Assembly build, absent when it couldn't be read.
     build: Option<String>,
 }
@@ -60,8 +57,6 @@ enum Outcome {
     Dd,
     /// An insertion without a settled copy count.
     Uncertain,
-    /// No insertion, and no structural variant file to look in.
-    NoUpload,
 }
 
 fn main() {
@@ -74,7 +69,7 @@ name = "Sprint or Marathon"
 version = "0.1.0"
 
 [reads]
-paths = ["v1/genome/regions/chr17/63488479-63488579", "v1/genome/datasets", "v1/genome/files/reference-genome"]
+paths = ["v1/genome/regions/chr17/63488479-63488579", "v1/genome/datasets/structural-variants", "v1/genome/files/reference-genome"]
 
 [listing]
 language = "en"
@@ -87,14 +82,14 @@ keywords = ["sport", "endurance", "ACE", "structural variant", "Alu"]
 description = '''
 _ACE_ comes in two common versions, one carrying a 287-base Alu repeat, called I, and one without it, called D. Sport studies found the I version more often in endurance athletes.
 
-This app looks for the insertion in your structural variant file. It is too long for a small variant caller, so without a structural variant upload the app has no answer, and says so.
+This app looks for the insertion in your structural variant file. It's too long for a small variant caller, so the app needs your structural variant file, and the Ark won't run it without one.
 
 The grant covers 101 bases around the insertion, including any small variants of yours in them.
 '''
 
 [listing.purposes]
 "v1/genome/regions/chr17/63488479-63488579" = "101 bases of the ACE gene, around its Alu insertion"
-"v1/genome/datasets" = "Which files your Ark holds, to tell a missing upload from a missing insertion"
+"v1/genome/datasets/structural-variants" = "Your structural variant file has to be on the Ark, though the app never reads it"
 "v1/genome/files/reference-genome" = "The reference build, to name positions"
 "#
         );
@@ -179,19 +174,11 @@ fn changes(base: &Path) -> Result<Vec<Change>, String> {
 }
 
 impl Report {
-    /// Reads the window's changes, the uploads and the build.
+    /// Reads the window's changes and the build.
     fn load(root: &Path) -> Result<Self, String> {
         let changes = changes(&root.join(LENS))?;
-        let uploaded = root
-            .join("v1/genome/datasets/structural-variants")
-            .try_exists()
-            .map_err(|err| format!("Could not read dataset availability: {err}"))?;
         let build = leaf(&root.join("v1/genome/files/reference-genome"), "build")?;
-        Ok(Self {
-            changes,
-            uploaded,
-            build,
-        })
+        Ok(Self { changes, build })
     }
 
     /// Picks the insertion carried on the most copies, the first on a tie. Only an
@@ -220,8 +207,8 @@ impl Report {
         chosen
     }
 
-    /// Decides the outcome from the chosen insertion, or from the uploads without one.
-    fn outcome(&self, chosen: Option<&Change>) -> Outcome {
+    /// Decides the outcome from the chosen insertion.
+    fn outcome(chosen: Option<&Change>) -> Outcome {
         match chosen {
             Some(change) if change.uncalled.is_some() => Outcome::Uncertain,
             Some(change) => match change
@@ -233,8 +220,7 @@ impl Report {
                 Some(1) => Outcome::Id,
                 _ => Outcome::Uncertain,
             },
-            None if self.uploaded => Outcome::Dd,
-            None => Outcome::NoUpload,
+            None => Outcome::Dd,
         }
     }
 
@@ -254,7 +240,7 @@ impl Report {
     /// Prints the report, from the finding down to the sources.
     fn print(&self) {
         let chosen = self.insertion();
-        let outcome = self.outcome(chosen);
+        let outcome = Self::outcome(chosen);
         println!("# 🏃 Sprint or Marathon\n");
         print!("{}", finding(&outcome));
 
@@ -324,12 +310,6 @@ fn finding(outcome: &Outcome) -> &'static str {
             "**No answer.** Your files show the ACE insertion, but not on how \
             many copies, so this app can't name your genotype."
         }
-        Outcome::NoUpload => {
-            "**No answer.** Your Ark holds no structural variant file, so \
-            this app can't tell D/D from a missing call. The insertion runs to nearly 300 \
-            bases, too long for a small variant caller, so only a structural variant upload \
-            answers this."
-        }
     }
 }
 
@@ -343,8 +323,8 @@ fn print_method() {
         meta-analysis of sport studies tied I/I to endurance events, with 1.35 times the \
         odds of D carriers (Ma et al., 2013). The app lists the changes your files hold in \
         101 bases around the insertion's anchor, chr17:63488529, and counts an insertion \
-        of 200 bases or more as I. With no such insertion and a structural variant file \
-        present, it reads D/D.\n"
+        of 200 bases or more as I. With no such insertion it reads D/D, since the Ark only \
+        runs the app with a structural variant file.\n"
     );
 }
 

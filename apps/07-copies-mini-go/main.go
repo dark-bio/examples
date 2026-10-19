@@ -32,7 +32,7 @@ func main() {
 			"name = \"Copy Number\"\n" +
 			"version = \"0.1.0\"\n\n" +
 			"[reads]\n" +
-			"paths = [\"v1/genome/genes/UGT2B17\"]\n\n" +
+			"paths = [\"v1/genome/genes/UGT2B17\", \"v1/genome/datasets/copy-number-variants\"]\n\n" +
 			"[listing]\n" +
 			"language = \"en\"\n" +
 			"icon = \"🔢\"\n" +
@@ -43,11 +43,12 @@ func main() {
 			"keywords = [\"tutorial\", \"copies\", \"copy number\", \"UGT2B17\"]\n" +
 			"description = '''\n" +
 			"Grant `v1/genome/genes/UGT2B17` and list its `copies`. Each directory is one segment of your copy number file that reaches the gene, named after its span, and its `count` holds how many copies your genome has there.\n\n" +
-			"Whole genes can go missing, and a small variant file never notices. An empty listing is no answer, never zero copies, since a caller can skip a region.\n\n" +
+			"Whole genes can go missing, and a small variant file never notices. An empty listing is no answer, never zero copies, since a caller can skip a region. The app also grants `v1/genome/datasets/copy-number-variants`, so the Ark won't run it without a copy number file.\n\n" +
 			"A gene grant also covers your variants inside the gene, even though this app does not read them. Doping Test turns the same read into a report.\n" +
 			"'''\n\n" +
 			"[listing.purposes]\n" +
-			"\"v1/genome/genes/UGT2B17\" = \"A gene to read your copy number over\"\n")
+			"\"v1/genome/genes/UGT2B17\" = \"A gene to read your copy number over\"\n" +
+			"\"v1/genome/datasets/copy-number-variants\" = \"Your copy number file has to be on the Ark, though the app never reads it\"\n")
 		return
 	}
 	if err := run(os.Args[1]); err != nil {

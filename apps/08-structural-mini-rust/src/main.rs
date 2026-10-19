@@ -36,7 +36,7 @@ name = "Structural Variant"
 version = "0.1.0"
 
 [reads]
-paths = ["v1/genome/regions/chr17/63488479-63488579"]
+paths = ["v1/genome/regions/chr17/63488479-63488579", "v1/genome/datasets/structural-variants"]
 
 [listing]
 language = "en"
@@ -49,13 +49,14 @@ keywords = ["tutorial", "changes", "structural variants", "ACE"]
 description = '''
 Grant a short window inside the _ACE_ gene and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.
 
-The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart.
+The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.
 
 An interval grant also covers your small variants inside it. Sprint or Marathon turns the same read into a report.
 '''
 
 [listing.purposes]
 "v1/genome/regions/chr17/63488479-63488579" = "101 bases of the ACE gene, around its Alu insertion"
+"v1/genome/datasets/structural-variants" = "Your structural variant file has to be on the Ark, though the app never reads it"
 "#
         );
         return;

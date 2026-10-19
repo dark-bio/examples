@@ -29,7 +29,7 @@ func main() {
 			"name = \"Structural Variant\"\n" +
 			"version = \"0.1.0\"\n\n" +
 			"[reads]\n" +
-			"paths = [\"v1/genome/regions/chr17/63488479-63488579\"]\n\n" +
+			"paths = [\"v1/genome/regions/chr17/63488479-63488579\", \"v1/genome/datasets/structural-variants\"]\n\n" +
 			"[listing]\n" +
 			"language = \"en\"\n" +
 			"icon = \"🧩\"\n" +
@@ -40,11 +40,12 @@ func main() {
 			"keywords = [\"tutorial\", \"changes\", \"structural variants\", \"ACE\"]\n" +
 			"description = '''\n" +
 			"Grant a short window inside the _ACE_ gene and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.\n\n" +
-			"The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart.\n\n" +
+			"The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.\n\n" +
 			"An interval grant also covers your small variants inside it. Sprint or Marathon turns the same read into a report.\n" +
 			"'''\n\n" +
 			"[listing.purposes]\n" +
-			"\"v1/genome/regions/chr17/63488479-63488579\" = \"101 bases of the ACE gene, around its Alu insertion\"\n")
+			"\"v1/genome/regions/chr17/63488479-63488579\" = \"101 bases of the ACE gene, around its Alu insertion\"\n" +
+			"\"v1/genome/datasets/structural-variants\" = \"Your structural variant file has to be on the Ark, though the app never reads it\"\n")
 		return
 	}
 	if err := run(os.Args[1]); err != nil {

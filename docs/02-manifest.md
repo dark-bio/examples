@@ -132,9 +132,17 @@ so an owner who would rather not share it can still run the app.
 
 Some grants reach further than they look. A gene or interval grant includes its
 `changes` and `copies`, which hold the owner's variants and copy numbers, even
-when the app only reads the reference. Only `v1/genome/datasets`,
-`v1/genome/files/reference-genome` and `v1/genome/files/gene-annotations` hold
-nothing but public data, so the owner's approval leaves them out.
+when the app only reads the reference. Only `v1/genome/datasets` and its
+folders, `v1/genome/files/reference-genome` and
+`v1/genome/files/gene-annotations` hold nothing but public data, so the owner's
+approval leaves them out.
+
+An app that can't answer without a dataset grants its folder under
+`v1/genome/datasets`, such as `v1/genome/datasets/structural-variants`. The
+folder reads empty, but the Ark won't run the app while the dataset is missing,
+and Ark Hub greys out its Run button.
+[07-doping-test](../apps/07-doping-test) and
+[08-sprint-or-marathon](../apps/08-sprint-or-marathon) work this way.
 
 ## Asking the owner
 

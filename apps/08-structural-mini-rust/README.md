@@ -9,7 +9,10 @@ came from and how many copies carry it.
 The window holds the ACE insertion, nearly 300 bases of Alu repeat. That's too
 long for a small variant caller, so it comes from the structural variant file,
 and it reads like any other change. The window is wider than the insertion's
-anchor, since callers can place an insertion a few bases apart.
+anchor, since callers can place an insertion a few bases apart. The app also
+grants `v1/genome/datasets/structural-variants`, a public folder that reads
+empty, so the Ark won't run it without that file. On `fixtures/unanswered` it
+never starts, just as on an Ark without one.
 
 The same mini exists in [Go](../08-structural-mini-go),
 [C](../08-structural-mini-c) and [Python](../08-structural-mini-python), and

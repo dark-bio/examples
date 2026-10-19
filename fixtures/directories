@@ -1,3 +1,9 @@
+v1/genome/datasets/copy-number-variants
+v1/genome/datasets/gene-annotations
+v1/genome/datasets/reference-genome
+v1/genome/datasets/small-variants
+v1/genome/datasets/structural-variants
+v1/genome/datasets/variant-catalog
 v1/genome/genes/TAS2R38/copies
 v1/genome/genes/TAS2R38/positions/141972731/copies
 v1/genome/genes/TAS2R38/positions/141973131/copies

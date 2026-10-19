@@ -6,9 +6,8 @@
 //! docs/06-reports.md describes.
 //!
 //! The app asks the Ark for the gene, `v1/genome/genes/UGT2B17`, and for two
-//! public grants. `v1/genome/datasets` tells a genome without a copy number
-//! file from one whose caller left the gene out, and
-//! `v1/genome/files/reference-genome` names the assembly build.
+//! public grants. `v1/genome/datasets/copy-number-variants` requires the copy
+//! number file, and `v1/genome/files/reference-genome` names the assembly build.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -41,8 +40,6 @@ struct Report {
     end: u64,
     /// Segments reaching the gene, ordered by their first base.
     segments: Vec<Segment>,
-    /// Whether the Ark holds a copy number file.
-    uploaded: bool,
     /// Assembly build, absent when it couldn't be read.
     build: Option<String>,
 }
@@ -50,8 +47,6 @@ struct Report {
 /// What the segments say about the gene's copies.
 #[derive(Debug, PartialEq, Eq)]
 enum Outcome {
-    /// The Ark holds no copy number file.
-    NoUpload,
     /// The copy number file has no segment over the gene.
     Uncalled,
     /// The segments leave part of the gene uncovered.
@@ -74,7 +69,7 @@ name = "Doping Test"
 version = "0.1.0"
 
 [reads]
-paths = ["v1/genome/genes/UGT2B17", "v1/genome/datasets", "v1/genome/files/reference-genome"]
+paths = ["v1/genome/genes/UGT2B17", "v1/genome/datasets/copy-number-variants", "v1/genome/files/reference-genome"]
 
 [listing]
 language = "en"
@@ -87,14 +82,14 @@ keywords = ["doping", "testosterone", "UGT2B17", "copy number", "sport"]
 description = '''
 The classic urine doping test reads testosterone against epitestosterone. The enzyme _UGT2B17_ makes readies testosterone for urine, and a common deletion removes the whole gene. Men with no copies excrete almost none, so their ratio starts near zero.
 
-This app counts your copies of _UGT2B17_ from your copy number file. A small variant file can't see a missing gene, so without a copy number upload the app has no answer, and says so.
+This app counts your copies of _UGT2B17_ from your copy number file. A small variant file can't see a missing gene, so the app needs your copy number file, and the Ark won't run it without one.
 
 One grant covers the whole gene, including your variants in it, which this app does not read.
 '''
 
 [listing.purposes]
 "v1/genome/genes/UGT2B17" = "The gene behind the doping test, with your copy number over it"
-"v1/genome/datasets" = "Which files your Ark holds, to tell a missing upload from a missing call"
+"v1/genome/datasets/copy-number-variants" = "Your copy number file has to be on the Ark, though the app never reads it"
 "v1/genome/files/reference-genome" = "The reference build, to name positions"
 "#
         );
@@ -170,7 +165,7 @@ fn filters<'a>(values: impl Iterator<Item = &'a str>) -> Vec<&'a str> {
 }
 
 impl Report {
-    /// Reads the gene, its segments, the uploads and the build.
+    /// Reads the gene, its segments and the build.
     fn load(root: &Path) -> Result<Self, String> {
         let base = root.join(LENS);
         let chromosome = required(&base, "chromosome")?;
@@ -180,17 +175,12 @@ impl Report {
             return Err("Gene end precedes its start".into());
         }
         let segments = segments(&base)?;
-        let uploaded = root
-            .join("v1/genome/datasets/copy-number-variants")
-            .try_exists()
-            .map_err(|err| format!("Could not read dataset availability: {err}"))?;
         let build = leaf(&root.join("v1/genome/files/reference-genome"), "build")?;
         Ok(Self {
             chromosome,
             start,
             end,
             segments,
-            uploaded,
             build,
         })
     }
@@ -199,11 +189,7 @@ impl Report {
     /// agreement, in that order.
     fn outcome(&self) -> Outcome {
         if self.segments.is_empty() {
-            return if self.uploaded {
-                Outcome::Uncalled
-            } else {
-                Outcome::NoUpload
-            };
+            return Outcome::Uncalled;
         }
 
         // Walk the segments from the gene's first base, stopping at the first gap
@@ -328,10 +314,6 @@ fn finding(outcome: &Outcome) -> String {
             *UGT2B17*, the gene whose enzyme readies testosterone for urine. The studies here \
             compared zero, one and two copies, so they say nothing about more."
         ),
-        Outcome::NoUpload => "**No answer.** Your Ark holds no copy number file, so this app \
-            has no count for *UGT2B17*. A small variant file can't show a missing gene, so \
-            only a copy number upload answers this."
-            .into(),
         Outcome::Uncalled => "**No answer.** Your copy number file has no segment over \
             *UGT2B17*, so this app has no count. A caller leaves out regions it can't measure, \
             and a missing segment is not zero copies."

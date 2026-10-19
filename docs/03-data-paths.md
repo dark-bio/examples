@@ -62,6 +62,7 @@ v1/genome/ +
       changes/
       copies/
   datasets/ +                 which datasets are uploaded
+    <name>/ +                 one empty folder per uploaded dataset
   files/
     small-variants/ +         the stored files, each its own grant
     structural-variants/ +
@@ -85,9 +86,10 @@ A gene and an interval also hold every position inside them, under
 `positions/<pos>/`, with the same leaves as a position of their own. These
 aren't listed, so address them directly.
 
-`datasets/` holds one empty file per uploaded dataset, such as
+`datasets/` holds one empty folder per uploaded dataset, such as
 `small-variants`, so an app can tell an empty answer from data the owner never
-uploaded. `files/` holds the stored files with their indexes, under the same
+uploaded. Each folder is a public grant of its own, and granting one makes the
+Ark refuse to run the app until that dataset is there. `files/` holds the stored files with their indexes, under the same
 names, for an app that needs a whole file.
 
 ## Rules every path follows
@@ -118,7 +120,7 @@ names, for an app that needs a whole file.
 - **Stored files are big.** `files/small-variants/vcf` and
   `files/reference-genome/fa` are decompressed on read and run to gigabytes, so
   read them line by line.
-- **Public grants never reach the owner.** `datasets`,
+- **Public grants never reach the owner.** `datasets` and its folders,
   `files/reference-genome` and `files/gene-annotations` say nothing about the
   owner's DNA, so the approval doesn't list them.
 - **`available`** means the data a path needs is on the Ark, not that every
