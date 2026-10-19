@@ -14,7 +14,7 @@ const SITES: &[&str] = &["rs72921001", "rs671", "rs1229984"];
 const FORTUNES: &[&str] = &[
     "A quiet allele today keeps the soap away.",
     "Your codons align for a productive afternoon.",
-    "Trust your enzymes; skip the buffet shrimp.",
+    "Trust your enzymes, and skip the buffet shrimp.",
     "A double helix bends, but never toward regret.",
     "Today, let the recessive traits rest.",
     "Fortune favors the heterozygous.",
@@ -37,15 +37,15 @@ paths = ["v1/genome/rsids/rs72921001", "v1/genome/rsids/rs671", "v1/genome/rsids
 [listing]
 language = "en"
 icon = "🥠"
-summary = "A fortune derived from three of your genotypes. The same one every time."
+summary = "A fortune baked from three of your genotypes. Same cookie every time."
 category = "traits"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/11-fortune-cookie"
 keywords = ["fortune", "deterministic", "sandbox", "hashing"]
 description = '''
-The Ark's sandbox hands apps zero random bytes and clocks that only count. There is no randomness to draw a fortune from, so this app hashes the genotypes of three variants into one. Run it again on the same data and you get the same fortune.
+The Ark's sandbox gives apps no random bytes and clocks that only count. With no dice to roll, this app hashes the genotypes of three variants into a fortune. Same data, same fortune, forever.
 
-An absent genotype adds nothing to the hash and is noted in the report. Any other read error stops the app. It is a demonstration of a deterministic sandbox, wrapped in a cookie.
+An absent genotype adds nothing to the hash and gets a mention in the report. Any other read error stops the app. It's a deterministic sandbox demo, wrapped in a cookie.
 '''
 
 [listing.purposes]
@@ -81,14 +81,14 @@ An absent genotype adds nothing to the hash and is noted in the report. Any othe
     }
 
     let pick = (acc % FORTUNES.len() as u64) as usize;
-    println!("# Your Genomic Fortune\n");
+    println!("# 🥠 Your Genomic Fortune\n");
     println!("> {}\n", FORTUNES[pick]);
     println!("## Method\n");
     println!(
-        "The sandbox has no randomness, so the fortune is derived entirely from your \
-         genotypes at three variants, folded into one number that picks a line. Run it \
-         again on the same data and the fortune is the same. A genotype without an answer \
-         adds nothing to the number, and this run had {unanswered} of those.\n"
+        "The sandbox has no clock and no dice, so your fortune comes from your genotypes \
+         at three variants, folded into one number that picks a line. Same data, same \
+         fortune, every single time. A genotype without an answer adds nothing to the \
+         number, and this run had {unanswered} of those.\n"
     );
     println!("## Limitations\n");
     println!(

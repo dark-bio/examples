@@ -39,17 +39,17 @@ paths = ["v1/genome/files/small-variants"]
 [listing]
 language = "en"
 icon = "📋"
-summary = "An inventory of your small variant file, from record counts to depth and quality."
+summary = "Roll call for your small variant file. Who's here, who's missing, who mumbled."
 category = "tools"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/09-vcf-roll-call"
 keywords = ["VCF", "call file", "statistics", "data quality", "noodles"]
 description = '''
-Most apps ask for a variant, a gene or a region. This one asks for the small variant file itself and streams it end to end with the noodles VCF parser. The report describes the file rather than you. It counts records per chromosome, classifies genotype calls, checks whether depth and quality fields are present, measures missingness and totals the span covered by reference blocks.
+Most apps ask for a variant, a gene or a region. This one asks for your whole small variant file and streams it end to end with the noodles VCF parser. The report is about the file, not about you. Records per chromosome, genotype calls, depth and quality fields, missing calls and reference blocks all answer the roll.
 
-A malformed record is counted and skipped. A failed read stops the app, so a damaged file cannot pass as a partial success.
+A malformed record gets counted and skipped. A failed read stops the app, so a damaged file can't pass as a partial success.
 
-This is the broadest grant an app can ask for. Your phone shows it as your whole small variant file, and that is exactly what the app can read.
+It's the broadest grant an app can ask for. Your phone shows it as your whole small variant file, and that's exactly what the app gets.
 '''
 
 [listing.purposes]
@@ -206,9 +206,9 @@ impl Report {
         // the check table beneath it grades the same facts.
         let (primary_count, other_count) = contig_counts(&self.chromosomes);
         print!(
-            "Your call file holds {} records for {} {} in {} format, across {primary_count} primary \
-             chromosomes and {other_count} other contigs. {} carry a non-reference \
-             genotype, {} are all-reference and {} have a missing call",
+            "{} records answered the roll call, for {} {} in {} across {primary_count} primary \
+             chromosomes and {other_count} other contigs. {} carry a change, {} match \
+             the reference and {} didn't show up to be called",
             format_int(self.records),
             self.samples,
             if self.samples == 1 {
@@ -223,7 +223,7 @@ impl Report {
         );
         if self.parse_errors > 0 {
             print!(
-                ", and {} could not be parsed and were skipped",
+                ", and {} mumbled something unparseable and were skipped",
                 format_int(self.parse_errors)
             );
         }
@@ -272,14 +272,14 @@ impl Report {
     /// One sentence on what the file's shape lets a reader conclude.
     fn shape_sentence(&self) -> &'static str {
         if self.reference_blocks.records > 0 {
-            "The file carries reference blocks, so it says where calls were possible, \
-             not only where they differ."
+            "It keeps reference blocks too, so it knows where it looked, not only where it \
+             found something."
         } else if self.genotype.hom_ref > 0 {
-            "The file carries all-reference calls at some sites, but no reference \
-             blocks, so it doesn't say how much of the genome was callable."
+            "It records some all-reference sites but no reference blocks, so it never says \
+             how much of the genome it could actually read."
         } else {
-            "The file records variants only, so a sparse stretch is low variant density, \
-             not evidence of low coverage."
+            "It lists variants only, so a quiet stretch shows few changes and proves \
+             nothing about coverage."
         }
     }
 
@@ -643,7 +643,7 @@ fn sample_integer(header: &vcf::Header, record: &vcf::Record, key: &str) -> Opti
 }
 
 fn print_header() {
-    println!("# Call File Health Check");
+    println!("# 📋 Roll Call");
     println!();
 }
 

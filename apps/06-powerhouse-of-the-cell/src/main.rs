@@ -35,17 +35,17 @@ paths = ["v1/genome/regions/chrM/1-16569", "v1/genome/files/reference-genome"]
 [listing]
 language = "en"
 icon = "⚡"
-summary = "Your whole mitochondrial genome on one page, with your changes mapped."
+summary = "The genome your mitochondria got from your mother, mapped on one page."
 category = "tools"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/06-powerhouse-of-the-cell"
 keywords = ["mitochondria", "chrM", "GC content", "variants"]
 description = '''
-The mitochondrial chromosome is 16,569 bases long, small enough to read as a single interval. This app grants `chrM:1-16569` under `regions/`, streams its reference for GC content and density windows, and lists the changes you carry with a text map of where they fall along the chromosome.
+Mitochondria carry their own 16,569-base genome, inherited from your mother alone. This app reads all of it as one interval, streams the reference for GC content and maps every change you carry along it.
 
-It counts transitions and transversions, flags indels and mixed allele calls, and reports positions without an answer. It is not a haplogroup caller, an ancestry test or a medical report.
+It counts transitions and transversions and flags indels and mixed calls. It's a map, not a haplogroup caller or an ancestry readout.
 
-An interval grant covers your variants inside it, so approving this app shares every mitochondrial change in your call file with it.
+An interval grant covers your variants inside it, so approving this app shares every mitochondrial change in your call file.
 '''
 
 [listing.purposes]
@@ -117,9 +117,9 @@ impl RegionReport {
         match &self.changes {
             Some(changes) if changes.is_empty() => {
                 println!(
-                    "Your call file lists no changes across the {} bp mitochondrial \
-                     chromosome. A map of where your calls differ from the reference, not a \
-                     haplogroup.",
+                    "**Factory settings** 🔋. Your call file lists no changes across the {} bp \
+                     genome your mitochondria got from your mother alone. A map of the \
+                     differences, not a family tree.",
                     format_int(span)
                 );
             }
@@ -142,10 +142,11 @@ impl RegionReport {
                     .filter(|c| c.substitution == "transversion")
                     .count();
                 print!(
-                    "Your mitochondrial chromosome, all {2} bp of it, carries {0} {1} in your \
-                     call file, {transitions} {3}, {transversions} {4} and {indels} {5}",
+                    "**Mom's batteries** 🔋. Your mitochondria run on a {2} bp genome you got \
+                     from your mother alone, and your call file differs from the reference in \
+                     {0} {1}, {transitions} {3}, {transversions} {4} and {indels} {5}",
                     changes.len(),
-                    plural(changes.len(), "change", "changes"),
+                    plural(changes.len(), "place", "places"),
                     format_int(span),
                     plural(transitions, "transition", "transitions"),
                     plural(transversions, "transversion", "transversions"),
@@ -158,15 +159,14 @@ impl RegionReport {
                     print!(", with {uncertain} uncertain and {unanswered} without an answer");
                 }
                 println!(
-                    ". That's {density:.2} per kb. A map of where your calls differ from the \
-                     reference, not a haplogroup."
+                    ". That's {density:.2} per kb. A map of the differences, not a family \
+                     tree."
                 );
             }
             None => {
                 println!(
-                    "No changes answer is available for this interval, so the app can't say \
-                     what your call file holds there. The reference sequence is {} bp with \
-                     {gc:.1}% GC.",
+                    "**No answer.** The Ark has no change listing for your mitochondria, so \
+                     there's nothing to map. The reference alone runs {} bp with {gc:.1}% GC.",
                     format_int(self.sequence.len)
                 );
             }
@@ -211,7 +211,7 @@ impl RegionReport {
 }
 
 fn print_header() {
-    println!("# Your Mitochondrial Genome");
+    println!("# ⚡ The Powerhouse of the Cell");
     println!();
 }
 

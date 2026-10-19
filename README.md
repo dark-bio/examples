@@ -32,7 +32,7 @@ fn main() {
         print!("manifest = 1\n\n[app]\nname = \"hello\"\nversion = \"0.1.0\"\n");
         return;
     }
-    println!("Hello from an Ark app.");
+    println!("Hello from inside an Ark. No network, no disk, no way out.");
 }
 ```
 

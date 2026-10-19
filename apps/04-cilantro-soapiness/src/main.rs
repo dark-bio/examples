@@ -92,23 +92,23 @@ The app reads that one variant and the reference base beside it. The report says
             } else {
                 println!(
                     "**No verdict.** Genotype `{genotype}` holds {copies} copies of C across \
-                     {} alleles, and the taste comparison is built for two-allele calls.",
+                     {} alleles, and the soap math only works for two.",
                     alleles.len()
                 );
             }
         }
         Call::Uncertain(genotype) => {
             println!(
-                "**Inconclusive** ⚠️. Your genotype at {RSID} is `{genotype}`, with at least \
-                 one allele missing, so the copies of C can't be counted."
+                "**Inconclusive** ⚠️. Your genotype at {RSID} is `{genotype}`, with an \
+                 allele missing in action, so the copies of C can't be counted."
             );
         }
         Call::Unanswered => {
             println!(
-                "**No answer.** No genotype is available at {RSID}, so this app has no \
-                 result. An absent genotype is not a reference call. A call file that \
-                 records only variants has no record at a reference site, and none at a \
-                 site it didn't cover, and the two can't be distinguished here."
+                "**No answer.** Your call file is silent at {RSID}, so this app has no \
+                 result. Silence isn't a reference call. A file that records only variants \
+                 skips reference sites and sites it never covered alike, and from here the \
+                 two look the same."
             );
         }
     }
@@ -157,19 +157,19 @@ fn leaf(base: &Path, name: &str) -> Option<String> {
 fn finding(copies: usize) -> &'static str {
     match copies {
         0 => {
-            "**Cilantro lover** 🌿. You carry no copy of C at rs72921001, the genotype with \
-             no soapy association. Most people built this way taste cilantro as herby or \
-             citrusy."
+            "**Cilantro lover** 🌿. Zero copies of C at rs72921001, the genotype with no \
+             soapy association. Most people built this way taste cilantro as bright, herby \
+             and nothing like a bar of soap."
         }
         1 => {
-            "**On the fence** 🫧. You carry one copy of C at rs72921001, so the soapy \
-             association is partial. You may notice a mild soapy note, or none at all, \
-             depending on the rest of your genome and what you grew up eating."
+            "**On the fence** 🫧. One copy of C at rs72921001, so the soapy association is \
+             only half there. You might catch a soapy note, or none at all, depending on the \
+             rest of your genome and what you grew up eating."
         }
         _ => {
-            "**Soap detector** 🧼. You carry two copies of C at rs72921001, the genotype most \
-             strongly tied to tasting cilantro as dish soap. Blame *OR6A2*, the olfactory \
-             receptor next door."
+            "**Soap detector** 🧼. Two copies of C at rs72921001, the genotype most strongly \
+             tied to tasting cilantro as dish soap. Blame *OR6A2*, the smell receptor next \
+             door."
         }
     }
 }

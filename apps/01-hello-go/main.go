@@ -22,22 +22,22 @@ func main() {
 				"[listing]\n" +
 				"language = \"en\"\n" +
 				"icon = \"👋\"\n" +
-				"summary = \"The two passes of an app, in the fewest lines. Start here.\"\n" +
+				"summary = \"Two passes, a handful of lines, zero data. Start here.\"\n" +
 				"category = \"developer\"\n" +
 				"license = \"BSD-3-Clause\"\n" +
 				"source = \"https://github.com/dark-bio/examples/tree/main/apps/01-hello-go\"\n" +
 				"keywords = [\"tutorial\", \"manifest\", \"two passes\", \"WASI\"]\n" +
 				"description = '''\n" +
-				"An Ark app is one WebAssembly file built for WASI Preview 1. The Ark runs it twice.\n\n" +
-				"**The manifest pass.** With no arguments, the app prints a short TOML manifest naming itself, its version and the data it wants. The Ark checks the manifest and shows it on your phone.\n\n" +
-				"**The report pass.** With a data directory as its first argument, the app reads the files it was granted and prints its report. Reports are Markdown, which is how Ark Hub shows them.\n\n" +
-				"This app asks for no data, so approving it grants nothing. It proves the round trip, from upload through approval to a rendered report, in the fewest lines possible. Pick a language, read the source, then run it on your Ark.\n\n" +
-				"Each language's folder in the examples repository builds and runs it with one `make run` command.\n\n" +
-				"The docs cover the two passes, the manifest and the sandbox limits in detail.\n" +
+				"An Ark app is one WebAssembly file built for WASI Preview 1, and the Ark runs it twice.\n\n" +
+				"**The manifest pass.** No arguments. The app prints a short TOML manifest with its name, its version and the data it wants, and your phone shows it to you.\n\n" +
+				"**The report pass.** A data directory as its first argument. The app reads what you granted and prints a Markdown report, which Ark Hub renders.\n\n" +
+				"This one asks for nothing, so approving it shares nothing. It's the whole round trip, upload to approval to report, in a handful of lines.\n\n" +
+				"Each language's folder in the examples repository builds and runs it with one `make run`.\n\n" +
+				"Pick a language, read the source, then run it on your Ark.\n" +
 				"'''\n")
 		return
 	}
 
 	// The report pass receives a data directory. This app reads nothing.
-	fmt.Println("Hello from an Ark app written in Go.")
+	fmt.Println("Hello from inside an Ark. No network, no disk, no way out. Go says hi.")
 }

@@ -41,7 +41,7 @@ paths = ["v1/genome/regions/chr17/63488479-63488579"]
 [listing]
 language = "en"
 icon = "🧩"
-summary = "A structural variant read as plain files, in four languages."
+summary = "Nearly 300 bases of Alu, read as plain files, in four languages."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-structural-mini-rust"

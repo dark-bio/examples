@@ -19,14 +19,14 @@ func main() {
 			"[listing]\n"+
 			"language = \"en\"\n"+
 			"icon = \"📄\"\n"+
-			"summary = \"Count the records of a whole genome one line at a time.\"\n"+
+			"summary = \"Count a whole genome's records one line at a time, in 128 MiB.\"\n"+
 			"category = \"developer\"\n"+
 			"license = \"BSD-3-Clause\"\n"+
 			"source = \"https://github.com/dark-bio/examples/tree/main/apps/09-vcf-mini-go\"\n"+
 			"keywords = [\"tutorial\", \"VCF\", \"call file\", \"streaming\"]\n"+
 			"description = '''\n"+
-			"Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.\n\n"+
-			"Every buffer refill leaves the sandbox, which adds up at that scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones also reuse one line instead of allocating one per record.\n\n"+
+			"Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it line by line and counts headers and records.\n\n"+
+			"Every buffer refill leaves the sandbox, and that adds up at this scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones reuse a single line instead of allocating one per record.\n\n"+
 			"This is the broadest grant there is. VCF Roll Call parses the same file with a library.\n"+
 			"'''\n\n"+
 			"[listing.purposes]\n"+
@@ -74,11 +74,12 @@ func run(root string) error {
 			break
 		}
 	}
-	fmt.Printf("## Variant file\n\n")
+	fmt.Printf("## Your whole call file, one line at a time\n\n")
 	fmt.Printf("- Header lines: %d\n", headers)
 	fmt.Printf("- Variant records: %d\n", records)
 	if records != 0 {
 		fmt.Printf("- First record: `%s`\n", first)
 	}
+	fmt.Printf("\nRead every line, kept none.\n")
 	return nil
 }

@@ -19,17 +19,17 @@ paths = ["{LENS}"]
 [listing]
 language = "en"
 icon = "📏"
-summary = "Stream an interval's reference without ever loading it whole."
+summary = "Stream a stretch of chromosome without loading it. Memory never notices."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/06-regions-mini-python"
 keywords = ["tutorial", "regions", "streaming", "mitochondria"]
 description = '''
-Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.
+Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This one takes your whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` 8 KiB at a time for length and GC content. Memory stays flat however long the interval.
 
-Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.
+Repeats are soft-masked in lowercase, so count both cases. A failed read stops the app.
 
-An interval grant covers your variants inside it, which Powerhouse of the Cell lists.
+An interval grant covers your variants inside it, which Powerhouse of the Cell maps.
 '''
 
 [listing.purposes]
@@ -46,9 +46,10 @@ An interval grant covers your variants inside it, which Powerhouse of the Cell l
     if length != 16569:
         raise ValueError("Region sequence length does not match its span")
 
-    print(f"## Region {REGION}\n")
+    print(f"## Your mitochondria, {REGION}\n")
     print(f"- Reference length: {length} bp")
     print(f"- GC content: {100.0 * gc / length:.1f}%")
+    print("\nStreamed 8 KiB at a time, so memory never noticed.")
 
 
 if __name__ == "__main__":

@@ -25,15 +25,15 @@ paths = ["v1/genome/files/small-variants"]
 [listing]
 language = "en"
 icon = "📄"
-summary = "Count the records of a whole genome one line at a time."
+summary = "Count a whole genome's records one line at a time, in 128 MiB."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/09-vcf-mini-rust"
 keywords = ["tutorial", "VCF", "call file", "streaming"]
 description = '''
-Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome file runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it one line at a time and counts headers and records.
+Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it line by line and counts headers and records.
 
-Every buffer refill leaves the sandbox, which adds up at that scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones also reuse one line instead of allocating one per record.
+Every buffer refill leaves the sandbox, and that adds up at this scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones reuse a single line instead of allocating one per record.
 
 This is the broadest grant there is. VCF Roll Call parses the same file with a library.
 '''
@@ -79,11 +79,12 @@ fn run(root: &Path) -> Result<(), String> {
         }
     }
 
-    println!("## Variant file\n");
+    println!("## Your whole call file, one line at a time\n");
     println!("- Header lines: {headers}");
     println!("- Variant records: {records}");
     if let Some(record) = first {
         println!("- First record: `{record}`");
     }
+    println!("\nRead every line, kept none.");
     Ok(())
 }

@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
            "[listing]\n"
            "language = \"en\"\n"
            "icon = \"🧩\"\n"
-           "summary = \"A structural variant read as plain files, in four languages.\"\n"
+           "summary = \"Nearly 300 bases of Alu, read as plain files, in four languages.\"\n"
            "category = \"developer\"\n"
            "license = \"BSD-3-Clause\"\n"
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/08-structural-mini-c\"\n"

@@ -69,15 +69,15 @@ int main(int argc, char *argv[]) {
            "[listing]\n"
            "language = \"en\"\n"
            "icon = \"🧬\"\n"
-           "summary = \"A gene's coordinates and reference length, read as plain files.\"\n"
+           "summary = \"A whole gene as plain files. Coordinates, strand and length, no parser needed.\"\n"
            "category = \"developer\"\n"
            "license = \"BSD-3-Clause\"\n"
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/05-genes-mini-c\"\n"
            "keywords = [\"tutorial\", \"genes\", \"reference\", \"TAS2R38\"]\n"
            "description = '''\n"
-           "Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `reference` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.\n\n"
-           "An absent value prints as no answer. A missing reference is an error.\n\n"
-           "A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.\n"
+           "Grant `v1/genome/genes/TAS2R38` and its `chromosome`, `start`, `end`, `strand` and `biotype` are just files. The `reference` holds exactly end - start + 1 bases, so its size is the gene's length, and the gene never has to fit in memory.\n\n"
+           "An absent value is no answer. A missing reference is an error.\n\n"
+           "A gene grant also covers your variants inside the gene, even though this app never reads them. Bitter Meter does.\n"
            "'''\n\n"
            "[listing.purposes]\n"
            "\"v1/genome/genes/TAS2R38\" = \"A gene to read coordinates and reference length from\"\n");
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     fail("Gene sequence length does not match its span");
   }
 
-  printf("## Gene " GENE "\n\n");
+  printf("## " GENE ", the bitter gene\n\n");
   printf("- Chromosome: %s\n", chromosome ? chromosome : "no answer");
   if (start_text) printf("- Start: %" PRIu64 "\n", start);
   else printf("- Start: no answer\n");
@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
   printf("- Strand: %s\n", strand ? strand : "no answer");
   printf("- Biotype: %s\n", biotype ? biotype : "no answer");
   printf("- Reference length: %" PRIu64 " bp\n", length);
+  printf("\nEvery base stayed on the Ark. Only this summary leaves.\n");
   free(chromosome);
   free(start_text);
   free(end_text);

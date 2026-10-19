@@ -34,15 +34,15 @@ paths = ["v1/genome/genes/TAS2R38"]
 [listing]
 language = "en"
 icon = "✂️"
-summary = "Where five classic restriction enzymes would cut the TAS2R38 reference sequence."
+summary = "Five molecular scissors versus TAS2R38. Who cuts, and how often."
 category = "tools"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/10-motif-finder"
 keywords = ["restriction enzymes", "motifs", "TAS2R38", "reference genome"]
 description = '''
-A restriction enzyme cuts DNA at a short fixed motif. This app streams the reference sequence of _TAS2R38_ and counts the sites of five classic enzymes, AluI, HaeIII, RsaI, TaqI and Sau3AI. It keeps a four base window across chunks so a site spanning two reads still counts, and uppercases bases because repeats are soft masked.
+Restriction enzymes cut DNA wherever they find their short motif. This app streams the reference of _TAS2R38_ past five classics, AluI, HaeIII, RsaI, TaqI and Sau3AI, and counts every cut. A four-base window spans chunk edges so no site slips through, and bases are uppercased since repeats arrive soft-masked.
 
-The app reads only public reference sequence. Its grant is still the gene, and a gene grant also covers your variants in it. You approve the grant, not what the code happens to read, and the listing shows the grant.
+It reads only the public reference, yet its grant is the gene, and a gene grant covers your variants in it too. You approve the grant, not what the code happens to read, which is why the listing shows the grant.
 '''
 
 [listing.purposes]
@@ -94,17 +94,20 @@ fn run(root: &Path) -> Result<(), String> {
         .map(|((name, _), _)| *name)
         .collect();
 
-    println!("# Restriction Map of {GENE}\n");
+    println!("# ✂️ Molecular Scissors on {GENE}\n");
     print!(
-        "{} enzymes cut the {} bp reference sequence of *{GENE}* {total} times between \
-         them. {most} cuts most often, {most_cuts} times",
+        "{} classic enzymes walk into *{GENE}* and cut its {} bp {total} times between \
+         them. {most} is the eager one with {most_cuts} cuts",
         ENZYMES.len(),
         commas(length)
     );
     match uncut.as_slice() {
         [] => println!("."),
-        [one] => println!(", and {one} not at all."),
-        many => println!(", and {} never do.", many.join(", ")),
+        [one] => println!(". {one} never finds its spot and leaves empty-handed."),
+        many => println!(
+            ". {} never find their spots and leave empty-handed.",
+            many.join(", ")
+        ),
     }
     println!();
     println!("## Evidence\n");

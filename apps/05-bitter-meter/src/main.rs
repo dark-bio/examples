@@ -34,17 +34,17 @@ paths = ["v1/genome/genes/TAS2R38", "v1/genome/files/reference-genome"]
 [listing]
 language = "en"
 icon = "🥦"
-summary = "A postcard from TAS2R38, the bitter taste receptor, with your changes in it."
+summary = "A postcard from TAS2R38, the gene behind broccoli's bitter bite."
 category = "traits"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/05-bitter-meter"
 keywords = ["bitter taste", "TAS2R38", "PTC", "taste receptor"]
 description = '''
-_TAS2R38_ is the bitter taste receptor from the PTC and PROP classroom experiments. This app reads the gene under `genes/`. It streams the gene's reference for its GC content and lists every change you carry inside the gene, with the reference base and your genotype where it starts.
+_TAS2R38_ is the bitter taste receptor from the PTC and PROP classroom experiments, and one reason broccoli tastes harsh to some people. This app reads the gene, streams its reference for GC content and lists every change you carry in it.
 
-The report is deliberately a postcard, not a taster prediction. The classic taster story depends on specific coding variants and their phase, and this app does not infer either from the gene view.
+It's a postcard, not a taster prediction. The classic taster story needs specific coding variants and their phase, and the gene view infers neither.
 
-One grant covers the whole gene, including your variants in it. The app reads how many copies carry each change, splits genotypes around symbolic alleles, and stops when a listing fails instead of reading it as no changes.
+One grant covers the whole gene, your variants in it included. A listing that fails stops the app, so a broken read never passes for a quiet gene.
 '''
 
 [listing.purposes]
@@ -151,8 +151,9 @@ impl GeneReport {
         match &self.changes {
             Some(changes) if changes.is_empty() => {
                 println!(
-                    "Your call file lists no changes inside *{GENE}* across {} bp on {}. A \
-                     postcard of the gene as recorded, not a verdict on how you taste.",
+                    "**Blank postcard** 🥦. Your call file lists no changes inside *{GENE}*, \
+                     the receptor behind broccoli's bitter bite, across its {} bp on {}. A \
+                     postcard of the gene, not a verdict on how you taste.",
                     format_int(span),
                     self.chromosome
                 );
@@ -168,8 +169,9 @@ impl GeneReport {
                 let unanswered = changes.iter().filter(|c| c.call == "no answer").count();
                 let indels = changes.iter().filter(|c| c.kind == "indel").count();
                 print!(
-                    "Your bitter receptor gene *{GENE}* carries {} {} in your call file, \
-                     {heterozygous} heterozygous and {homozygous} homozygous, across {} bp on {}",
+                    "**Bitter postcard** 🥦. *{GENE}*, the receptor behind broccoli's bitter \
+                     bite, carries {} {} in your call file across its {} bp on {}, \
+                     {heterozygous} on one copy and {homozygous} on both",
                     changes.len(),
                     if changes.len() == 1 {
                         "change"
@@ -189,15 +191,16 @@ impl GeneReport {
                     print!(", with {uncertain} uncertain and {unanswered} without an answer");
                 }
                 println!(
-                    ". That's {density:.2} per kb, {} for a gene this small. A postcard of \
-                     the gene as your call file records it, not a verdict on how you taste.",
+                    ". That's {density:.2} per kb, {} for a gene this small. Whether \
+                     broccoli hates you back is another story, and Limitations explains why.",
                     density_label(density)
                 );
             }
             None => {
                 println!(
-                    "No changes answer is available for *{GENE}*, so the app can't say what \
-                     your call file holds there. The reference sequence is {} bp with {gc:.1}% GC.",
+                    "**No answer.** The Ark has no change listing for *{GENE}*, so there's \
+                     nothing to put on the postcard. The reference alone runs {} bp with \
+                     {gc:.1}% GC.",
                     format_int(self.sequence.len)
                 );
             }
@@ -229,8 +232,8 @@ impl GeneReport {
             println!("### Change ruler");
             println!();
             println!(
-                "Each `*` marks a non-reference change along the gene, and `+` more than one \
-                 in the same column."
+                "Each `*` marks one of your changes along the gene, and `+` a pile-up of \
+                 several in one column."
             );
             println!();
             print_ruler(self.start, self.end, changes);
@@ -245,7 +248,7 @@ impl GeneReport {
 }
 
 fn print_header() {
-    println!("# TAS2R38, the Bitter Taste Receptor Gene");
+    println!("# 🥦 The Broccoli Gene");
     println!();
 }
 
@@ -460,13 +463,13 @@ fn per_kb(count: usize, span: u64) -> f64 {
 
 fn density_label(density: f64) -> &'static str {
     if density == 0.0 {
-        "quiet: no non-reference changes listed"
+        "dead quiet"
     } else if density < 1.0 {
         "lightly speckled"
     } else if density < 3.0 {
-        "busy enough to notice"
+        "lively"
     } else {
-        "crowded little gene"
+        "a real crowd"
     }
 }
 
@@ -547,7 +550,7 @@ fn print_limitations() {
     println!("## Limitations");
     println!();
     println!(
-        "Not a PTC or PROP taster test. The classic bitter-taste story rests on specific \
+        "Not a PTC or PROP taster verdict. The classic bitter-taste story rests on specific \
          coding variants and haplotypes, and this app doesn't phase calls or name rsIDs \
          from the gene view. A position without a listed change isn't a result on its \
          own, since a call file can leave reference sites out. Taste is also shaped by \

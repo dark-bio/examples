@@ -19,15 +19,15 @@ func main() {
 			"[listing]\n"+
 			"language = \"en\"\n"+
 			"icon = \"📏\"\n"+
-			"summary = \"Stream an interval's reference without ever loading it whole.\"\n"+
+			"summary = \"Stream a stretch of chromosome without loading it. Memory never notices.\"\n"+
 			"category = \"developer\"\n"+
 			"license = \"BSD-3-Clause\"\n"+
 			"source = \"https://github.com/dark-bio/examples/tree/main/apps/06-regions-mini-go\"\n"+
 			"keywords = [\"tutorial\", \"regions\", \"streaming\", \"mitochondria\"]\n"+
 			"description = '''\n"+
-			"Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.\n\n"+
-			"Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.\n\n"+
-			"An interval grant covers your variants inside it, which Powerhouse of the Cell lists.\n"+
+			"Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This one takes your whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` 8 KiB at a time for length and GC content. Memory stays flat however long the interval.\n\n"+
+			"Repeats are soft-masked in lowercase, so count both cases. A failed read stops the app.\n\n"+
+			"An interval grant covers your variants inside it, which Powerhouse of the Cell maps.\n"+
 			"'''\n\n"+
 			"[listing.purposes]\n"+
 			"\"v1/genome/regions/chrM/1-16569\" = \"The mitochondrial genome, to stream its reference bases\"\n", lens)
@@ -66,8 +66,9 @@ func run(root string) error {
 	if length != 16569 {
 		return errors.New("Region sequence length does not match its span")
 	}
-	fmt.Printf("## Region %s\n\n", region)
+	fmt.Printf("## Your mitochondria, %s\n\n", region)
 	fmt.Printf("- Reference length: %d bp\n", length)
 	fmt.Printf("- GC content: %.1f%%\n", 100.0*float64(gc)/float64(length))
+	fmt.Printf("\nStreamed 8 KiB at a time, so memory never noticed.\n")
 	return nil
 }

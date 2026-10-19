@@ -31,17 +31,17 @@ paths = ["{LENS}"]
 [listing]
 language = "en"
 icon = "🌱"
-summary = "The smallest real data access, one variant through rsids, in four languages."
+summary = "One variant, four languages, zero call file. The smallest real read."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-python"
 keywords = ["tutorial", "rsids", "genotype", "four languages"]
 description = '''
-The `rsids/` folder hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
+The `rsids/` folder hands you one variant as plain files. Grant `v1/genome/rsids/rs72921001`, read `genotype`, `chromosome`, `position` and `reference`, and you're done. The call file never comes near it.
 
-Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.
+Every app handles three outcomes. A missing allele, as in `./.`, makes the count inconclusive. A missing genotype is no answer, never two reference alleles. Any other read error stops the app.
 
-The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.
+Written in Rust, Go, C and Python. Compare them, then meet the full report, Cilantro Taste Test.
 '''
 
 [listing.purposes]
@@ -52,18 +52,18 @@ The same program is written in Rust, Go, C and Python. Compare them, then see th
     base = f"{sys.argv[1]}/{LENS}"
     genotype = leaf(base, "genotype")
     if genotype is None:
-        print("## Cilantro taste\n")
-        print(f"No genotype answer for `{RSID}`. "
-              "Absence does not imply two reference alleles.")
+        print("## Cilantro or soap?\n")
+        print(f"No genotype at `{RSID}`. "
+              "Silence isn't two reference alleles.")
         return
 
     # This known SNP needs a simple split, including a possible leading phase marker.
     alleles = genotype.lstrip("/|").replace("|", "/").split("/")
     copies = alleles.count(SOAPY_ALLELE)
-    print("## Cilantro taste\n")
+    print("## Cilantro or soap?\n")
     print(f"Your genotype at `{RSID}` is `{genotype}`.\n")
     if "." in alleles:
-        print("The copy count is inconclusive because an allele is missing (`.`).")
+        print("An allele is missing (`.`), so the soap count is inconclusive.")
     elif copies == 0:
         print(f"You carry no copies of the soapy `{SOAPY_ALLELE}` allele. "
               "Cilantro probably tastes fresh and herby.")

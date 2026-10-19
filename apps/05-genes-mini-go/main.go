@@ -20,15 +20,15 @@ func main() {
 			"[listing]\n"+
 			"language = \"en\"\n"+
 			"icon = \"🧬\"\n"+
-			"summary = \"A gene's coordinates and reference length, read as plain files.\"\n"+
+			"summary = \"A whole gene as plain files. Coordinates, strand and length, no parser needed.\"\n"+
 			"category = \"developer\"\n"+
 			"license = \"BSD-3-Clause\"\n"+
 			"source = \"https://github.com/dark-bio/examples/tree/main/apps/05-genes-mini-go\"\n"+
 			"keywords = [\"tutorial\", \"genes\", \"reference\", \"TAS2R38\"]\n"+
 			"description = '''\n"+
-			"Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `reference` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.\n\n"+
-			"An absent value prints as no answer. A missing reference is an error.\n\n"+
-			"A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.\n"+
+			"Grant `v1/genome/genes/TAS2R38` and its `chromosome`, `start`, `end`, `strand` and `biotype` are just files. The `reference` holds exactly end - start + 1 bases, so its size is the gene's length, and the gene never has to fit in memory.\n\n"+
+			"An absent value is no answer. A missing reference is an error.\n\n"+
+			"A gene grant also covers your variants inside the gene, even though this app never reads them. Bitter Meter does.\n"+
 			"'''\n\n"+
 			"[listing.purposes]\n"+
 			"\"v1/genome/genes/TAS2R38\" = \"A gene to read coordinates and reference length from\"\n", lens)
@@ -82,10 +82,11 @@ func run(base string) error {
 		(start == 0 || end < start || uint64(length) != end-start+1) {
 		return errors.New("Gene sequence length does not match its span")
 	}
-	fmt.Printf("## Gene %s\n\n", gene)
+	fmt.Printf("## %s, the bitter gene\n\n", gene)
 	for i, label := range []string{"Chromosome", "Start", "End", "Strand", "Biotype"} {
 		fmt.Printf("- %s: %s\n", label, values[i])
 	}
 	fmt.Printf("- Reference length: %d bp\n", length)
+	fmt.Printf("\nEvery base stayed on the Ark. Only this summary leaves.\n")
 	return nil
 }

@@ -15,15 +15,15 @@ int main(int argc, char *argv[]) {
            "[listing]\n"
            "language = \"en\"\n"
            "icon = \"📏\"\n"
-           "summary = \"Stream an interval's reference without ever loading it whole.\"\n"
+           "summary = \"Stream a stretch of chromosome without loading it. Memory never notices.\"\n"
            "category = \"developer\"\n"
            "license = \"BSD-3-Clause\"\n"
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/06-regions-mini-c\"\n"
            "keywords = [\"tutorial\", \"regions\", \"streaming\", \"mitochondria\"]\n"
            "description = '''\n"
-           "Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.\n\n"
-           "Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.\n\n"
-           "An interval grant covers your variants inside it, which Powerhouse of the Cell lists.\n"
+           "Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This one takes your whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` 8 KiB at a time for length and GC content. Memory stays flat however long the interval.\n\n"
+           "Repeats are soft-masked in lowercase, so count both cases. A failed read stops the app.\n\n"
+           "An interval grant covers your variants inside it, which Powerhouse of the Cell maps.\n"
            "'''\n\n"
            "[listing.purposes]\n"
            "\"v1/genome/regions/chrM/1-16569\" = \"The mitochondrial genome, to stream its reference bases\"\n");
@@ -67,8 +67,9 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Region sequence length does not match its span\n");
     return 1;
   }
-  printf("## Region " REGION "\n\n");
+  printf("## Your mitochondria, " REGION "\n\n");
   printf("- Reference length: %" PRIu64 " bp\n", length);
   printf("- GC content: %.1f%%\n", 100.0 * (double)gc / (double)length);
+  printf("\nStreamed 8 KiB at a time, so memory never noticed.\n");
   return 0;
 }

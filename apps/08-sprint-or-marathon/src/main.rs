@@ -79,7 +79,7 @@ paths = ["v1/genome/regions/chr17/63488479-63488579", "v1/genome/datasets", "v1/
 [listing]
 language = "en"
 icon = "🏃"
-summary = "The ACE insertion that turns up more often in endurance athletes."
+summary = "Built for the sprint or the marathon? One Alu insertion in ACE has a say."
 category = "traits"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-sprint-or-marathon"

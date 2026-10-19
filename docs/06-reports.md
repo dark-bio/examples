@@ -68,10 +68,10 @@ its report in this shape:
 ```markdown
 # 🌿 Cilantro Taste Test
 
-**Soap detector** 🧼. You carry two copies of C at rs72921001, the genotype
-most strongly tied to tasting cilantro as dish soap. Blame *OR6A2*, the
-olfactory receptor next door. C is also the reference base here, so a call
-file that lists only variants would have stayed quiet about it. Yours didn't.
+**Soap detector** 🧼. Two copies of C at rs72921001, the genotype most strongly
+tied to tasting cilantro as dish soap. Blame *OR6A2*, the smell receptor next
+door. C is also the reference base here, so a call file that lists only
+variants would have stayed quiet about it. Yours didn't.
 
 ## Evidence
 
@@ -119,10 +119,10 @@ never read as two reference alleles:
 ```markdown
 # 🌿 Cilantro Taste Test
 
-**No answer.** No genotype is available at rs72921001, so this app has no
-result. An absent genotype is not a reference call. A call file that records
-only variants has no record at a reference site, and none at a site it didn't
-cover, and the two can't be distinguished here.
+**No answer.** Your call file is silent at rs72921001, so this app has no
+result. Silence isn't a reference call. A file that records only variants
+skips reference sites and sites it never covered alike, and from here the two
+look the same.
 ```
 
 **Evidence** holds the values the finding rests on, one row per variant, gene
@@ -163,8 +163,9 @@ table, or a punchline wrapped around a finding that touches real risk. A light
 report can carry a heavy fact, and when it does, that sentence is plain and
 says so, the way a friend drops the joke for a moment.
 
-The examples are toys, and they read that way, charming and friendly whatever
-they count. The serious voice is for heavier subjects, and none of the examples
+The examples are toys, and they read that way, punchy and a little cheeky
+whatever they count. Their jokes land on the science and the sandbox, never on
+the owner. The serious voice is for heavier subjects, and none of the examples
 has one yet. So that its register is on record, the cilantro finding above in
 the serious voice:
 

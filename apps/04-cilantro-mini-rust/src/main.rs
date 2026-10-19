@@ -33,17 +33,17 @@ paths = ["{LENS}"]
 [listing]
 language = "en"
 icon = "🌱"
-summary = "The smallest real data access, one variant through rsids, in four languages."
+summary = "One variant, four languages, zero call file. The smallest real read."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-rust"
 keywords = ["tutorial", "rsids", "genotype", "four languages"]
 description = '''
-The `rsids/` folder hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
+The `rsids/` folder hands you one variant as plain files. Grant `v1/genome/rsids/rs72921001`, read `genotype`, `chromosome`, `position` and `reference`, and you're done. The call file never comes near it.
 
-Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.
+Every app handles three outcomes. A missing allele, as in `./.`, makes the count inconclusive. A missing genotype is no answer, never two reference alleles. Any other read error stops the app.
 
-The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.
+Written in Rust, Go, C and Python. Compare them, then meet the full report, Cilantro Taste Test.
 '''
 
 [listing.purposes]
@@ -58,8 +58,8 @@ The same program is written in Rust, Go, C and Python. Compare them, then see th
 
     // ENOENT means no answer, including reference sites in variants-only calls.
     let Some(genotype) = leaf(&base, "genotype") else {
-        println!("## Cilantro taste\n");
-        println!("No genotype answer for `{RSID}`. Absence does not imply two reference alleles.");
+        println!("## Cilantro or soap?\n");
+        println!("No genotype at `{RSID}`. Silence isn't two reference alleles.");
         return;
     };
 
@@ -72,10 +72,10 @@ The same program is written in Rust, Go, C and Python. Compare them, then see th
     let copies = alleles.iter().filter(|a| **a == SOAPY_ALLELE).count();
     let missing = alleles.contains(&".");
 
-    println!("## Cilantro taste\n");
+    println!("## Cilantro or soap?\n");
     println!("Your genotype at `{RSID}` is `{genotype}`.\n");
     if missing {
-        println!("The copy count is inconclusive because an allele is missing (`.`).");
+        println!("An allele is missing (`.`), so the soap count is inconclusive.");
     } else {
         match copies {
             0 => println!(

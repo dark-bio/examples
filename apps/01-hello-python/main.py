@@ -14,28 +14,28 @@ version = "0.1.0"
 [listing]
 language = "en"
 icon = "👋"
-summary = "The two passes of an app, in the fewest lines. Start here."
+summary = "Two passes, a handful of lines, zero data. Start here."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/01-hello-python"
 keywords = ["tutorial", "manifest", "two passes", "WASI"]
 description = '''
-An Ark app is one WebAssembly file built for WASI Preview 1. The Ark runs it twice.
+An Ark app is one WebAssembly file built for WASI Preview 1, and the Ark runs it twice.
 
-**The manifest pass.** With no arguments, the app prints a short TOML manifest naming itself, its version and the data it wants. The Ark checks the manifest and shows it on your phone.
+**The manifest pass.** No arguments. The app prints a short TOML manifest with its name, its version and the data it wants, and your phone shows it to you.
 
-**The report pass.** With a data directory as its first argument, the app reads the files it was granted and prints its report. Reports are Markdown, which is how Ark Hub shows them.
+**The report pass.** A data directory as its first argument. The app reads what you granted and prints a Markdown report, which Ark Hub renders.
 
-This app asks for no data, so approving it grants nothing. It proves the round trip, from upload through approval to a rendered report, in the fewest lines possible. Pick a language, read the source, then run it on your Ark.
+This one asks for nothing, so approving it shares nothing. It's the whole round trip, upload to approval to report, in a handful of lines.
 
-Each language's folder in the examples repository builds and runs it with one `make run` command.
+Each language's folder in the examples repository builds and runs it with one `make run`.
 
-The docs cover the two passes, the manifest and the sandbox limits in detail.
+Pick a language, read the source, then run it on your Ark.
 '''""")
         return
 
     # The report pass receives a data directory, even when no data is requested
-    print("Hello from an Ark app written in Python.")
+    print("Hello from inside an Ark. No network, no disk, no way out. Python says hi.")
 
 
 if __name__ == "__main__":

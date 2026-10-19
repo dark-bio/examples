@@ -26,7 +26,7 @@ paths = ["v1/genome/genes/UGT2B17"]
 [listing]
 language = "en"
 icon = "🔢"
-summary = "A gene's copy number, read from its segments, in four languages."
+summary = "Spot a gene that isn't there. Copy numbers as plain files, in four languages."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/07-copies-mini-python"
@@ -34,7 +34,7 @@ keywords = ["tutorial", "copies", "copy number", "UGT2B17"]
 description = '''
 Grant `v1/genome/genes/UGT2B17` and list its `copies`. Each directory is one segment of your copy number file that reaches the gene, named after its span, and its `count` holds how many copies your genome has there.
 
-A whole gene can go missing, and a small variant file never shows it. An empty listing is no answer, never zero copies, since a caller can leave a region out.
+Whole genes can go missing, and a small variant file never notices. An empty listing is no answer, never zero copies, since a caller can skip a region.
 
 A gene grant also covers your variants inside the gene, even though this app does not read them. Doping Test turns the same read into a report.
 '''

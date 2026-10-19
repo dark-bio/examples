@@ -25,17 +25,17 @@ paths = ["v1/genome/genes/TAS2R38"]
 [listing]
 language = "en"
 icon = "🧬"
-summary = "A gene's coordinates and reference length, read as plain files."
+summary = "A whole gene as plain files. Coordinates, strand and length, no parser needed."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/05-genes-mini-rust"
 keywords = ["tutorial", "genes", "reference", "TAS2R38"]
 description = '''
-Grant `v1/genome/genes/TAS2R38` and read the gene's `chromosome`, `start`, `end`, `strand` and `biotype` as files. The `reference` file holds exactly end - start + 1 bases, so its size is the gene's length and the gene never has to fit in memory.
+Grant `v1/genome/genes/TAS2R38` and its `chromosome`, `start`, `end`, `strand` and `biotype` are just files. The `reference` holds exactly end - start + 1 bases, so its size is the gene's length, and the gene never has to fit in memory.
 
-An absent value prints as no answer. A missing reference is an error.
+An absent value is no answer. A missing reference is an error.
 
-A gene grant also covers your variants inside the gene, even though this app does not read them. Bitter Meter does.
+A gene grant also covers your variants inside the gene, even though this app never reads them. Bitter Meter does.
 '''
 
 [listing.purposes]
@@ -83,7 +83,7 @@ fn run(root: &Path) -> Result<(), String> {
         }
     }
 
-    println!("## Gene {GENE}\n");
+    println!("## {GENE}, the bitter gene\n");
     println!(
         "- Chromosome: {}",
         chromosome.as_deref().unwrap_or("no answer")
@@ -102,5 +102,6 @@ fn run(root: &Path) -> Result<(), String> {
     println!("- Strand: {}", strand.as_deref().unwrap_or("no answer"));
     println!("- Biotype: {}", biotype.as_deref().unwrap_or("no answer"));
     println!("- Reference length: {length} bp");
+    println!("\nEvery base stayed on the Ark. Only this summary leaves.");
     Ok(())
 }

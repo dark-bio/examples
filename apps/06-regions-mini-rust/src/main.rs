@@ -25,17 +25,17 @@ paths = ["v1/genome/regions/chrM/1-16569"]
 [listing]
 language = "en"
 icon = "📏"
-summary = "Stream an interval's reference without ever loading it whole."
+summary = "Stream a stretch of chromosome without loading it. Memory never notices."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/06-regions-mini-rust"
 keywords = ["tutorial", "regions", "streaming", "mitochondria"]
 description = '''
-Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This app takes the whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` in 8 KiB chunks to report its length and GC content. Memory use does not grow with the interval.
+Grant any interval as `v1/genome/regions/<chr>/<start>-<end>`. This one takes your whole mitochondrial genome, `chrM:1-16569`, and streams its `reference` 8 KiB at a time for length and GC content. Memory stays flat however long the interval.
 
-Repeats are soft masked in lowercase, so count both cases. A failed read stops the app.
+Repeats are soft-masked in lowercase, so count both cases. A failed read stops the app.
 
-An interval grant covers your variants inside it, which Powerhouse of the Cell lists.
+An interval grant covers your variants inside it, which Powerhouse of the Cell maps.
 '''
 
 [listing.purposes]
@@ -73,8 +73,9 @@ fn run(root: &Path) -> Result<(), String> {
         return Err("Region sequence length does not match its span".into());
     }
     let pct = 100.0 * gc as f64 / length as f64;
-    println!("## Region {REGION}\n");
+    println!("## Your mitochondria, {REGION}\n");
     println!("- Reference length: {length} bp");
     println!("- GC content: {pct:.1}%");
+    println!("\nStreamed 8 KiB at a time, so memory never noticed.");
     Ok(())
 }
