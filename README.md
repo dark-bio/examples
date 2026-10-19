@@ -80,6 +80,8 @@ and a full app turns the same read into a report. Each row is a folder under
 | `05-bitter-meter` | the gene and its changes as a report | Rust |
 | `06-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
 | `06-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
+| `07-copies-mini` | a gene's copy number through `copies/` | Rust, Go, C, Python |
+| `07-doping-test` | the copy number and a missing upload as a report | Rust |
 | `09-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
 | `09-vcf-roll-call` | parsing the whole call file as a report | Rust |
 | `10-motif-finder` | computing over a gene's reference sequence | Rust |

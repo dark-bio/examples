@@ -31,6 +31,11 @@ Keep in mind what absence means. A genotype can be absent for someone carrying
 two reference alleles, since a variants-only call file has no records at
 reference sites. An app must never read absence as a result.
 
+Absence can also mean the data was never uploaded. `v1/genome/datasets` lists
+one empty file per dataset the Ark holds, and it's a public grant the owner
+never has to approve. [07-doping-test](../apps/07-doping-test) reads it to tell
+a genome without a copy number file from one whose caller left the gene out.
+
 ## Reading references
 
 A gene's or an interval's `reference` holds exactly end - start + 1 bases, so
@@ -98,6 +103,11 @@ allele the owner carries that reaches the gene. A very long or very variable
 gene fails with "file too large". [05-genes-mini-rust](../apps/05-genes-mini-rust) shows the bare read,
 and [05-bitter-meter](../apps/05-bitter-meter) turns TAS2R38 into a report.
 
+Its `copies` lists the segments of the owner's copy number file that reach the
+gene, each with a `count`. A whole gene can go missing, and only a copy number
+file shows it. [07-copies-mini-rust](../apps/07-copies-mini-rust) shows the bare
+read, and [07-doping-test](../apps/07-doping-test) turns UGT2B17 into a report.
+
 ### An interval
 
 Grant `regions/<chr>/<start>-<end>` for any stretch of a chromosome, with the
@@ -111,13 +121,13 @@ A gene or interval grant includes its `changes`, `copies` and positions, even
 if the app never reads them. [10-motif-finder](../apps/10-motif-finder) reads
 only a gene's reference, yet its grant still covers the gene's variants.
 
-### The whole call file
+### A whole file
 
-Grant `files/small-variants` to read the `vcf` itself, when no place answers
-the question.
-It is the broadest request there is, and the file runs to gigabytes, so read it
-line by line, through a large buffer. Every refill leaves the sandbox, so a
-small default buffer can cost ten times the scan time.
+Grant a folder under `files/`, such as `files/small-variants`, to read its
+`vcf` itself, when no place answers the question. It is the broadest request
+there is, and a small variant file runs to gigabytes, so read it line by line,
+through a large buffer. Every refill leaves the sandbox, so a small default
+buffer can cost ten times the scan time.
 [09-vcf-mini-rust](../apps/09-vcf-mini-rust) counts records with a plain line
 scan, and [09-vcf-roll-call](../apps/09-vcf-roll-call) parses the whole file
 with `noodles-vcf`.
