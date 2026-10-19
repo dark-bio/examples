@@ -70,22 +70,22 @@ Written in Rust, Go, C and Python. Compare them, then meet the full report, Cila
         .split(['/', '|'])
         .collect();
     let copies = alleles.iter().filter(|a| **a == SOAPY_ALLELE).count();
-    let missing = alleles.contains(&".");
+    let missing = alleles.contains(&".") || alleles.contains(&"*");
 
     println!("## Cilantro or soap?\n");
     println!("Your genotype at `{RSID}` is `{genotype}`.\n");
     if missing {
-        println!("An allele is missing (`.`), so the soap count is inconclusive.");
+        println!("An allele is missing or deleted, so the soap count is inconclusive.");
     } else {
         match copies {
             0 => println!(
-                "You carry no copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro probably tastes fresh and herby."
+                "You carry no copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro is more likely to taste fresh and herby."
             ),
             1 => println!(
                 "You carry one copy of the soapy `{SOAPY_ALLELE}` allele. Cilantro may have a faint soapy note."
             ),
             n => println!(
-                "You carry {n} copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro likely tastes like dish soap."
+                "You carry {n} copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro is more likely to taste like dish soap."
             ),
         }
     }

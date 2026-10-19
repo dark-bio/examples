@@ -6,8 +6,9 @@ directory per alternate allele the owner carries there. It sorts them by span
 and prints each one's `type`, how many new bases it brings, the `dataset` it
 came from and how many copies carry it.
 
-The window holds the ACE insertion, nearly 300 bases of Alu repeat. That's too
-long for a small variant caller, so it comes from the structural variant file,
+The window holds the ACE insertion on GRCh38, nearly 300 bases of Alu repeat.
+That's usually too long for a small variant caller, so it comes from the
+structural variant file,
 and it reads like any other change. The window is wider than the insertion's
 anchor, since callers can place an insertion a few bases apart. The app also
 grants `v1/genome/datasets/structural-variants`, a public folder that reads

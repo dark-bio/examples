@@ -65,7 +65,7 @@ func main() {
 	// This known SNP needs only a simple split; keep the original text for display.
 	copies, missing := 0, false
 	for _, allele := range strings.FieldsFunc(genotype, func(r rune) bool { return r == '/' || r == '|' }) {
-		if allele == "." {
+		if allele == "." || allele == "*" {
 			missing = true
 		}
 		if allele == soapyAllele {
@@ -76,15 +76,15 @@ func main() {
 	fmt.Printf("## Cilantro or soap?\n\n")
 	fmt.Printf("Your genotype at `%s` is `%s`.\n\n", rsID, genotype)
 	if missing {
-		fmt.Println("An allele is missing (`.`), so the soap count is inconclusive.")
+		fmt.Println("An allele is missing or deleted, so the soap count is inconclusive.")
 	} else {
 		switch copies {
 		case 0:
-			fmt.Printf("You carry no copies of the soapy `%s` allele. Cilantro probably tastes fresh and herby.\n", soapyAllele)
+			fmt.Printf("You carry no copies of the soapy `%s` allele. Cilantro is more likely to taste fresh and herby.\n", soapyAllele)
 		case 1:
 			fmt.Printf("You carry one copy of the soapy `%s` allele. Cilantro may have a faint soapy note.\n", soapyAllele)
 		default:
-			fmt.Printf("You carry %d copies of the soapy `%s` allele. Cilantro likely tastes like dish soap.\n", copies, soapyAllele)
+			fmt.Printf("You carry %d copies of the soapy `%s` allele. Cilantro is more likely to taste like dish soap.\n", copies, soapyAllele)
 		}
 	}
 

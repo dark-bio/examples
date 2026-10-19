@@ -86,6 +86,8 @@ struct RegionReport {
 
 #[derive(Debug)]
 struct Change {
+    /// Directory name, including any suffix for a shared span.
+    name: String,
     pos: u64,
     /// Place among the entries sharing this span, counting from 1.
     ordinal: u64,
@@ -95,6 +97,8 @@ struct Change {
     genotype: Option<String>,
     call: String,
     kind: String,
+    /// The variant file the change came from.
+    dataset: Option<String>,
     substitution: String,
 }
 
@@ -143,10 +147,10 @@ impl RegionReport {
                     .count();
                 print!(
                     "**Mom's batteries** 🔋. Your mitochondria run on a {2} bp genome you got \
-                     from your mother alone, and your call file differs from the reference in \
-                     {0} {1}, {transitions} {3}, {transversions} {4} and {indels} {5}",
+                     from your mother alone, and your call file lists {0} {1} against the \
+                     reference, {transitions} {3}, {transversions} {4} and {indels} {5}",
                     changes.len(),
-                    plural(changes.len(), "place", "places"),
+                    plural(changes.len(), "change", "changes"),
                     format_int(span),
                     plural(transitions, "transition", "transitions"),
                     plural(transversions, "transversion", "transversions"),
@@ -286,8 +290,11 @@ fn read_changes(base: &Path) -> Result<Option<Vec<Change>>, String> {
     let mut changes = Vec::new();
     for entry in entries {
         let entry = entry.map_err(|err| format!("Could not read changes entry: {err}"))?;
-        let name = entry.file_name();
-        let (pos, end, ordinal) = change_span(name.to_str().ok_or("Invalid change name")?)?;
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| "Invalid change name")?;
+        let (pos, end, ordinal) = change_span(&name)?;
         let change_type = read_leaf(&entry.path(), "type")?;
         let bases = read_leaf(&entry.path(), "bases")?;
         let carried = read_leaf(&entry.path(), "carried")?
@@ -302,18 +309,21 @@ fn read_changes(base: &Path) -> Result<Option<Vec<Change>>, String> {
         let site = base.join("positions").join(pos.to_string());
         let reference = read_leaf(&site, "reference")?;
         let genotype = read_leaf(&site, "genotype")?;
+        let alleles = genotype.as_deref().map(alleles);
 
         // The site's genotype holds only small variant copies, so other entries get no call
-        let call = match (dataset.as_deref(), genotype.as_deref(), carried) {
+        let call = match (dataset.as_deref(), alleles.as_deref(), carried) {
             _ if uncalled.is_some() => "uncertain",
-            (Some("small-variants"), Some(genotype), Some(carried)) => {
-                classify_call(genotype, carried)
+            (_, Some(alleles), _) if alleles.contains(&"*") => "uncertain",
+            (Some("small-variants"), Some(alleles), Some(carried)) => {
+                classify_call(alleles, carried)
             }
             _ => "no answer",
         };
-        let kind = classify_kind(change_type.as_deref(), bases.as_deref());
+        let kind = classify_kind(dataset.as_deref(), change_type.as_deref());
         let substitution = classify_substitution(kind, reference.as_deref(), bases.as_deref());
         changes.push(Change {
+            name,
             pos,
             end,
             ordinal,
@@ -321,6 +331,7 @@ fn read_changes(base: &Path) -> Result<Option<Vec<Change>>, String> {
             genotype,
             call: call.into(),
             kind: kind.into(),
+            dataset,
             substitution: substitution.into(),
         });
     }
@@ -354,8 +365,7 @@ fn change_span(name: &str) -> Result<(u64, u64, u64), String> {
 }
 
 /// Calls an allele from how many of the site's copies carry it.
-fn classify_call(genotype: &str, carried: usize) -> &'static str {
-    let alleles = alleles(genotype);
+fn classify_call(alleles: &[&str], carried: usize) -> &'static str {
     if carried == 0 || carried > alleles.len() || alleles.contains(&".") {
         return "uncertain";
     }
@@ -369,24 +379,26 @@ fn classify_call(genotype: &str, carried: usize) -> &'static str {
     }
 }
 
-/// Sorts a change into the report's substitution or indel kind.
-fn classify_kind(change_type: Option<&str>, bases: Option<&str>) -> &'static str {
-    match (change_type, bases) {
-        (Some("SNV"), Some(bases)) if is_base(bases) => "snp",
-        (Some("SNV") | None, _) => "no answer",
-        _ => "indel",
+/// Labels a change by its dataset and type.
+fn classify_kind(dataset: Option<&str>, change_type: Option<&str>) -> &'static str {
+    match (dataset, change_type) {
+        (Some("structural-variants"), _) => "structural",
+        (_, Some("SNV")) => "snp",
+        (_, Some("MNV")) => "mnv",
+        (_, Some("INS" | "DEL" | "DELINS")) => "indel",
+        _ => "structural",
     }
 }
 
 /// Names a substitution a transition or a transversion.
 fn classify_substitution(kind: &str, reference: Option<&str>, bases: Option<&str>) -> &'static str {
-    if kind == "indel" {
+    if kind != "snp" {
         return "not a snp";
     }
     let (Some(reference), Some(bases)) = (reference, bases) else {
         return "no answer";
     };
-    if kind != "snp" || !is_base(reference) || !is_base(bases) {
+    if !is_base(reference) || !is_base(bases) {
         return "no answer";
     }
     let reference = reference.as_bytes()[0].to_ascii_uppercase() as char;
@@ -530,22 +542,23 @@ fn print_change_table(changes: &[Change]) {
     println!("### Change receipt");
     println!();
 
-    println!("| Position | Reference | Genotype | Call | Kind | Substitution |");
-    println!("| ---: | :---: | :---: | :--- | :--- | :--- |");
+    println!("| Change | Reference | Genotype | Call | Kind | File | Substitution |");
+    println!("| :--- | :---: | :---: | :--- | :--- | :--- | :--- |");
     for change in changes.iter().take(MAX_CHANGE_ROWS) {
         println!(
-            "| {} | `{}` | `{}` | {} | {} | {} |",
-            change.pos,
+            "| {} | `{}` | `{}` | {} | {} | {} | {} |",
+            change.name,
             table_value(&change.reference),
             table_value(&change.genotype),
             change.call,
             change.kind,
+            change.dataset.as_deref().unwrap_or("no answer"),
             change.substitution
         );
     }
     if changes.len() > MAX_CHANGE_ROWS {
         println!(
-            "| ... | ... | ... | {} more changes omitted | ... | ... |",
+            "| ... | ... | ... | {} more changes omitted | ... | ... | ... |",
             changes.len() - MAX_CHANGE_ROWS
         );
     }

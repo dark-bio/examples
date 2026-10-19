@@ -109,12 +109,16 @@ root, `fixtures`, models one invented genome on GRCh38. Its coordinates,
 reference alleles and sequences are public data, while every genotype is made
 up. Two more roots cover the answers an app must handle:
 
-- `fixtures/no-call` answers every panel variant with a no-call, `./.`.
+- `fixtures/no-call` answers every panel variant with a no-call, `./.`, and
+  holds a copy number segment without a count and the ACE insertion with a
+  copy uncalled.
 - `fixtures/unanswered` has coordinates and reference alleles but no genotypes,
-  like reference sites in a variants-only call file.
+  like reference sites in a variants-only call file, and no copy number or
+  structural variant upload.
 
-Both hold only the variant data the rsID apps need, so other apps stop at their
-missing grants there.
+Both hold only the data their apps need, so other apps stop at their missing
+grants there, and on `fixtures/unanswered` the copy number and structural apps
+never start, just as on an Ark without those files.
 
 ### What a laptop doesn't reproduce
 

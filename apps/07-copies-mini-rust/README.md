@@ -6,8 +6,8 @@ gene. It sorts the segments by start, since listing order isn't promised, and
 prints each one's `count`. An empty listing prints as no answer, never as zero
 copies, since a caller can leave a region out.
 
-A whole gene can go missing, and only a copy number file shows it. A small
-variant file has nothing to say about a gene that isn't there. So the app also
+A whole gene can go missing, and a small variant file has nothing to say about
+a gene that isn't there. Copy number segments show it, so the app also
 grants `v1/genome/datasets/copy-number-variants`, a public folder that reads
 empty, and the Ark won't run it without a copy number file. On
 `fixtures/unanswered` it never starts, just as on an Ark without one.

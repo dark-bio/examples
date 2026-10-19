@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
   if (*allele == '/' || *allele == '|') allele++;
   while (*allele) {
     size_t length = strcspn(allele, "/|");
-    if (length == 1 && allele[0] == '.') missing = 1;
+    if (length == 1 && (allele[0] == '.' || allele[0] == '*')) missing = 1;
     if (length == 1 && allele[0] == SOAPY_ALLELE[0]) copies++;
     allele += length;
     if (*allele) allele++;
@@ -110,16 +110,16 @@ int main(int argc, char *argv[]) {
   printf("## Cilantro or soap?\n\n");
   printf("Your genotype at `" RSID "` is `%s`.\n\n", genotype);
   if (missing) {
-    printf("An allele is missing (`.`), so the soap count is inconclusive.\n");
+    printf("An allele is missing or deleted, so the soap count is inconclusive.\n");
   } else if (copies == 0) {
     printf("You carry no copies of the soapy `" SOAPY_ALLELE "` allele. "
-           "Cilantro probably tastes fresh and herby.\n");
+           "Cilantro is more likely to taste fresh and herby.\n");
   } else if (copies == 1) {
     printf("You carry one copy of the soapy `" SOAPY_ALLELE "` allele. "
            "Cilantro may have a faint soapy note.\n");
   } else {
     printf("You carry %zu copies of the soapy `" SOAPY_ALLELE "` allele. "
-           "Cilantro likely tastes like dish soap.\n", copies);
+           "Cilantro is more likely to taste like dish soap.\n", copies);
   }
 
   char *chrom = read_leaf(argv[1], "chromosome");

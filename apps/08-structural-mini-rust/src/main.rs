@@ -47,9 +47,9 @@ license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-structural-mini-rust"
 keywords = ["tutorial", "changes", "structural variants", "ACE"]
 description = '''
-Grant a short window inside the _ACE_ gene and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.
+Grant a short window inside the _ACE_ gene, in GRCh38 coordinates, and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.
 
-The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.
+The window holds the ACE insertion, nearly 300 bases long and usually too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.
 
 An interval grant also covers your small variants inside it. Sprint or Marathon turns the same read into a report.
 '''
@@ -137,7 +137,7 @@ fn run(root: &Path) -> Result<(), String> {
     // Listing order isn't promised, so sort by span before printing
     changes.sort_by_key(|change| change.span);
 
-    println!("## Changes near the ACE insertion\n");
+    println!("## Changes in chr17:63488479-63488579\n");
     if changes.is_empty() {
         println!(
             "No change reaches this window. That is no answer, since your files may not cover it."
@@ -147,6 +147,13 @@ fn run(root: &Path) -> Result<(), String> {
         let bases = match change.new_bases {
             Some(1) => "1 new base".into(),
             Some(n) => format!("{n} new bases"),
+            None if change
+                .kind
+                .as_deref()
+                .is_some_and(|kind| kind == "INS" || kind.starts_with("INS:")) =>
+            {
+                "new bases unknown".into()
+            }
             None => "no new bases".into(),
         };
         let copies = match change.carried.as_deref() {

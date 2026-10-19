@@ -62,17 +62,17 @@ Written in Rust, Go, C and Python. Compare them, then meet the full report, Cila
     copies = alleles.count(SOAPY_ALLELE)
     print("## Cilantro or soap?\n")
     print(f"Your genotype at `{RSID}` is `{genotype}`.\n")
-    if "." in alleles:
-        print("An allele is missing (`.`), so the soap count is inconclusive.")
+    if "." in alleles or "*" in alleles:
+        print("An allele is missing or deleted, so the soap count is inconclusive.")
     elif copies == 0:
         print(f"You carry no copies of the soapy `{SOAPY_ALLELE}` allele. "
-              "Cilantro probably tastes fresh and herby.")
+              "Cilantro is more likely to taste fresh and herby.")
     elif copies == 1:
         print(f"You carry one copy of the soapy `{SOAPY_ALLELE}` allele. "
               "Cilantro may have a faint soapy note.")
     else:
         print(f"You carry {copies} copies of the soapy `{SOAPY_ALLELE}` allele. "
-              "Cilantro likely tastes like dish soap.")
+              "Cilantro is more likely to taste like dish soap.")
 
     names = ("chromosome", "position", "reference")
     chrom, pos, reference = (leaf(base, name) for name in names)

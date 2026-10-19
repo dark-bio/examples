@@ -52,9 +52,9 @@ license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/08-structural-mini-python"
 keywords = ["tutorial", "changes", "structural variants", "ACE"]
 description = '''
-Grant a short window inside the _ACE_ gene and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.
+Grant a short window inside the _ACE_ gene, in GRCh38 coordinates, and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.
 
-The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.
+The window holds the ACE insertion, nearly 300 bases long and usually too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.
 
 An interval grant also covers your small variants inside it. Sprint or Marathon turns the same read into a report.
 '''
@@ -90,17 +90,20 @@ An interval grant also covers your small variants inside it. Sprint or Marathon 
     # Listing order isn't promised, so sort by span before printing
     changes.sort(key=lambda change: change[0])
 
-    print("## Changes near the ACE insertion\n")
+    print("## Changes in chr17:63488479-63488579\n")
     if not changes:
         print(
             "No change reaches this window. That is no answer, since your files may not cover it."
         )
     for _, name, kind, size, dataset, carried in changes:
-        bases = (
-            "no new bases"
-            if size is None
-            else f"{size} new {'base' if size == 1 else 'bases'}"
-        )
+        if size is None:
+            bases = (
+                "new bases unknown"
+                if kind is not None and (kind == "INS" or kind.startswith("INS:"))
+                else "no new bases"
+            )
+        else:
+            bases = f"{size} new {'base' if size == 1 else 'bases'}"
         copies = (
             "no answer"
             if carried is None

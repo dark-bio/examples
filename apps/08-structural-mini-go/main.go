@@ -39,8 +39,8 @@ func main() {
 			"source = \"https://github.com/dark-bio/examples/tree/main/apps/08-structural-mini-go\"\n" +
 			"keywords = [\"tutorial\", \"changes\", \"structural variants\", \"ACE\"]\n" +
 			"description = '''\n" +
-			"Grant a short window inside the _ACE_ gene and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.\n\n" +
-			"The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.\n\n" +
+			"Grant a short window inside the _ACE_ gene, in GRCh38 coordinates, and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.\n\n" +
+			"The window holds the ACE insertion, nearly 300 bases long and usually too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.\n\n" +
 			"An interval grant also covers your small variants inside it. Sprint or Marathon turns the same read into a report.\n" +
 			"'''\n\n" +
 			"[listing.purposes]\n" +
@@ -144,7 +144,7 @@ func run(root string) error {
 		return changes[i].suffix < changes[j].suffix
 	})
 
-	fmt.Print("## Changes near the ACE insertion\n\n")
+	fmt.Print("## Changes in chr17:63488479-63488579\n\n")
 	if len(changes) == 0 {
 		fmt.Println("No change reaches this window. That is no answer, since your files may not cover it.")
 	}
@@ -167,6 +167,8 @@ func run(root string) error {
 			if *change.newBases == 1 {
 				bases = "1 new base"
 			}
+		} else if kind == "INS" || strings.HasPrefix(kind, "INS:") {
+			bases = "new bases unknown"
 		}
 		fmt.Printf("- %s: %s, %s, %s, carried on %s\n", change.name, kind, bases, dataset, copies)
 	}

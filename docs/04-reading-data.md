@@ -106,8 +106,9 @@ gene fails with "file too large". [05-genes-mini-rust](../apps/05-genes-mini-rus
 and [05-bitter-meter](../apps/05-bitter-meter) turns TAS2R38 into a report.
 
 Its `copies` lists the segments of the owner's copy number file that reach the
-gene, each with a `count`. A whole gene can go missing, and only a copy number
-file shows it. [07-copies-mini-rust](../apps/07-copies-mini-rust) shows the bare
+gene, each with a `count`. A whole gene can go missing, which a small variant
+file never shows. Copy number segments do, and a structural variant caller can
+report it as a deletion too. [07-copies-mini-rust](../apps/07-copies-mini-rust) shows the bare
 read, and [07-doping-test](../apps/07-doping-test) turns UGT2B17 into a report.
 
 ### An interval

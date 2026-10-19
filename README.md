@@ -81,9 +81,9 @@ and a full app turns the same read into a report. Each row is a folder under
 | `06-regions-mini` | an interval through `regions/` | Rust, Go, C, Python |
 | `06-powerhouse-of-the-cell` | the mitochondrial genome as a report | Rust |
 | `07-copies-mini` | a gene's copy number through `copies/` | Rust, Go, C, Python |
-| `07-doping-test` | the copy number and a missing upload as a report | Rust |
+| `07-doping-test` | the copy number as a report, with its dataset required | Rust |
 | `08-structural-mini` | a structural variant through `changes/` | Rust, Go, C, Python |
-| `08-sprint-or-marathon` | the insertion and its absence as a report | Rust |
+| `08-sprint-or-marathon` | the insertion as a report, with its dataset required | Rust |
 | `09-vcf-mini` | streaming the raw call file | Rust, Go, C, Python |
 | `09-vcf-roll-call` | parsing the whole call file as a report | Rust |
 | `10-motif-finder` | computing over a gene's reference sequence | Rust |

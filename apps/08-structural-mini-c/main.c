@@ -145,8 +145,8 @@ int main(int argc, char *argv[]) {
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/08-structural-mini-c\"\n"
            "keywords = [\"tutorial\", \"changes\", \"structural variants\", \"ACE\"]\n"
            "description = '''\n"
-           "Grant a short window inside the _ACE_ gene and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.\n\n"
-           "The window holds the ACE insertion, nearly 300 bases long and too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.\n\n"
+           "Grant a short window inside the _ACE_ gene, in GRCh38 coordinates, and list its `changes`. Each directory is one alternate allele you carry, named after the span it changes. Its `type`, `bases`, `dataset` and `carried` say what changed, into what, in which file and on how many copies.\n\n"
+           "The window holds the ACE insertion, nearly 300 bases long and usually too long for a small variant caller, so it comes from your structural variant file. The window spans 101 bases, since callers can place an insertion a few bases apart. The app also grants `v1/genome/datasets/structural-variants`, so the Ark won't run it without that file.\n\n"
            "An interval grant also covers your small variants inside it. Sprint or Marathon turns the same read into a report.\n"
            "'''\n\n"
            "[listing.purposes]\n"
@@ -197,13 +197,15 @@ int main(int argc, char *argv[]) {
     free(entry);
   }
 
-  printf("## Changes near the ACE insertion\n\n");
+  printf("## Changes in chr17:63488479-63488579\n\n");
   if (!length) printf("No change reaches this window. That is no answer, since your files may not cover it.\n");
   for (size_t i = 0; i < length; i++) {
     struct change *change = &changes[i];
     printf("- %s: %s, ", change->name, change->kind ? change->kind : "no answer");
     if (change->has_bases) {
       printf("%" PRIu64 " new %s", change->new_bases, change->new_bases == 1 ? "base" : "bases");
+    } else if (change->kind && (!strcmp(change->kind, "INS") || !strncmp(change->kind, "INS:", 4))) {
+      printf("new bases unknown");
     } else printf("no new bases");
     printf(", %s, carried on ", change->dataset ? change->dataset : "no answer");
     if (change->carried) {

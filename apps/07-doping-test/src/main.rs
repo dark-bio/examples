@@ -24,6 +24,10 @@ struct Segment {
     start: u64,
     /// Last base of the segment's span.
     end: u64,
+    /// Latest first base allowed by the confidence range.
+    latest_start: u64,
+    /// Earliest last base allowed by the confidence range.
+    earliest_end: u64,
     /// Copy number as the file holds it, absent when it holds none.
     count: Option<String>,
     /// Filters the segment failed, one per line, absent when it passed.
@@ -127,8 +131,20 @@ fn coordinate(value: &str) -> Result<u64, String> {
         .map_err(|err| format!("Invalid coordinate: {err}"))
 }
 
-/// Lists the segments reaching the gene, sorted by their first base.
-fn segments(base: &Path) -> Result<Vec<Segment>, String> {
+/// Reads the two coordinates of a confidence range.
+fn range(base: &Path, name: &str) -> Result<Option<(u64, u64)>, String> {
+    leaf(base, name)?
+        .map(|value| {
+            let (start, end) = value
+                .split_once('-')
+                .ok_or_else(|| format!("Invalid {name}"))?;
+            Ok((coordinate(start)?, coordinate(end)?))
+        })
+        .transpose()
+}
+
+/// Lists segments whose nominal spans overlap the gene, sorted by start.
+fn segments(base: &Path, gene_start: u64, gene_end: u64) -> Result<Vec<Segment>, String> {
     let entries = match fs::read_dir(base.join("copies")) {
         Ok(entries) => entries,
         Err(err) if err.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -143,9 +159,14 @@ fn segments(base: &Path) -> Result<Vec<Segment>, String> {
             .map_err(|_| "Invalid segment name")?;
         let (start, end) = name.split_once('-').ok_or("Invalid segment name")?;
         let (start, end) = (coordinate(start)?, coordinate(end)?);
+        if end < gene_start || start > gene_end {
+            continue;
+        }
         result.push(Segment {
             start,
             end,
+            latest_start: range(&entry.path(), "start-range")?.map_or(start, |(_, latest)| latest),
+            earliest_end: range(&entry.path(), "end-range")?.map_or(end, |(earliest, _)| earliest),
             count: leaf(&entry.path(), "count")?,
             failed: leaf(&entry.path(), "failed")?,
         });
@@ -174,7 +195,7 @@ impl Report {
         if end < start {
             return Err("Gene end precedes its start".into());
         }
-        let segments = segments(&base)?;
+        let segments = segments(&base, start, end)?;
         let build = leaf(&root.join("v1/genome/files/reference-genome"), "build")?;
         Ok(Self {
             chromosome,
@@ -196,17 +217,17 @@ impl Report {
         let mut next = self.start;
         let mut covered = false;
         for segment in &self.segments {
-            if segment.end < next {
+            if segment.earliest_end < next {
                 continue;
             }
-            if segment.start > next {
+            if segment.latest_start > next {
                 break;
             }
-            if segment.end >= self.end {
+            if segment.earliest_end >= self.end {
                 covered = true;
                 break;
             }
-            next = segment.end + 1;
+            next = segment.earliest_end + 1;
         }
         if !covered {
             return Outcome::Partial;
@@ -270,7 +291,7 @@ impl Report {
             for segment in &self.segments {
                 let failed = filters(segment.failed.as_deref().into_iter());
                 let failed = if failed.is_empty() {
-                    "passed".into()
+                    "none failed".into()
                 } else {
                     failed.join(", ")
                 };
@@ -301,13 +322,13 @@ fn finding(outcome: &Outcome) -> String {
             .into(),
         Outcome::Copies(1) => "**Half volume** 🔉. You carry one copy of *UGT2B17*, the gene \
             whose enzyme readies testosterone for urine. The classic doping test reads that \
-            testosterone against epitestosterone, and one copy keeps it visible. The test \
-            struggles only with people who carry none."
+            testosterone against epitestosterone, and its famous blind spot belongs to \
+            people with no copies."
             .into(),
         Outcome::Copies(2) => "**Full volume** 🔊. You carry two copies of *UGT2B17*, the gene \
             whose enzyme readies testosterone for urine. The classic doping test reads that \
-            testosterone against epitestosterone, and with both copies yours shows up the way \
-            the test expects."
+            testosterone against epitestosterone, and its famous blind spot belongs to \
+            people with no copies."
             .into(),
         Outcome::Copies(count) => format!(
             "**Extra copies** 🔊. You carry {count} copies of \
@@ -318,8 +339,8 @@ fn finding(outcome: &Outcome) -> String {
             *UGT2B17*, so this app has no count. A caller leaves out regions it can't measure, \
             and a missing segment is not zero copies."
             .into(),
-        Outcome::Partial => "**No answer.** Your copy number segments cover only part of \
-            *UGT2B17*, so this app has no count for the whole gene."
+        Outcome::Partial => "**No answer.** Your copy number segments don't cover all of \
+            *UGT2B17* for certain, so this app has no count for the whole gene."
             .into(),
         Outcome::Unreadable => "**No answer.** A segment over *UGT2B17* holds no whole copy \
             count, so this app has no count."
@@ -340,9 +361,10 @@ fn print_method() {
         *UGT2B17* makes. A common deletion removes the whole gene (Wilson et al., 2004). \
         Jakobsson et al. (2006) found that Swedish and Korean men with no copies excreted \
         almost no testosterone. Schulze et al. (2008) then gave 55 men one 500 mg dose of \
-        testosterone, and 40% of those with no copies never reached a ratio of 4 in the 15 \
-        days after. The app reads the copy number segments your file holds over the gene \
-        and reports their count.\n"
+        testosterone enanthate, and 40% of those with no copies never reached a ratio of 4 \
+        in the 15 days after. The same study found that the classic cutoff also flags some \
+        men with copies who took nothing, and proposed a cutoff for each genotype. The app \
+        reads the copy number segments your file holds over the gene and reports their count.\n"
     );
 }
 
