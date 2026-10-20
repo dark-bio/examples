@@ -33,7 +33,7 @@ check_manifest_reader() {
 
   # Read both grant lists and all three spellings of an input table name
   test_manifest_facts tables 'paths v1/genome/rsids/rs72921001
-paths v1/genome/reference
+paths v1/genome/files/reference-genome
 optional v1/genome/rsids/rs671
 input flavor
 input toppings
@@ -42,7 +42,7 @@ manifest = 1
 [reads] # A comment can contain [inputs.fake]
 paths = [
   'v1/genome/rsids/rs72921001', # A comment can contain ] and "quotes"
-  "v1/genome/reference",
+  "v1/genome/files/reference-genome",
 ]
 optional = ['v1/genome/rsids/rs671']
 [inputs.flavor]
@@ -91,12 +91,12 @@ toppings.max = 32
 TOML
 
   # Top-level inline tables accept comments, newlines and trailing commas
-  test_manifest_facts inline 'paths v1/genome/reference
+  test_manifest_facts inline 'paths v1/genome/files/reference-genome
 optional v1/genome/rsids/rs671
 input z
 input a' <<'TOML'
 manifest = 1
-reads = { paths = ["v1/genome/\x72eference"], optional = [
+reads = { paths = ["v1/genome/files/\x72eference-genome"], optional = [
   'v1/genome/rsids/rs671',
 ] }
 inputs = {
@@ -110,7 +110,7 @@ inputs = {
 TOML
 
   # Fenced declarations inside a literal description remain string content
-  test_manifest_facts literal_description 'paths v1/genome/reference
+  test_manifest_facts literal_description 'paths v1/genome/files/reference-genome
 input real' <<'TOML'
 manifest = 1
 [listing]
@@ -125,7 +125,7 @@ inputs.fake.type = 'text'
 ```
 '''
 [reads]
-paths = ['v1/genome/reference']
+paths = ['v1/genome/files/reference-genome']
 [inputs.real]
 type = 'text'
 prompt = 'Real'
@@ -151,10 +151,10 @@ inputs.real = {type = 'text', prompt = 'Real', max = 1}
 TOML
 
   # Unsupported names and string values never become partial facts
-  test_manifest_facts unsupported 'paths v1/genome/reference
+  test_manifest_facts unsupported 'paths v1/genome/files/reference-genome
 input real' <<'TOML'
 manifest = 1
-reads.paths = ["v1/genome/rsids/rs\n1", 'v1/genome/reference']
+reads.paths = ["v1/genome/rsids/rs\n1", 'v1/genome/files/reference-genome']
 "inputs.fake" = {type = 'text', prompt = 'Fake', max = 1}
 [inputs."bad.name"]
 type = 'text'

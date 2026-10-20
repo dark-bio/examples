@@ -4,7 +4,7 @@
 // olfactory receptor, tracks the trait: the more copies of the C allele you
 // carry, the more soapy cilantro tends to taste (Eriksson et al., 2012).
 //
-// This is ../04-cilantro-mini-rust in Go. The rsids/ lens hands
+// This is ../04-cilantro-mini-rust in Go. The rsids/ folder hands
 // back the genotype and coordinate as plain files; the app never opens a
 // variant file. See ../../docs/04-reading-data.md.
 package main
@@ -36,36 +36,36 @@ func main() {
 			"[listing]\n"+
 			"language = \"en\"\n"+
 			"icon = \"🌱\"\n"+
-			"summary = \"The smallest real data access, through the rsids lens, in four languages.\"\n"+
+			"summary = \"One variant, four languages, zero call file. The smallest real read.\"\n"+
 			"category = \"developer\"\n"+
 			"license = \"BSD-3-Clause\"\n"+
 			"source = \"https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-go\"\n"+
 			"keywords = [\"tutorial\", \"rsids\", \"genotype\", \"four languages\"]\n"+
 			"description = '''\n"+
-			"The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.\n\n"+
-			"Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.\n\n"+
-			"The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.\n"+
+			"The `rsids/` folder hands you one variant as plain files. Grant `v1/genome/rsids/rs72921001`, read `genotype`, `chromosome`, `position` and `reference`, and you're done. The call file never comes near it.\n\n"+
+			"Every app handles three outcomes. A missing allele, as in `./.`, makes the count inconclusive. A missing genotype is no answer, never two reference alleles. Any other read error stops the app.\n\n"+
+			"Written in Rust, Go, C and Python. Compare them, then meet the full report, Cilantro Taste Test.\n"+
 			"'''\n\n"+
 			"[listing.purposes]\n"+
 			"\"v1/genome/rsids/rs72921001\" = \"The one variant this tutorial reads\"\n", lens)
 		return
 	}
 
-	// The report pass reads everything from the one lens directory
+	// The report pass reads everything from the one variant directory
 	base := filepath.Join(os.Args[1], lens)
 
 	// ENOENT means no answer, including reference sites in variants-only calls.
 	genotype, present := leaf(base, "genotype")
 	if !present {
-		fmt.Printf("## Cilantro taste\n\n")
-		fmt.Printf("No genotype answer for `%s`. Absence does not imply two reference alleles.\n", rsID)
+		fmt.Printf("## Cilantro or soap?\n\n")
+		fmt.Printf("No genotype at `%s`. Silence isn't two reference alleles.\n", rsID)
 		return
 	}
 
 	// This known SNP needs only a simple split; keep the original text for display.
 	copies, missing := 0, false
 	for _, allele := range strings.FieldsFunc(genotype, func(r rune) bool { return r == '/' || r == '|' }) {
-		if allele == "." {
+		if allele == "." || allele == "*" {
 			missing = true
 		}
 		if allele == soapyAllele {
@@ -73,18 +73,18 @@ func main() {
 		}
 	}
 
-	fmt.Printf("## Cilantro taste\n\n")
+	fmt.Printf("## Cilantro or soap?\n\n")
 	fmt.Printf("Your genotype at `%s` is `%s`.\n\n", rsID, genotype)
 	if missing {
-		fmt.Println("The copy count is inconclusive because an allele is missing (`.`).")
+		fmt.Println("An allele is missing or deleted, so the soap count is inconclusive.")
 	} else {
 		switch copies {
 		case 0:
-			fmt.Printf("You carry no copies of the soapy `%s` allele. Cilantro probably tastes fresh and herby.\n", soapyAllele)
+			fmt.Printf("You carry no copies of the soapy `%s` allele. Cilantro is more likely to taste fresh and herby.\n", soapyAllele)
 		case 1:
 			fmt.Printf("You carry one copy of the soapy `%s` allele. Cilantro may have a faint soapy note.\n", soapyAllele)
 		default:
-			fmt.Printf("You carry %d copies of the soapy `%s` allele. Cilantro likely tastes like dish soap.\n", copies, soapyAllele)
+			fmt.Printf("You carry %d copies of the soapy `%s` allele. Cilantro is more likely to taste like dish soap.\n", copies, soapyAllele)
 		}
 	}
 

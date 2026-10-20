@@ -58,8 +58,8 @@ map, a scan or a quality check, keeps the order and names its sections for what
 they hold.
 
 The title is the subject, not the app's name, which the Ark reports beside the
-report, so an app called `drunk-o-type` prints a report titled "How Your Body
-Handles a Drink". The same shape holds one variant, a panel, a gene, a whole
+report, so an app called `cilantro-soapiness` prints a report titled "Cilantro
+Taste Test". The same shape holds one variant, a panel, a gene, a whole
 call file, and the summary a study asked for.
 
 [04-cilantro-soapiness](../apps/04-cilantro-soapiness) is a light app, and
@@ -68,14 +68,15 @@ its report in this shape:
 ```markdown
 # 🌿 Cilantro Taste Test
 
-**Soap detector** 🧼. You carry two copies of C at rs72921001, the genotype
-most strongly tied to tasting cilantro as dish soap. Blame *OR6A2*, the
-olfactory receptor next door. C is also the reference base here, so a call
-file that lists only variants would have stayed quiet about it. Yours didn't.
+**Soap detector** 🧼. Two copies of C at rs72921001, the genotype most strongly
+tied to tasting cilantro as dish soap. The study's prime suspect is *OR6A2*, a
+smell receptor nearby that binds the aldehydes behind cilantro's soapy note. C
+is also the reference base here, so a call file that lists only variants would
+have stayed quiet about it. Yours didn't.
 
 ## Evidence
 
-| Variant | Nearest gene | Position |
+| Variant | Candidate gene | Position |
 | :-- | :-- | :-- |
 | rs72921001 | *OR6A2* | chr11:6868417, GRCh38.p14 |
 
@@ -84,19 +85,21 @@ Your call file says `|C|C` here, and the reference base is C.
 ## Method
 
 Some people love cilantro. Others think it tastes like dish soap. Eriksson et
-al. (2012) went looking for why, in a genome-wide study of self-reported
-preference among European-ancestry participants, and rs72921001 is what they
-found. The app counts your copies of C. Two is the strongest association, one
-is somewhere in between, and zero is none. More copies, more soap.
+al. (2012) went looking for why, in a genome-wide study of 14,604 people of
+European ancestry who reported whether cilantro tasted soapy, confirmed in
+11,851 more who said whether they liked it, and rs72921001 is what they found.
+Each copy of C raises the odds of tasting soap a little, so two copies carry
+the highest odds, one sits in between, and zero the lowest. More copies, more
+soap.
 
 ## Limitations
 
-One variant, one modest effect. The study measured what people said they
-preferred, not what they tasted, and taste is polygenic and shaped by diet,
-culture and exposure besides. Two copies doesn't mean you hate cilantro, and
-zero doesn't mean you love it. The study was mostly people of European
-ancestry, so elsewhere the effect is less well known, and this app doesn't
-know how common your genotype is.
+One variant, one modest effect. The study rests on what people reported about
+cilantro, and the common variants it could measure explain under a tenth of
+the trait. Taste is also shaped by other genes, diet, culture and exposure.
+Two copies doesn't mean you hate cilantro, and zero doesn't mean you love it.
+The study was mostly people of European ancestry, so elsewhere the effect is
+less well known, and this app doesn't know how common your genotype is.
 
 ## Sources
 
@@ -119,10 +122,10 @@ never read as two reference alleles:
 ```markdown
 # 🌿 Cilantro Taste Test
 
-**No answer.** No genotype is available at rs72921001, so this app has no
-result. An absent genotype is not a reference call. A call file that records
-only variants has no record at a reference site, and none at a site it didn't
-cover, and the two can't be distinguished here.
+**No answer.** Your call file is silent at rs72921001, so this app has no
+result. Silence isn't a reference call. A file that records only variants
+skips reference sites and sites it never covered alike, and from here the two
+look the same.
 ```
 
 **Evidence** holds the values the finding rests on, one row per variant, gene
@@ -134,8 +137,9 @@ pipe, that is a different genotype. Absent values stay in the table, marked
 absent. A long list is cut, with a count of what was left out.
 
 Coordinates name their assembly when the app can read it. It sits in
-`v1/genome/reference/build`, and reading it means granting
-`v1/genome/reference`, as the demos do. An app without that grant leaves the
+`v1/genome/files/reference-genome/build`, and reading it means granting
+`v1/genome/files/reference-genome`, a public grant the owner never has to
+approve, as the demos do. An app without that grant leaves the
 coordinate unlabeled rather than labeling it wrongly, since an Ark may hold a
 GRCh37 genome.
 
@@ -162,8 +166,9 @@ table, or a punchline wrapped around a finding that touches real risk. A light
 report can carry a heavy fact, and when it does, that sentence is plain and
 says so, the way a friend drops the joke for a moment.
 
-The examples are toys, and they read that way, charming and friendly whatever
-they count. The serious voice is for heavier subjects, and none of the examples
+The examples are toys, and they read that way, punchy and a little cheeky
+whatever they count. Their jokes land on the science and the sandbox, never on
+the owner. The serious voice is for heavier subjects, and none of the examples
 has one yet. So that its register is on record, the cilantro finding above in
 the serious voice:
 

@@ -4,7 +4,7 @@
 // olfactory receptor, tracks the trait: the more copies of the C allele you
 // carry, the more soapy cilantro tends to taste (Eriksson et al., 2012).
 //
-// This is ../04-cilantro-mini-rust in C. The rsids/ lens hands
+// This is ../04-cilantro-mini-rust in C. The rsids/ folder hands
 // back the genotype and coordinate as plain files; the app never opens a
 // variant file. See ../../docs/04-reading-data.md.
 #include <errno.h>
@@ -71,15 +71,15 @@ int main(int argc, char *argv[]) {
            "[listing]\n"
            "language = \"en\"\n"
            "icon = \"🌱\"\n"
-           "summary = \"The smallest real data access, through the rsids lens, in four languages.\"\n"
+           "summary = \"One variant, four languages, zero call file. The smallest real read.\"\n"
            "category = \"developer\"\n"
            "license = \"BSD-3-Clause\"\n"
            "source = \"https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-c\"\n"
            "keywords = [\"tutorial\", \"rsids\", \"genotype\", \"four languages\"]\n"
            "description = '''\n"
-           "The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.\n\n"
-           "Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.\n\n"
-           "The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.\n"
+           "The `rsids/` folder hands you one variant as plain files. Grant `v1/genome/rsids/rs72921001`, read `genotype`, `chromosome`, `position` and `reference`, and you're done. The call file never comes near it.\n\n"
+           "Every app handles three outcomes. A missing allele, as in `./.`, makes the count inconclusive. A missing genotype is no answer, never two reference alleles. Any other read error stops the app.\n\n"
+           "Written in Rust, Go, C and Python. Compare them, then meet the full report, Cilantro Taste Test.\n"
            "'''\n\n"
            "[listing.purposes]\n"
            "\"v1/genome/rsids/rs72921001\" = \"The one variant this tutorial reads\"\n");
@@ -89,8 +89,8 @@ int main(int argc, char *argv[]) {
   // ENOENT means no answer, including reference sites in variants-only calls.
   char *genotype = read_leaf(argv[1], "genotype");
   if (!genotype) {
-    printf("## Cilantro taste\n\n");
-    printf("No genotype answer for `" RSID "`. Absence does not imply two reference alleles.\n");
+    printf("## Cilantro or soap?\n\n");
+    printf("No genotype at `" RSID "`. Silence isn't two reference alleles.\n");
     return 0;
   }
 
@@ -101,25 +101,25 @@ int main(int argc, char *argv[]) {
   if (*allele == '/' || *allele == '|') allele++;
   while (*allele) {
     size_t length = strcspn(allele, "/|");
-    if (length == 1 && allele[0] == '.') missing = 1;
+    if (length == 1 && (allele[0] == '.' || allele[0] == '*')) missing = 1;
     if (length == 1 && allele[0] == SOAPY_ALLELE[0]) copies++;
     allele += length;
     if (*allele) allele++;
   }
 
-  printf("## Cilantro taste\n\n");
+  printf("## Cilantro or soap?\n\n");
   printf("Your genotype at `" RSID "` is `%s`.\n\n", genotype);
   if (missing) {
-    printf("The copy count is inconclusive because an allele is missing (`.`).\n");
+    printf("An allele is missing or deleted, so the soap count is inconclusive.\n");
   } else if (copies == 0) {
     printf("You carry no copies of the soapy `" SOAPY_ALLELE "` allele. "
-           "Cilantro probably tastes fresh and herby.\n");
+           "Cilantro is more likely to taste fresh and herby.\n");
   } else if (copies == 1) {
     printf("You carry one copy of the soapy `" SOAPY_ALLELE "` allele. "
            "Cilantro may have a faint soapy note.\n");
   } else {
     printf("You carry %zu copies of the soapy `" SOAPY_ALLELE "` allele. "
-           "Cilantro likely tastes like dish soap.\n", copies);
+           "Cilantro is more likely to taste like dish soap.\n", copies);
   }
 
   char *chrom = read_leaf(argv[1], "chromosome");

@@ -1,0 +1,66 @@
+"""Count headers and records in the decompressed VCF view."""
+import sys
+
+LENS = "v1/genome/files/small-variants"
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(f"""manifest = 1
+
+[app]
+name = "The Call File"
+version = "0.1.0"
+
+[reads]
+paths = ["{LENS}"]
+
+[listing]
+language = "en"
+icon = "📄"
+summary = "Count a whole genome's records one line at a time, in 128 MiB."
+category = "developer"
+license = "BSD-3-Clause"
+source = "https://github.com/dark-bio/examples/tree/main/apps/09-vcf-mini-python"
+keywords = ["tutorial", "VCF", "call file", "streaming"]
+description = '''
+Grant `v1/genome/files/small-variants` and open its `vcf`, the decompressed call file. A whole genome runs to gigabytes, far past an app's 128 MiB of memory, so this app streams it line by line and counts headers and records.
+
+Every buffer refill leaves the sandbox, and that adds up at this scale. The Rust, Go and C versions read through a 64 KiB buffer, and the Rust and C ones reuse a single line instead of allocating one per record.
+
+This is the broadest grant there is. VCF Roll Call parses the same file with a library.
+'''
+
+[listing.purposes]
+"v1/genome/files/small-variants" = "Your whole small variant file, to count its records"
+""", end="")
+        return
+
+    headers = records = 0
+    first = None
+    # Keep one line at a time so a whole-genome call file need not fit in memory.
+    with open(f"{sys.argv[1]}/{LENS}/vcf", encoding="utf-8", newline="\n") as file:
+        for line in file:
+            if line.endswith("\n"):
+                line = line[:-1].removesuffix("\r")
+            if line.startswith("#"):
+                headers += 1
+            elif line:
+                records += 1
+                if first is None:
+                    first = " ".join(line.split("\t")[:5])
+
+    print("## Your whole call file, one line at a time\n")
+    print(f"- Header lines: {headers}")
+    print(f"- Variant records: {records}")
+    if first is not None:
+        print(f"- First record: `{first}`")
+    print("\nRead every line, kept none.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, UnicodeError) as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)

@@ -5,7 +5,7 @@
 //! carry, the more soapy cilantro tends to taste (Eriksson et al., 2012).
 //!
 //! This is the simplest real data access there is. The app asks for one
-//! directory and the `rsids/` lens hands back the genotype and coordinate as
+//! directory and the `rsids/` folder hands back the genotype and coordinate as
 //! plain files. It never opens a variant file. See ../../docs/04-reading-data.md.
 
 use std::path::Path;
@@ -33,17 +33,17 @@ paths = ["{LENS}"]
 [listing]
 language = "en"
 icon = "🌱"
-summary = "The smallest real data access, through the rsids lens, in four languages."
+summary = "One variant, four languages, zero call file. The smallest real read."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/04-cilantro-mini-rust"
 keywords = ["tutorial", "rsids", "genotype", "four languages"]
 description = '''
-The rsids lens hands back one variant as plain files. Grant `v1/genome/rsids/rs72921001` and read `genotype`, `chromosome`, `position` and `reference` from that directory. The app never opens the call file.
+The `rsids/` folder hands you one variant as plain files. Grant `v1/genome/rsids/rs72921001`, read `genotype`, `chromosome`, `position` and `reference`, and you're done. The call file never comes near it.
 
-Three outcomes every app has to handle. A missing allele, as in `./.`, makes a copy count inconclusive. An absent genotype means no answer, never two reference alleles. Any other read error stops the app.
+Every app handles three outcomes. A missing allele, as in `./.`, makes the count inconclusive. A missing genotype is no answer, never two reference alleles. Any other read error stops the app.
 
-The same program is written in Rust, Go, C and Python. Compare them, then see the full report version, Cilantro Taste Test.
+Written in Rust, Go, C and Python. Compare them, then meet the full report, Cilantro Taste Test.
 '''
 
 [listing.purposes]
@@ -53,13 +53,13 @@ The same program is written in Rust, Go, C and Python. Compare them, then see th
         return;
     };
 
-    // The report pass reads everything from the one lens directory
+    // The report pass reads everything from the one variant directory
     let base = Path::new(&dir).join(LENS);
 
     // ENOENT means no answer, including reference sites in variants-only calls.
     let Some(genotype) = leaf(&base, "genotype") else {
-        println!("## Cilantro taste\n");
-        println!("No genotype answer for `{RSID}`. Absence does not imply two reference alleles.");
+        println!("## Cilantro or soap?\n");
+        println!("No genotype at `{RSID}`. Silence isn't two reference alleles.");
         return;
     };
 
@@ -70,22 +70,22 @@ The same program is written in Rust, Go, C and Python. Compare them, then see th
         .split(['/', '|'])
         .collect();
     let copies = alleles.iter().filter(|a| **a == SOAPY_ALLELE).count();
-    let missing = alleles.contains(&".");
+    let missing = alleles.contains(&".") || alleles.contains(&"*");
 
-    println!("## Cilantro taste\n");
+    println!("## Cilantro or soap?\n");
     println!("Your genotype at `{RSID}` is `{genotype}`.\n");
     if missing {
-        println!("The copy count is inconclusive because an allele is missing (`.`).");
+        println!("An allele is missing or deleted, so the soap count is inconclusive.");
     } else {
         match copies {
             0 => println!(
-                "You carry no copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro probably tastes fresh and herby."
+                "You carry no copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro is more likely to taste fresh and herby."
             ),
             1 => println!(
                 "You carry one copy of the soapy `{SOAPY_ALLELE}` allele. Cilantro may have a faint soapy note."
             ),
             n => println!(
-                "You carry {n} copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro likely tastes like dish soap."
+                "You carry {n} copies of the soapy `{SOAPY_ALLELE}` allele. Cilantro is more likely to taste like dish soap."
             ),
         }
     }

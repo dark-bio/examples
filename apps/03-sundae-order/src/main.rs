@@ -39,17 +39,17 @@ max = 40
 [listing]
 language = "en"
 icon = "🍨"
-summary = "A flavor, some toppings and a card. The first app that asks you questions."
+summary = "A flavor, some toppings and a card. The first app that asks you things."
 category = "developer"
 license = "BSD-3-Clause"
 source = "https://github.com/dark-bio/examples/tree/main/apps/03-sundae-order"
 keywords = ["tutorial", "inputs", "choices", "text input"]
 description = '''
-An app can ask you questions when you approve it. This one asks for a flavor, any number of toppings and the words on the card, then prints your sundae.
+Apps can ask you questions when you approve them. This one wants a flavor, any toppings and the words for the card, then serves your sundae.
 
-Each answer reaches the app as a plain file under `inputs`. A choice holds the picked choice, a multiple choice holds one pick per line, and a text holds exactly what you typed. The app reads none of your genome, so approving it shares only your answers with it.
+Each answer lands as a plain file under `inputs`. A choice holds your pick, a multiple choice one pick per line, and a text exactly what you typed. It reads none of your genome, so all it ever learns is your order.
 
-Answers never change what an app can read. The grants on the approval are the whole of it.
+Answers never widen what an app can read. The grants on the approval are the whole deal.
 '''
 "#
         );
@@ -71,8 +71,11 @@ Answers never change what an app can read. The grants on the approval are the wh
     };
 
     // Put the order first, followed by each input's value beside its path
-    println!("# Your Sundae\n");
-    println!("One scoop of {flavor} with {topping_names}, and a card that reads \"{card}\".\n");
+    println!("# 🍨 Order Up\n");
+    println!(
+        "One scoop of {flavor} with {topping_names}, and a card that reads \"{card}\". The \
+         kitchen saw your answers and nothing else. Your genome stayed home.\n"
+    );
     println!("## Evidence\n");
     println!("- `inputs/flavor` holds {}.", inline_code(&flavor));
     match picks.as_slice() {

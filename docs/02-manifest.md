@@ -13,7 +13,7 @@ name = "Cilantro Taste Test"
 version = "0.4.0"
 
 [reads]
-paths = ["v1/genome/rsids/rs72921001", "v1/genome/reference"]
+paths = ["v1/genome/rsids/rs72921001", "v1/genome/files/reference-genome"]
 
 [listing]
 language = "en"
@@ -131,9 +131,18 @@ narrowest to broadest. Data that only enriches a report belongs in `optional`,
 so an owner who would rather not share it can still run the app.
 
 Some grants reach further than they look. A gene or interval grant includes its
-`changes`, which hold the owner's variants, even when the app only reads the
-sequence. Only `v1/genome/reference` and `v1/genome/annotations` hold nothing but
-public data.
+`changes` and `copies`, which hold the owner's variants and copy numbers, even
+when the app only reads the reference. Only `v1/genome/datasets` and its
+folders, `v1/genome/files/reference-genome` and
+`v1/genome/files/gene-annotations` hold nothing but public data, so the owner's
+approval leaves them out.
+
+An app that can't answer without a dataset grants its folder under
+`v1/genome/datasets`, such as `v1/genome/datasets/structural-variants`. The
+folder reads empty, but the Ark won't run the app while the dataset is missing,
+and Ark Hub greys out its Run button.
+[07-doping-test](../apps/07-doping-test) and
+[08-sprint-or-marathon](../apps/08-sprint-or-marathon) work this way.
 
 ## Asking the owner
 

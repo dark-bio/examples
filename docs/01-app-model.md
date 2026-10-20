@@ -67,7 +67,7 @@ same report every time:
   unrelated to real time.
 
 An app that needs a random-looking choice derives it from its input.
-[10-fortune-cookie](../apps/10-fortune-cookie) does exactly that.
+[11-fortune-cookie](../apps/11-fortune-cookie) does exactly that.
 
 ## Limits
 
