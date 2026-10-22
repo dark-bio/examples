@@ -31,6 +31,7 @@ v1/genome/ +
       <pos>/ +
         reference
         genotype
+        fhir
         changes/
         copies/
   genes/ +                    one gene, by symbol
@@ -41,6 +42,7 @@ v1/genome/ +
       strand
       biotype
       reference
+      fhir
       changes/
       copies/
       positions/<pos>/        unlisted, a site inside the gene
@@ -49,6 +51,7 @@ v1/genome/ +
       length
       <start>-<end>/ +
         reference
+        fhir
         changes/
         copies/
         positions/<pos>/      unlisted, a site inside the interval
@@ -59,6 +62,7 @@ v1/genome/ +
       end
       reference
       genotype
+      fhir
       changes/
       copies/
   datasets/ +                 which datasets are uploaded
@@ -154,6 +158,7 @@ An entry's leaves, each present only when it has a value:
 - `count`, `evidence` and `event` carry the record's copy number, evidence
   and event.
 - `mate`, `mate-id`, `joins` and `mate-joins` describe a breakend's join.
+- `fhir` holds the change as a FHIR resource.
 
 ## Copies
 
@@ -163,6 +168,49 @@ total copy number over the segment, `failed` lists the filters it failed, and
 `start-range` and `end-range` give its uncertain edges. A count never says
 gain or loss by itself, since what is normal depends on the chromosome and the
 person's sex. `copies/` is empty while no copy number file is uploaded.
+Its `fhir` leaf holds the segment as a FHIR resource when `count` has an answer.
+
+## FHIR
+
+Each `fhir` leaf is compact FHIR R4 4.0.1 JSON, with media type
+`application/fhir+json` and no trailing newline. Its components follow the
+[HL7 Genomics Reporting STU3 profiles](https://hl7.org/fhir/uv/genomics-reporting/STU3/).
+
+| Endpoint | Resource |
+| :-- | :-- |
+| `changes/<entry>/fhir` | one Variant `Observation`, LOINC `69548-6` |
+| `copies/<entry>/fhir` | one Variant `Observation` with a copy number component |
+| a position or rsID's `fhir` | a `collection` `Bundle` containing a Genotype `Observation`, LOINC `84413-4`, and its variants |
+| a gene or interval's `fhir` | a `collection` `Bundle` containing its changes and answered copy numbers |
+
+Positions inside genes and intervals have the same site leaf. The genotype is
+preserved exactly in `valueCodeableConcept.text`. Its `derivedFrom` references
+one Variant per distinct non-reference sequence allele. Spanning deletions
+(`*`), symbolic alleles and breakends remain in the genotype text but derive no
+Variant here. Their full descriptions are in `changes/<entry>/fhir`.
+A fully called reference site instead has one Variant valued `Absent`.
+Missing and skipped alleles never imply `Absent`. Missing site answers and
+missing copy counts have no `fhir` leaf. Empty span answers have an empty
+collection.
+
+Only known component values are included. Gene symbols are text because the
+annotations do not hold HGNC identifiers. Copy counts do not infer gain or
+loss. RefSeq accessions are included only for GRCh37 and GRCh38, with chrM
+included only for GRCh38. Allelic state is included only for fully called
+alternate alleles, never on chrM. Haploid calls carry it only on chrX and chrY.
+
+The JSON contains no dates, `subject`, `specimen` or `performer`. Resource IDs
+and `urn:uuid:` entry URLs use UUIDv5 over canonical paths in the URL namespace.
+Site aliases use their `positions/<chr>/<pos>/fhir` path. The same data produces
+identical JSON. Gene and interval leaves share the 4000000-base and
+16384-entry limits; their entry count includes both changes and copies.
+Every FHIR leaf also has a 16 MiB JSON limit. Exceeding a limit fails with
+"file too large" (EFBIG). The fixture's TAS2R38 change at 141972731 occupies
+2,551 bytes. Including collection overhead, about 6,400 changes of that size
+fit in one leaf. Longer alleles and additional components reduce that count.
+
+[12-fhir-view](../apps/12-fhir-view) renders these leaves beside their
+re-indented JSON, preserving key order and content.
 
 ## Genotypes
 

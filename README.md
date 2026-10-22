@@ -88,6 +88,7 @@ and a full app turns the same read into a report. Each row is a folder under
 | `09-vcf-roll-call` | parsing the whole call file as a report | Rust |
 | `10-motif-finder` | computing over a gene's reference sequence | Rust |
 | `11-fortune-cookie` | why the sandbox is deterministic | Rust |
+| `12-fhir-view` | genomic FHIR resources as component tables beside their JSON | Rust |
 
 ## Documentation
 

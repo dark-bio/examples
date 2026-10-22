@@ -11,8 +11,8 @@ coordinates, reference alleles and sequences are public data.
 | Root | Used by | What it models |
 | :-- | :-- | :-- |
 | `fixtures` | every app | typical calls, including phased, haploid and reference calls, no copies of UGT2B17, and the ACE insertion on both copies |
-| `fixtures/no-call` | the rsID, copy number and structural apps | a no-call, `./.`, at every panel variant, a copy number segment without a count, and the ACE insertion with a copy uncalled |
-| `fixtures/unanswered` | the rsID apps | no genotypes at the panel variants, as at reference sites in a variants-only call file, and no copy number or structural variant upload, so the `07` and `08` apps never start |
+| `fixtures/no-call` | the rsID, copy number and structural apps, and `12-fhir-view` | a no-call, `./.`, at every panel variant, a copy number segment without a count, and the ACE insertion with a copy uncalled |
+| `fixtures/unanswered` | the rsID apps and `12-fhir-view` | no genotypes at the panel variants, as at reference sites in a variants-only call file, and no copy number or structural variant upload, so the `07` and `08` apps never start |
 
 The rsID apps are `02-permissions`, the cilantro apps and `11-fortune-cookie`,
 the copy number apps are the `07` ones, and the structural apps the `08` ones.
@@ -45,6 +45,9 @@ Keep every file exactly as an Ark would serve it.
   have no `reference`.
 - `files/small-variants/vcf` is ordinary VCF text and keeps its newlines. Keep
   it in agreement with the files beside it.
+- The `fhir` leaves used by `12-fhir-view` match what an Ark serves, byte for
+  byte. Keep their bytes unchanged. A missing genotype or copy count has no
+  corresponding site or copy resource.
 
 ## Sources
 
