@@ -5,6 +5,8 @@
 # its declared outputs in a temporary directory, removed when the task ends.
 # OPTIONAL=off leaves every optional dataset unmounted. INPUTS supplies answers
 # when the third argument is empty, including untyped inputs for stage debugging.
+# REPORT=<file> saves the main app's report exactly as it printed it.
+# STDERR=<file> saves the main app's standard error exactly as it printed it.
 # It checks only what it needs to run. The Ark checks every manifest and value
 # rule, and the emulator runs the real firmware.
 # The Ark's merged count, shared runs, limits and determinism are not reproduced.
@@ -55,6 +57,12 @@ run_pass() {
   pass_status=0
   wait "$child" || pass_status=$?
   child=
+
+  # Save the main app's streams before handling a failed pass
+  if [ "$pass_phase" = processing ] && [ "$pass_path" = . ]; then
+    [ -z "${REPORT:-}" ] || cp "$pass_dir/$pass_phase" "$REPORT"
+    [ -z "${STDERR:-}" ] || cp "$pass_dir/stderr" "$STDERR"
+  fi
 
   # cat carries raw stream bytes without shell substitution or decoding
   printf '== %s pass: %s: stdout ==\n' "$pass_phase" "$pass_path"

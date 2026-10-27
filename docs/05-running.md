@@ -151,6 +151,8 @@ input and refuses one on the main app.
 Every app's stdout and stderr are printed after each pass, labeled by its
 path of local names. A dot names the main app. If a pass fails, the runner
 names that path and starts no further app.
+`REPORT=<file>` saves the main app's report exactly as it printed it.
+`STDERR=<file>` saves the main app's standard error exactly as it printed it.
 
 ### Small modules
 
