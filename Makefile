@@ -45,5 +45,5 @@ run-%: FORCE
 	@sh tools/run.sh "$(BUILD)/$*.wasm" "$(FIXTURES)" "$(INPUTS)"
 
 clean:
-	@rm -rf $(BUILD) apps/*/target apps/*/*.wasm
+	@rm -rf $(BUILD) apps/*/target apps/*/*.wasm apps/*/src/pins.rs
 	@echo "cleaned build outputs"

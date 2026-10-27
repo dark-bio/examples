@@ -89,6 +89,10 @@ feature flags in `tools/build.sh`, because an Ark's runtime accepts only those.
 
 ### Apps that use apps
 
+[12-eye-color](../apps/12-eye-color) composes a genotype gatherer and the
+IrisPlex model. `make run APP=12-eye-color` builds both dependencies, computes
+their digest pins and builds the main app before running the chain.
+
 An app pins each dependency by the SHA-256 of its module in `[apps.<name>]`.
 Build those modules before running the app. The runner hashes `build/*.wasm`
 and finds each pin by digest, so a filename can change without changing the

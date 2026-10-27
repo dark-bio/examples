@@ -16,7 +16,8 @@ run anyone else's. The [whitepaper](https://dark.bio/whitepaper.pdf) lays out
 the trust model.
 
 These examples teach that model one idea at a time, from printing a line to
-scanning a whole call file. Every app is a single source file.
+scanning a whole call file and composing apps. Every app has one handwritten
+source file.
 
 ## What an app is
 
@@ -95,6 +96,9 @@ and a full app turns the same read into a report. Each row is a folder under
 | `09-vcf-roll-call` | parsing the whole call file as a report | Rust |
 | `10-motif-finder` | computing over a gene's reference sequence | Rust |
 | `11-fortune-cookie` | why the sandbox is deterministic | Rust |
+| `12-pigment-variants` | gathering six genotypes into an output, with a typed ordering input | Rust |
+| `12-eye-color-model` | turning an untyped variant input into IrisPlex probabilities | Rust |
+| `12-eye-color` | composing both apps with digest pins and input bindings | Rust |
 
 ## Documentation
 

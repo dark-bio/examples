@@ -193,8 +193,9 @@ the owner filled in, never the answers.
 
 `[listing]` holds what Ark Hub shows when it lists the app. The Ark never reads
 it and it never reaches the phone, so it changes nothing about what an app can
-do. Ark Hub needs the first five keys before it lists an app, and every example
-carries a full listing.
+do. Ark Hub needs the first five keys before it lists an app. Examples that run
+on their own carry a full listing. A dependency with an untyped input, such as
+[12-eye-color-model](../apps/12-eye-color-model), leaves it out.
 
 | Key | To be listed | Rules |
 | :-- | :-- | :-- |

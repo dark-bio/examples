@@ -1,0 +1,13 @@
+[package]
+name = "eye-color-model"
+version = "1.0.0"
+edition = "2024"
+publish = false
+
+# A smaller module uploads and starts faster on an Ark.
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
