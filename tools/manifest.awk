@@ -1,15 +1,98 @@
-# Read grant paths and input names from an app's TOML manifest.
+# Read grants, inputs, outputs and dependencies from an app's TOML manifest.
 # Strings keep their contents separate from keys, including fenced examples.
-# Unsupported names and strings are omitted. This is not a manifest validator.
+# The default facts omit unsupported names. The task planner uses the same
+# parser's ordered nodes, with strings held as octal escapes, including NUL.
+# This reads the manifest's tables, not every TOML type or every Ark rule.
 #
-# Usage: awk -f tools/manifest.awk manifest.toml
+# Usage: LC_ALL=C awk -f tools/manifest.awk manifest.toml
 
-# Read a quoted string, decoding printable ASCII escapes used in paths and keys.
+# Encode bytes for POSIX printf %b without holding a native NUL in awk.
+function octal(value,    result, i) {
+  for (i = 1; i <= length(value); i++)
+    result = result sprintf("\\0%03o", ord[substr(value, i, 1)])
+  return result
+}
+
+# Decode a non-NUL string used for names and diagnostics.
+function plain(value,    result, i, code) {
+  for (i = 1; i <= length(value); i += 5) {
+    code = substr(value, i + 2, 1) * 64 + substr(value, i + 3, 1) * 8 + \
+           substr(value, i + 4, 1)
+    result = result (code ? sprintf("%c", code) : "\001")
+  }
+  return result
+}
+
+# Allocate a scalar, array or table in the ordered manifest tree.
+function node(type, value) {
+  node_type[++node_count] = type
+  node_value[node_count] = value
+  return node_count
+}
+
+# Return one named member without changing the table's order.
+function member(parent, key) {
+  return members[parent, octal(key)]
+}
+
+# Attach one named node to a table in declaration order.
+function attach(parent, key, child) {
+  members[parent, key] = child
+  entries[parent, ++sizes[parent]] = child
+  node_name[child] = key
+}
+
+# Stop parsing with the current app and declaration in the diagnostic.
+function manifest_error(message) {
+  print "error: " task_path ": cannot read manifest: " message > "/dev/stderr"
+  exit 1
+}
+
+# Encode a Unicode scalar as UTF-8 while running awk in the C locale.
+function utf8(code) {
+  if (code < 128) return sprintf("%c", code)
+  if (code < 2048)
+    return sprintf("%c%c", 192 + int(code / 64), 128 + code % 64)
+  if (code < 65536)
+    return sprintf("%c%c%c", 224 + int(code / 4096),
+                   128 + int(code / 64) % 64, 128 + code % 64)
+  return sprintf("%c%c%c%c", 240 + int(code / 262144),
+                 128 + int(code / 4096) % 64,
+                 128 + int(code / 64) % 64, 128 + code % 64)
+}
+
+# Keep declarations in source order.
+function record(path, value,    parts, count, i, parent, child) {
+  if (path == "?") return
+  count = split(path, parts, SUBSEP)
+  if (parts[1] == octal("listing")) return
+  parent = manifest_root
+  for (i = 1; i <= count; i++) {
+    child = members[parent, parts[i]]
+    if (!child) {
+      child = i == count && value ? value : node("table", "")
+      attach(parent, parts[i], child)
+      if (!task && i == 2 && node_type[child] == "table")
+        declaration_fact(plain(parts[1]), plain(parts[2]))
+    }
+    parent = child
+  }
+  return child
+}
+
+# Append decoded characters and their lossless octal representation.
+function append_string(value) {
+  token = token value
+  string_bytes = string_bytes octal(value)
+}
+
+# Read a quoted string, decoding the escapes used in literal input bindings.
 function read_string(quote,    triple, count, char, escape, digits, number, i) {
   triple = substr(source, position, 3) == quote quote quote
   kind = triple ? "multiline" : "string"
   position += triple ? 3 : 1
   token = ""
+  string_bytes = ""
   readable = 1
   if (triple && substr(source, position, 1) == "\n") position++
 
@@ -25,17 +108,17 @@ function read_string(quote,    triple, count, char, escape, digits, number, i) {
         }
       }
       if (!triple || count >= 3) {
-        for (i = 3; i < count; i++) token = token quote
+        for (i = 3; i < count; i++) append_string(quote)
         if (!readable) token = "\001"
         return
       }
-      for (i = 0; i < count; i++) token = token quote
+      for (i = 0; i < count; i++) append_string(quote)
     } else if (char == "\\" && quote == "\"") {
       escape = substr(source, position++, 1)
       if (triple && escape ~ /[ \t\n]/) {
         while (substr(source, position, 1) ~ /[ \t\n]/) position++
       } else if (escape == "\"" || escape == "\\") {
-        token = token escape
+        append_string(escape)
       } else if (escape == "x" || escape == "u" || escape == "U") {
         digits = escape == "x" ? 2 : (escape == "u" ? 4 : 8)
         number = 0
@@ -44,19 +127,29 @@ function read_string(quote,    triple, count, char, escape, digits, number, i) {
           if (char !~ /^[0-9a-f]$/) readable = 0
           number = number * 16 + index("0123456789abcdef", char) - 1
         }
-        if (number >= 32 && number <= 126) {
-          token = token sprintf("%c", number)
+        if (number <= 1114111 && !(number >= 55296 && number <= 57343)) {
+          if (number == 0) {
+            # Keep NUL escaped because some awk implementations drop native NUL
+            string_bytes = string_bytes "\\0000"
+            token = token "\001"
+          } else {
+            append_string(utf8(number))
+          }
         } else {
           readable = 0
         }
+      } else if (index("btnfre", escape)) {
+        number = index("btnfre", escape)
+        append_string(substr("\b\t\n\f\r\033", number, 1))
       } else {
         readable = 0
       }
     } else {
       if (!triple && char == "\n") readable = 0
-      token = token char
+      append_string(char)
     }
   }
+  ok = 0
   kind = "end"
   token = ""
 }
@@ -101,7 +194,8 @@ function scan(    char) {
 function read_key(    path, part) {
   path = ""
   while (kind == "bare" || kind == "string") {
-    part = token ~ /^[A-Za-z0-9_-]+$/ ? token : "?"
+    if (kind == "string" && !readable) { ok = 0; return "?" }
+    part = kind == "string" ? string_bytes : octal(token)
     path = path == "" ? part : path SUBSEP part
     scan()
     if (kind != ".") return path
@@ -116,34 +210,31 @@ function skip_newlines() {
   while (kind == "\n") scan()
 }
 
-# Return an input fact for a table path with a supported input name.
-function input_fact(path,    parts, count) {
-  count = split(path, parts, SUBSEP)
-  if (count >= 2 && parts[1] == "inputs" &&
-      parts[2] ~ /^[a-z][a-z0-9_-]*$/ && length(parts[2]) <= 32) {
-    return "input " parts[2] "\n"
-  }
-  return ""
+# Print a declaration fact when a table first introduces a supported name.
+function declaration_fact(table, name) {
+  if (table ~ /^(inputs|outputs|apps)$/ &&
+      name ~ /^[a-z][a-z0-9_-]*$/ && length(name) <= 32)
+    print substr(table, 1, length(table) - 1), name
 }
 
-# Read a value and return facts from its arrays, dotted keys and inline tables.
-function read_value(path,    facts, grant, key, prefix, parts, count) {
-  facts = ""
-  count = split(path, parts, SUBSEP)
-  prefix = count > 2 || kind == "{" ? input_fact(path) : ""
+# Read a value under its full path, keeping quoted dots in their keys.
+function read_entry(base, key) {
+  return read_value(base == "?" ? "?" : (base == "" ? key : base SUBSEP key))
+}
 
+# Read a scalar, array or inline table into the ordered manifest tree.
+function read_value(path,    grant, key, values, result) {
   # Grant arrays accept readable strings and skip values of other types
   if (kind == "[") {
-    if (path == "reads" SUBSEP "paths") grant = "paths"
-    if (path == "reads" SUBSEP "optional") grant = "optional"
+    result = node("array", "")
+    if (path == octal("reads") SUBSEP octal("paths")) grant = "paths"
+    if (path == octal("reads") SUBSEP octal("optional")) grant = "optional"
     scan()
     skip_newlines()
     while (kind != "]") {
-      if (grant != "" && (kind == "string" || kind == "multiline") &&
-          token != "" && token !~ /[[:space:][:cntrl:]]/) {
-        facts = facts grant " " token "\n"
-      }
-      read_value("?")
+      if (!task && grant != "" && (kind == "string" || kind == "multiline") &&
+          token != "" && token !~ /[[:space:][:cntrl:]]/) print grant, token
+      entries[result, ++sizes[result]] = read_value("?")
       skip_newlines()
       if (!ok) return ""
       if (kind == "]") break
@@ -153,13 +244,15 @@ function read_value(path,    facts, grant, key, prefix, parts, count) {
     }
     scan()
   } else if (kind == "{") {
+    result = record(path, 0)
+    if (!result) result = node("table", "")
     scan()
     skip_newlines()
     while (kind != "}") {
       key = read_key()
       if (!ok || kind != "=") { ok = 0; return "" }
       scan()
-      facts = facts read_value(path SUBSEP key)
+      read_entry(path, key)
       skip_newlines()
       if (!ok) return ""
       if (kind == "}") break
@@ -169,25 +262,32 @@ function read_value(path,    facts, grant, key, prefix, parts, count) {
     }
     scan()
   } else if (kind == "string" || kind == "multiline") {
+    if (!readable) { ok = 0; return "" }
+    result = node("string", string_bytes)
     scan()
   } else if (kind == "bare") {
-    # Scalars such as numbers and dates contribute no nested facts
-    while (kind == "bare" || kind == ".") scan()
+    # Consume a fractional scalar without treating its integer prefix as a value
+    values = token
+    scan()
+    while (kind == ".") {
+      values = values "."
+      scan()
+      if (kind != "bare") { ok = 0; return "" }
+      values = values token
+      scan()
+    }
+    result = node("bare", values)
   } else {
     ok = 0
     return ""
   }
-  return prefix facts
+  record(path, result)
+  return result
 }
 
-# Print facts in source order, keeping each input name once.
-function emit(facts,    lines, count, i) {
-  count = split(facts, lines, "\n")
-  for (i = 1; i <= count; i++) {
-    if (lines[i] == "") continue
-    if (lines[i] ~ /^input / && seen[lines[i]]++) continue
-    print lines[i]
-  }
+# Byte values let octal escapes preserve control characters in bindings.
+BEGIN {
+  for (byte = 1; byte < 256; byte++) ord[sprintf("%c", byte)] = byte
 }
 
 # Normalize CRLF before strings and comments consume their own lines
@@ -196,7 +296,8 @@ function emit(facts,    lines, count, i) {
   source = source $0 "\n"
 }
 
-END {
+# Parse the buffered document for facts or for the task's ordered nodes.
+function parse_manifest(    table, array_table, key) {
   # Keep the current table until a complete header replaces it
   position = 1
   ok = 1
@@ -210,22 +311,28 @@ END {
       array_table = kind == "["
       if (array_table) scan()
       table = read_key()
-      if (!ok || kind != "]") break
+      if (!ok || kind != "]") { ok = 0; break }
       scan()
       if (array_table) {
-        if (kind != "]") break
+        if (kind != "]") { ok = 0; break }
         scan()
-        table = "?"
       }
-      if (kind != "\n" && kind != "end") break
-      emit(input_fact(table))
+      if (kind != "\n" && kind != "end") { ok = 0; break }
+      record(table, 0)
     } else {
       key = read_key()
-      if (!ok || kind != "=") break
+      if (!ok || kind != "=") { ok = 0; break }
       scan()
-      facts = read_value(table == "" ? key : table SUBSEP key)
-      if (!ok || (kind != "\n" && kind != "end")) break
-      emit(facts)
+      read_entry(table, key)
+      if (!ok || (kind != "\n" && kind != "end")) { ok = 0; break }
     }
+  }
+  if (task && (!ok || kind != "end")) manifest_error("syntax")
+}
+
+END {
+  if (!task) {
+    manifest_root = node("table", "")
+    parse_manifest()
   }
 }

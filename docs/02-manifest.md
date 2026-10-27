@@ -30,10 +30,10 @@ with a longer listing.
 
 A manifest is a TOML 1.1.0 document. It opens with `manifest = 1`, the version
 of this format, followed by the tables below. The Ark reads `[app]`, `[reads]`,
-`[inputs]` and `[output]` strictly, and refuses a manifest with a key it doesn't
-know in any of them. It skips `[listing]` without reading it, and refuses any
-other table or top-level key, and any other `manifest` value. The whole manifest
-has to fit in the manifest pass's 64 KiB of output.
+`[inputs]`, `[outputs]` and `[apps]` strictly. It refuses a manifest with a key
+it doesn't know in any of them. It skips `[listing]` without reading it, and
+refuses any other table or top-level key, and any other `manifest` value. The
+whole manifest has to fit in the manifest pass's 64 KiB of output.
 
 Text that the owner or a listing shows, such as the name, a prompt or a choice,
 is display text. It holds at least one character, and no control characters,
@@ -62,14 +62,18 @@ An app that reads nothing leaves the table out.
 
 ### `[inputs.<name>]`
 
-Each table asks the owner one question, which
-[Asking the owner](#asking-the-owner) covers.
+Each typed input asks the owner one question, which
+[Asking the owner](#asking-the-owner) covers. A dependency gets its inputs from
+bindings, and an empty table declares an untyped input that only a binding
+can fill.
 
-### `[output]`
+### `[outputs]` and `[apps.<name>]`
 
-- **`report`** is the report's media type, `text/markdown` by default. The
-  format also defines `application/json`, which the current Ark firmware
-  refuses, so every example leaves the table out and prints Markdown.
+The report is Markdown. `[outputs]` declares files the app writes, each an
+empty table such as `variants = {}`. `[apps.<name>]` pins a dependency by its
+`sha256` and supplies its `inputs` bindings. Names follow the input name rules,
+with at most 16 outputs and 16 dependencies per manifest.
+[Running apps](05-running.md#apps-that-use-apps) covers bindings and mounts.
 
 ### `[listing]`
 
@@ -206,13 +210,16 @@ carries a full listing.
 
 A description allows paragraphs, emphasis, inline code, fenced code blocks and
 lists, and no headings, links, images, HTML, tables or footnotes. A purpose is
-display text of at most 80 characters, keyed by a path from `[reads]`:
+display text of at most 80 characters, keyed by a path in the app's combined
+grants, including those its dependencies request:
 
 ```toml
 [listing.purposes]
 "v1/genome/rsids/rs72921001" = "The variant near OR6A2 tied to tasting cilantro as soap"
 ```
 
-Purposes appear on the listing only. The phone describes every grant in the
-Ark's own words, never the app's. A module holds one language, so an app in
-another language is a separate app.
+Ark Hub reads only the main app's listing, so its purposes explain the grants
+its dependencies bring too. It refuses a purpose for a path outside the
+combined grants. Purposes appear on the listing only. The phone describes
+every grant in the Ark's own words, never the app's. A module holds one
+language, so an app in another language is a separate app.

@@ -6,9 +6,11 @@ Worked examples for writing apps that run on an Ark.
 
 An Ark holds a person's genome on a device only they control. Apps never receive
 a copy of that data. They are sent to it instead, and run in a deterministic
-sandbox on the Ark with no network and no writable storage. An app reads the
-data it was granted as plain files and prints a report. The owner approves each
-app on their phone before it runs, and decides whether to release its report.
+sandbox on the Ark with no network or storage that outlives the task. An app
+reads the data it was granted as plain files and may use other apps in the same
+task. The owner approves the task once on their phone, with the combined grants
+of all its apps. The main app prints the report, and the owner decides whether
+to release it.
 Because the sandbox contains the code, anyone can write an app and anyone can
 run anyone else's. The [whitepaper](https://dark.bio/whitepaper.pdf) lays out
 the trust model.
@@ -19,12 +21,15 @@ scanning a whole call file. Every app is a single source file.
 ## What an app is
 
 An app is a [WebAssembly](https://webassembly.org/) module built for
-[WASI Preview 1](https://github.com/WebAssembly/WASI). The Ark runs it twice.
+[WASI Preview 1](https://github.com/WebAssembly/WASI). The Ark runs each app
+in two passes.
 
 - **With no arguments**, the app prints a short TOML manifest naming itself and
-  the data it wants. The Ark checks it and shows it to the owner for approval.
+  the data it wants. The Ark checks every app's manifest before asking the
+  owner to approve the task.
 - **With a data directory as its first argument**, the app reads its granted
-  files and prints its report, a Markdown page the owner reads first.
+  files and inputs, and writes its declared outputs. Dependencies run before
+  the main app, whose standard output is the Markdown report the owner reads.
 
 ```rust
 fn main() {
@@ -39,7 +44,9 @@ fn main() {
 ## Quickstart
 
 Build and run an example against the fixture data in this repository, with
-[`wasmtime`](https://wasmtime.dev/) and the toolchain for its language:
+[`wasmtime`](https://wasmtime.dev/), a POSIX shell and AWK for the local runner,
+and the toolchain for its language. Building Python apps needs
+CPython 3.13 or newer to cross compile the interpreter they carry.
 
 ```sh
 make run APP=01-hello-rust   # one app
@@ -71,7 +78,7 @@ and a full app turns the same read into a report. Each row is a folder under
 
 | App | What it shows | Languages |
 | :-- | :-- | :-- |
-| `01-hello` | the manifest pass and the report pass | Rust, Go, C, Python |
+| `01-hello` | the manifest pass and the processing pass | Rust, Go, C, Python |
 | `02-permissions` | requesting data, optional grants, least privilege and the `develop` flag | Rust |
 | `03-sundae-order` | asking the owner questions with inputs | Rust |
 | `04-cilantro-mini` | one variant through `rsids/` | Rust, Go, C, Python |
