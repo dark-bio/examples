@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 
-	// The report pass reads everything from the one variant directory
+	// The processing pass reads from the one variant directory
 	base := filepath.Join(os.Args[1], lens)
 
 	// ENOENT means no answer, including reference sites in variants-only calls.

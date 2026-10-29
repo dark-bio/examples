@@ -9,7 +9,7 @@ data in this repository run both passes on a laptop. When the app works, the
 ### Toolchains
 
 All of these ship for macOS, Linux and Windows. The `make` targets and
-`tools/run.sh` need a POSIX shell, so build from WSL on Windows.
+`tools/run.sh` need a POSIX shell and AWK, so build from WSL on Windows.
 
 - [`wasmtime`](https://wasmtime.dev/) runs the modules.
 - [Binaryen](https://github.com/WebAssembly/binaryen/releases) supplies
@@ -22,7 +22,7 @@ All of these ship for macOS, Linux and Windows. The `make` targets and
   you unpacked it. C alone also accepts any clang with a WASI sysroot, such as
   Homebrew's `llvm`, `lld`, `wasi-libc` and `wasi-runtimes`, which the build
   falls back to.
-- Python also needs `make` and a
+- Building Python apps needs `make` and a
   [CPython](https://www.python.org/downloads/) of 3.13 or newer. Set `PYTHON`
   when the one to build with is not `python3`.
 
@@ -87,6 +87,73 @@ since `tools/run.sh` takes any module, as in
 third argument when the app declares inputs. Build it with the `wasm-opt`
 feature flags in `tools/build.sh`, because an Ark's runtime accepts only those.
 
+### Apps that use apps
+
+[12-eye-color](../apps/12-eye-color) composes a genotype gatherer and the
+IrisPlex model. `make run APP=12-eye-color` builds both dependencies, computes
+their digest pins and builds the main app before running the chain.
+
+An app pins each dependency by the SHA-256 of its module in `[apps.<name>]`.
+Build those modules before running the app. The runner hashes `build/*.wasm`
+and finds each pin by digest, so a filename can change without changing the
+pin. `BUILD` selects another build directory. To supply a particular set of
+modules, list them after the answers directory:
+
+```sh
+sh tools/run.sh my-app.wasm fixtures answers stages/*.wasm
+sh tools/run.sh my-app.wasm fixtures '' stages/*.wasm  # no owner inputs
+```
+
+The main module is always available too. A missing digest stops the task with
+the dependency's path of local names, such as `model/gather`, and its digest.
+
+The runner collects every manifest before any processing pass. It lists the
+apps depth first in manifest order, with each dependency before its parent.
+It runs the first ready app in that list, one at a time, with the main app
+last. A stage waits for its dependencies and for every file its inputs need.
+
+The main app's inputs come from answer files. A dependency's inputs come from
+its parent's bindings, either a literal, a parent input or a sibling output.
+Both inline tables and dotted keys work:
+
+```toml
+[apps.gather]
+sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+inputs.panel = "example"
+
+[apps.model]
+sha256 = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+inputs = { variants = { output = "gather/variants" }, detail = { input = "detail" } }
+```
+
+Replace those example digests with the SHA-256 of each built module. Every
+dependency input needs a binding. The runner checks that references exist and
+the graph has no cycle. Multiple choices reach each dependency in that
+dependency's declared choice order.
+
+Each `[outputs]` entry declares an empty table, such as `variants = {}`. The
+runner creates those files empty under `/outputs` before the app starts. The
+app can write them, but cannot create, rename or delete files there. Once it
+exits with status 0, its parent reads them at `/apps/<name>/<output>`.
+Inputs, grants and completed outputs are read-only. An unwritten output stays
+empty, and every output is removed when the task ends.
+
+To debug a stage alone, run its module directly with an answers directory:
+
+```sh
+sh tools/run.sh stages/model.wasm fixtures stage-answers
+```
+
+Give every input a file, including an untyped input declared as `{}`. This is
+a local debugging convenience. The Ark requires a binding for an untyped
+input and refuses one on the main app.
+
+Every app's stdout and stderr are printed after each pass, labeled by its
+path of local names. A dot names the main app. If a pass fails, the runner
+names that path and starts no further app.
+`REPORT=<file>` saves the main app's report exactly as it printed it.
+`STDERR=<file>` saves the main app's standard error exactly as it printed it.
+
 ### Small modules
 
 An Ark uploads and starts a smaller module faster, so every build here is tuned
@@ -122,15 +189,19 @@ never start, just as on an Ark without those files.
 
 ### What a laptop doesn't reproduce
 
-- **The checks before approval.** Locally nothing refuses a start section, a bad
-  name, a path that can't be granted or isn't on the Ark, or an answer that
-  doesn't fit its input.
+- **The checks before approval.** The runner checks only what it needs to run,
+  including references and fixture availability. The Ark checks every
+  manifest and value rule, and the emulator runs the real firmware.
+- **The task count and shared runs.** The runner expands and runs every pin
+  separately, even when its digest and inputs match another pin. It does not
+  reproduce the Ark's merged count or shared runs. A local guard stops an
+  expansion past 1,024 apps or 128 levels.
 - **The limits.** Memory, output and the manifest pass's time are unbounded.
 - **The deterministic sandbox.** A stock `wasmtime` gives real randomness and
   real clocks, so don't depend on either, as
   [11-fortune-cookie](../apps/11-fortune-cookie) explains.
-- **The owner's review.** You always see standard output and standard error at
-  once, as if `develop` were set and the owner released every report.
+- **The owner's review.** Every app's standard output and standard error are
+  printed locally, including dependencies. There is no approval or release.
 - **The generated tree.** Plain directories list everything, and no read fails
   with an I/O error or "file too large".
 - **Startup cost.** A laptop starts a module far faster than an Ark does, so a

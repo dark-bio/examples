@@ -195,6 +195,8 @@ def link(runtime, sdk, destination, output, args):
     command = [str(sdk / "bin/clang"), *runtime.flags]
     if args.lto != "none":
         command.append(f"-flto={args.lto}")
+        # Keep WASI's atexit allocator alias available through LTO
+        command.append("-Wl,-u,__libc_calloc")
     command += [f"-I{runtime.build}", f"-I{runtime.source / 'Include'}", f"-I{destination}",
                 str(TOOLS / "python_embed.c"), str(destination / "config.c"),
                 str(runtime.library), *map(str, runtime.extension_archives())]

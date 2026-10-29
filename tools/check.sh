@@ -12,9 +12,10 @@ cd "$(dirname "$0")/.."
 
 apps=${*:-$(ls apps)}
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+trap 'rm -rf "$work"' 0
 failures=0
 
+# Record a failed gate while letting independent checks continue.
 fail() {
   printf 'FAIL %s\n' "$*"
   failures=$((failures + 1))
@@ -22,7 +23,7 @@ fail() {
 
 # Compare one inline manifest with the facts its declarations supply.
 test_manifest_facts() {
-  awk -f tools/manifest.awk > "$work/manifest-facts"
+  LC_ALL=C awk -f tools/manifest.awk > "$work/manifest-facts"
   printf '%s\n' "$2" > "$work/manifest-expected"
   diff "$work/manifest-expected" "$work/manifest-facts" || fail "manifest reader $1"
 }
@@ -166,6 +167,34 @@ max = 1
 inputs.fake = {type = 'text', prompt = 'Fake', max = 1}
 TOML
 
+  # Outputs and pins keep declaration order across inline and dotted entries
+  test_manifest_facts composition 'output z
+app second
+app first
+output a' <<'TOML'
+manifest = 1
+[outputs.z]
+[apps]
+second = { sha256 = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+           inputs.value = { input = 'value' } }
+first.sha256 = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'
+first.inputs.value.output = 'second/z'
+[outputs]
+a = {}
+TOML
+
+  # Listing arrays and array tables keep nested inline entries out of the facts
+  test_manifest_facts listing_arrays 'output value' <<'TOML'
+manifest = 1
+[listing]
+items = [[{inputs = {fake = {}}}]]
+[[listing.gallery]]
+items = [{outputs = {fake = {}}}]
+[[listing.gallery]]
+items = [[{apps = {fake = {}}}]]
+[outputs.value]
+TOML
+
   [ "$reader_failures" -ne "$failures" ] || echo "checked the manifest reader"
 }
 
@@ -198,7 +227,7 @@ run_app() {
 
   # Accept a successful report or the expected stop for a missing required grant
   if OPTIONAL="${3:-${OPTIONAL:-}}" sh tools/run.sh "${BUILD:-build}/$app.wasm" "$root" "apps/$app/inputs" > "$output" 2>&1; then
-    sed -n '/^== report pass ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")${3:+-optional-off}"
+    sed -n '/^== processing pass: \.: stdout ==$/,$p' "$output" > "$work/report-$app-$(basename "$root")${3:+-optional-off}"
   elif [ "$?" -ne 3 ]; then
     fail "$app on $root${3:+ (OPTIONAL=$3)}"
     cat "$output"
@@ -235,9 +264,7 @@ build_and_run() {
   echo "built and ran $(echo "$apps" | wc -w | tr -d ' ') apps"
 }
 
-# Every port answers exactly like the Rust version it was ported from, so one
-# cannot drift from the others. The hello apps differ on purpose, each greeting
-# in its own language.
+# Compare reports with each app's Rust port, except the language-specific hello.
 compare_languages() {
   for app in $apps; do
     family=$(printf '%s' "$app" | sed -E 's/-(c|go|python|rust)$//')

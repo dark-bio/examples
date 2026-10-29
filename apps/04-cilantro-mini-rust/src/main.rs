@@ -53,7 +53,7 @@ Written in Rust, Go, C and Python. Compare them, then meet the full report, Cila
         return;
     };
 
-    // The report pass reads everything from the one variant directory
+    // The processing pass reads from the one variant directory
     let base = Path::new(&dir).join(LENS);
 
     // ENOENT means no answer, including reference sites in variants-only calls.

@@ -9,7 +9,7 @@
 use std::path::Path;
 use std::{fs, io};
 
-/// Required grant that the Ark mounts before the report pass.
+/// Required grant that the Ark mounts before the processing pass.
 const GRANTED: &str = "v1/genome/rsids/rs72921001";
 /// Optional grant that the Ark mounts when available and approved.
 const OPTIONAL: &str = "v1/genome/rsids/rs671";

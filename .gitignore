@@ -4,3 +4,4 @@ target/
 *.wasm
 .idea/
 __pycache__/
+apps/*/src/pins.rs

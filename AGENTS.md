@@ -19,12 +19,12 @@ INPUTS=<dir> make run APP=<app>   # answers from <dir>, not apps/<app>/inputs
 sh tools/check.sh             # what CI runs: links, builds, runs, ports
 ```
 
-`make run` mounts only the paths an app's manifest declares, read-only, and
-runs it with `/` as the data directory, the way an Ark does. An optional path
-is mounted when the fixture root holds it, and an app's answers at `/inputs`
-when it declares inputs. The three fixture roots are described in
-`fixtures/README.md`. An app whose required grants a root lacks stops before
-its report pass there, which is expected.
+`make run` mounts each app's grants, inputs and dependency outputs read-only,
+and its own declared outputs writable. It runs with `/` as the data directory.
+An optional path is mounted when the fixture root holds it. The main app's
+answers are mounted at `/inputs` when it declares inputs. The fixture roots
+are described in `fixtures/README.md`. An app whose required grants a root
+lacks stops before its processing pass there, which is expected.
 
 ## Adding an app
 
@@ -80,5 +80,6 @@ Follow `docs/06-reports.md`. In short:
 - Never read absence as homozygous reference.
 - Never assume the ALT allele is the risk allele. Derive it from the study.
 - Never grant more than the question needs.
-- Never depend on randomness, time, the network or writable storage.
+- Never depend on randomness, time, the network or storage outside declared
+  outputs.
 - Never put anything in a report the owner can't read.
